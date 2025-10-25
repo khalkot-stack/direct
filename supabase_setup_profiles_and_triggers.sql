@@ -1,3 +1,5 @@
+BEGIN; -- Start a transaction for atomic execution
+
 -- 1. Create user_type ENUM
 DO $$ BEGIN
   CREATE TYPE public.user_type AS ENUM ('passenger', 'driver', 'admin');
@@ -14,8 +16,13 @@ RETURNS public.user_type AS $$
   SELECT ((current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type')::public.user_type;
 $$ LANGUAGE sql STABLE;
 
--- 4. Recreate profiles table with RLS policies
+-- 4. Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE;
+
+-- 5. Drop existing profiles table if it exists
 DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- 6. Create profiles table with RLS policies
 CREATE TABLE public.profiles (
   id uuid REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name text,
@@ -45,16 +52,21 @@ CREATE POLICY "Admins can manage all profiles."
   USING (get_user_type() = 'admin')
   WITH CHECK (get_user_type() = 'admin');
 
--- 5. Create handle_new_user function and trigger
+-- 7. Create handle_new_user function and trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  _user_type public.user_type;
 BEGIN
+  -- Safely determine user_type, defaulting to 'passenger'
+  SELECT COALESCE(NEW.raw_user_meta_data->>'user_type', 'passenger') INTO _user_type;
+
   INSERT INTO public.profiles (id, full_name, email, user_type, phone_number, status)
   VALUES (
     NEW.id,
     NEW.raw_user_meta_data->>'full_name',
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'user_type', 'passenger')::public.user_type,
+    _user_type,
     NEW.raw_user_meta_data->>'phone_number',
     'active'
   );
@@ -65,3 +77,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+COMMIT; -- End the transaction
