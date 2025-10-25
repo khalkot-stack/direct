@@ -16,9 +16,11 @@ const PassengerDashboard = () => {
             مرحباً بك أيها الراكب! من هنا يمكنك طلب الرحلات وإدارة طلباتك.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button className="bg-green-500 hover:bg-green-600 text-white text-lg px-6 py-3 rounded-lg shadow-md">
-              طلب رحلة جديدة
-            </Button>
+            <Link to="/request-ride">
+              <Button className="bg-green-500 hover:bg-green-600 text-white text-lg px-6 py-3 rounded-lg shadow-md">
+                طلب رحلة جديدة
+              </Button>
+            </Link>
             <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
               عرض طلباتي
             </Button>

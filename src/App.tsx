@@ -7,6 +7,7 @@ import Index from "./pages/Index"; // Now the Home Page
 import AuthPage from "./pages/AuthPage";
 import PassengerDashboard from "./pages/PassengerDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
+import RequestRidePage from "./pages/RequestRidePage"; // Import the new page
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
           <Route path="/driver-dashboard" element={<DriverDashboard />} />
+          <Route path="/request-ride" element={<RequestRidePage />} /> {/* New route */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
