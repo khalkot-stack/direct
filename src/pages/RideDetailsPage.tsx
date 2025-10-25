@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, MapPin, User, Car, Info, Loader2, Users } from "lucide-react"; // Added Users and Loader2
+import { ChevronLeft, MapPin, User, Car, Info, Loader2, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 // Define an interface for the raw data returned by Supabase select with joins for a SINGLE row
+// For .single() queries, joined relations are typically single objects or null, not arrays.
 interface SupabaseJoinedRideData {
   id: string;
   pickup_location: string;
@@ -17,9 +18,8 @@ interface SupabaseJoinedRideData {
   status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_id: string;
   driver_id: string | null;
-  // For .single() query, these should be objects or null, not arrays
-  profiles_passenger: { full_name: string } | null;
-  profiles_driver: { full_name: string } | null;
+  profiles_passenger: { full_name: string } | null; // Expect a single object or null
+  profiles_driver: { full_name: string } | null;     // Expect a single object or null
 }
 
 interface Ride {
@@ -61,26 +61,30 @@ const RideDetailsPage = () => {
         profiles_driver:driver_id (full_name)
       `)
       .eq('id', rideId)
-      .single();
+      .single()
+      .returns<SupabaseJoinedRideData>(); // Use .returns() to enforce type
 
     if (error) {
       toast.error(`فشل جلب تفاصيل الرحلة: ${error.message}`);
       console.error("Error fetching ride details:", error);
       setRide(null);
-    } else {
-      const typedData = data as SupabaseJoinedRideData; // Cast to our defined interface
+    } else if (data) { // Check if data is not null
       setRide({
-        id: typedData.id,
-        passenger_id: typedData.passenger_id,
-        driver_id: typedData.driver_id,
-        // Access full_name directly on the object, as .single() returns an object
-        passenger_name: typedData.profiles_passenger?.full_name || 'غير معروف',
-        driver_name: typedData.profiles_driver?.full_name || 'لا يوجد',
-        pickup_location: typedData.pickup_location,
-        destination: typedData.destination,
-        passengers_count: typedData.passengers_count,
-        status: typedData.status,
+        id: data.id,
+        passenger_id: data.passenger_id,
+        driver_id: data.driver_id,
+        // Access full_name directly on the object, as .single() returns an object for joined relations
+        passenger_name: data.profiles_passenger?.full_name || 'غير معروف',
+        driver_name: data.profiles_driver?.full_name || 'لا يوجد',
+        pickup_location: data.pickup_location,
+        destination: data.destination,
+        passengers_count: data.passengers_count,
+        status: data.status,
       });
+    } else { // data is null, meaning no ride found
+      toast.error("الرحلة المطلوبة غير موجودة.");
+      console.error("Ride not found for ID:", rideId);
+      setRide(null); // Explicitly set to null
     }
     setLoading(false);
   }, [rideId]);
