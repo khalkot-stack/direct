@@ -6,7 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import UserFormDialog from "@/components/UserFormDialog"; // Import the new dialog
+import UserFormDialog from "@/components/UserFormDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface User {
   id: string;
@@ -28,8 +38,10 @@ const initialUsers: User[] = [
 const UserManagementPage = () => {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,30 +51,37 @@ const UserManagementPage = () => {
   );
 
   const handleAddUser = () => {
-    setEditingUser(undefined); // Clear any previous editing user
-    setIsDialogOpen(true);
+    setEditingUser(undefined);
+    setIsFormDialogOpen(true);
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
 
   const handleSaveUser = (updatedUser: User) => {
     if (users.some(u => u.id === updatedUser.id)) {
-      // Update existing user
       setUsers(users.map(u => (u.id === updatedUser.id ? updatedUser : u)));
       toast.success(`تم تحديث المستخدم ${updatedUser.name} بنجاح.`);
     } else {
-      // Add new user
       setUsers([...users, updatedUser]);
       toast.success(`تم إضافة المستخدم ${updatedUser.name} بنجاح.`);
     }
   };
 
-  const handleDelete = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    toast.warning(`تم حذف المستخدم بنجاح.`);
+  const handleDeleteClick = (userId: string) => {
+    setUserToDelete(userId);
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (userToDelete) {
+      setUsers(users.filter(user => user.id !== userToDelete));
+      toast.warning(`تم حذف المستخدم بنجاح.`);
+      setUserToDelete(null);
+    }
+    setIsConfirmDialogOpen(false);
   };
 
   return (
@@ -104,7 +123,7 @@ const UserManagementPage = () => {
                       <Button variant="outline" size="sm" onClick={() => handleEdit(user)}>
                         تعديل
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id)}>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(user.id)}>
                         حذف
                       </Button>
                     </TableCell>
@@ -122,11 +141,27 @@ const UserManagementPage = () => {
         </CardContent>
       </Card>
       <UserFormDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
         user={editingUser}
         onSave={handleSaveUser}
       />
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف هذا المستخدم بشكل دائم من سجلاتنا.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

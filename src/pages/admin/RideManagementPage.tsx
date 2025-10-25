@@ -6,7 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import RideFormDialog from "@/components/RideFormDialog"; // Import the new dialog
+import RideFormDialog from "@/components/RideFormDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface Ride {
   id: string;
@@ -28,8 +38,10 @@ const initialRides: Ride[] = [
 const RideManagementPage = () => {
   const [rides, setRides] = useState<Ride[]>(initialRides);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingRide, setEditingRide] = useState<Ride | undefined>(undefined);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [rideToCancel, setRideToCancel] = useState<string | null>(null);
 
   const filteredRides = rides.filter(ride =>
     ride.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,30 +53,37 @@ const RideManagementPage = () => {
   );
 
   const handleAddRide = () => {
-    setEditingRide(undefined); // Clear any previous editing ride
-    setIsDialogOpen(true);
+    setEditingRide(undefined);
+    setIsFormDialogOpen(true);
   };
 
   const handleEdit = (ride: Ride) => {
     setEditingRide(ride);
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
 
   const handleSaveRide = (updatedRide: Ride) => {
     if (rides.some(r => r.id === updatedRide.id)) {
-      // Update existing ride
       setRides(rides.map(r => (r.id === updatedRide.id ? updatedRide : r)));
       toast.success(`تم تحديث الرحلة ${updatedRide.id} بنجاح.`);
     } else {
-      // Add new ride
       setRides([...rides, updatedRide]);
       toast.success(`تم إضافة الرحلة ${updatedRide.id} بنجاح.`);
     }
   };
 
-  const handleCancelRide = (rideId: string) => {
-    setRides(rides.map(r => (r.id === rideId ? { ...r, status: "ملغاة" } : r)));
-    toast.warning(`تم إلغاء الرحلة رقم ${rideId}.`);
+  const handleCancelClick = (rideId: string) => {
+    setRideToCancel(rideId);
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (rideToCancel) {
+      setRides(rides.map(r => (r.id === rideToCancel ? { ...r, status: "ملغاة" } : r)));
+      toast.warning(`تم إلغاء الرحلة رقم ${rideToCancel}.`);
+      setRideToCancel(null);
+    }
+    setIsConfirmDialogOpen(false);
   };
 
   return (
@@ -111,7 +130,7 @@ const RideManagementPage = () => {
                         تعديل
                       </Button>
                       {ride.status !== "مكتملة" && ride.status !== "ملغاة" && (
-                        <Button variant="destructive" size="sm" onClick={() => handleCancelRide(ride.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleCancelClick(ride.id)}>
                           إلغاء
                         </Button>
                       )}
@@ -130,11 +149,27 @@ const RideManagementPage = () => {
         </CardContent>
       </Card>
       <RideFormDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
         ride={editingRide}
         onSave={handleSaveRide}
       />
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من إلغاء هذه الرحلة؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم تغيير حالة الرحلة إلى "ملغاة".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              تأكيد الإلغاء
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
