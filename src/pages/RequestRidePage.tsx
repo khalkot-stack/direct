@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,22 +9,59 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ChevronLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const RequestRidePage = () => {
   const navigate = useNavigate();
   const [pickupLocation, setPickupLocation] = useState("");
   const [destination, setDestination] = useState("");
-  const [passengers, setPassengers] = useState("1");
+  const [passengersCount, setPassengersCount] = useState("1");
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      } else {
+        toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
+        navigate("/auth");
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) {
+      toast.error("خطأ: لم يتم العثور على معرف المستخدم.");
+      return;
+    }
     if (!pickupLocation || !destination) {
       toast.error("الرجاء إدخال موقع الانطلاق والوجهة.");
       return;
     }
-    // Simulate ride request
-    toast.success(`تم طلب رحلة من ${pickupLocation} إلى ${destination} لـ ${passengers} ركاب.`);
-    navigate("/passenger-dashboard");
+
+    setLoading(true);
+    const { data, error } = await supabase.from('rides').insert([
+      {
+        passenger_id: userId,
+        pickup_location: pickupLocation,
+        destination: destination,
+        passengers_count: parseInt(passengersCount),
+        status: "pending",
+      },
+    ]).select();
+    setLoading(false);
+
+    if (error) {
+      toast.error(`فشل طلب الرحلة: ${error.message}`);
+      console.error("Error requesting ride:", error);
+    } else {
+      toast.success(`تم طلب رحلة من ${pickupLocation} إلى ${destination} لـ ${passengersCount} ركاب.`);
+      navigate("/passenger-requests"); // Redirect to passenger requests page
+    }
   };
 
   return (
@@ -75,7 +112,7 @@ const RequestRidePage = () => {
             </div>
             <div>
               <Label htmlFor="passengers">عدد الركاب</Label>
-              <Select value={passengers} onValueChange={setPassengers}>
+              <Select value={passengersCount} onValueChange={setPassengersCount}>
                 <SelectTrigger id="passengers" className="w-full mt-1">
                   <SelectValue placeholder="اختر عدد الركاب" />
                 </SelectTrigger>
@@ -87,8 +124,8 @@ const RequestRidePage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6">
-              طلب الرحلة
+            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
+              {loading ? "جاري طلب الرحلة..." : "طلب الرحلة"}
             </Button>
           </form>
         </CardContent>

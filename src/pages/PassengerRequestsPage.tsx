@@ -1,20 +1,83 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+
+interface RideRequest {
+  id: string;
+  pickup_location: string;
+  destination: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  driver_name?: string;
+}
 
 const PassengerRequestsPage = () => {
   const navigate = useNavigate();
+  const [passengerRequests, setPassengerRequests] = useState<RideRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Dummy ride requests for demonstration
-  const passengerRequests = [
-    { id: "req1", pickup: "شارع الجامعة", destination: "دوار السابع", passengersCount: 2, status: "قيد الانتظار", driver: "لا يوجد" },
-    { id: "req2", pickup: "العبدلي", destination: "الصويفية", passengersCount: 1, status: "مقبولة", driver: "أحمد محمود" },
-    { id: "req3", pickup: "جبل عمان", destination: "المدينة الرياضية", passengersCount: 3, status: "مكتملة", driver: "سارة علي" },
-  ];
+  const fetchPassengerRides = useCallback(async (currentUserId: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rides')
+      .select(`
+        id,
+        pickup_location,
+        destination,
+        passengers_count,
+        status,
+        driver_id,
+        profiles_driver:driver_id (full_name)
+      `)
+      .eq('passenger_id', currentUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error(`فشل جلب طلبات الرحلات: ${error.message}`);
+      console.error("Error fetching passenger rides:", error);
+    } else {
+      const formattedRequests: RideRequest[] = data.map((ride: any) => ({
+        id: ride.id,
+        pickup_location: ride.pickup_location,
+        destination: ride.destination,
+        passengers_count: ride.passengers_count,
+        status: ride.status,
+        driver_name: ride.profiles_driver?.full_name || 'لا يوجد',
+      }));
+      setPassengerRequests(formattedRequests);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const getUserAndFetchRides = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        fetchPassengerRides(user.id);
+      } else {
+        toast.error("الرجاء تسجيل الدخول لعرض طلباتك.");
+        navigate("/auth");
+      }
+    };
+    getUserAndFetchRides();
+  }, [navigate, fetchPassengerRides]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري تحميل طلبات الرحلات...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
@@ -42,14 +105,14 @@ const PassengerRequestsPage = () => {
               <div key={request.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div className="text-right sm:text-left mb-2 sm:mb-0">
                   <p className="text-lg font-medium text-gray-900 dark:text-white">
-                    من: {request.pickup} إلى: {request.destination}
+                    من: {request.pickup_location} إلى: {request.destination}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    عدد الركاب: {request.passengersCount} | الحالة: {request.status}
+                    عدد الركاب: {request.passengers_count} | الحالة: {request.status === 'pending' ? 'قيد الانتظار' : request.status === 'accepted' ? 'مقبولة' : request.status === 'completed' ? 'مكتملة' : 'ملغاة'}
                   </p>
-                  {request.driver !== "لا يوجد" && (
+                  {request.driver_name !== "لا يوجد" && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      السائق: {request.driver}
+                      السائق: {request.driver_name}
                     </p>
                   )}
                 </div>

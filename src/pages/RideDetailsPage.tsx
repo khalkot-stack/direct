@@ -1,28 +1,86 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, MapPin, User, Car, Info } from "lucide-react";
+import { ChevronLeft, MapPin, User, Car, Info, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
-// Dummy data for rides
-const dummyRides = [
-  { id: "req1", passenger: "ليلى خالد", driver: "لا يوجد", pickup: "شارع الجامعة", destination: "دوار السابع", passengersCount: 2, status: "قيد الانتظار" },
-  { id: "req2", passenger: "سارة علي", driver: "أحمد محمود", pickup: "العبدلي", destination: "الصويفية", passengersCount: 1, status: "مقبولة" },
-  { id: "req3", passenger: "يوسف حسن", driver: "فاطمة سعيد", pickup: "جبل عمان", destination: "المدينة الرياضية", passengersCount: 3, status: "مكتملة" },
-  { id: "R001", passenger: "سارة علي", driver: "أحمد محمود", pickup: "شارع الجامعة", destination: "دوار السابع", passengersCount: 2, status: "مكتملة" },
-  { id: "R002", passenger: "ليلى خالد", driver: "لا يوجد", pickup: "العبدلي", destination: "الصويفية", passengersCount: 1, status: "قيد الانتظار" },
-  { id: "R003", passenger: "يوسف حسن", driver: "فاطمة سعيد", pickup: "جبل عمان", destination: "المدينة الرياضية", passengersCount: 3, status: "ملغاة" },
-  { id: "R004", passenger: "علياء محمد", driver: "محمد سعيد", pickup: "الشميساني", destination: "مجمع رغدان", passengersCount: 1, status: "مكتملة" },
-  { id: "R005", passenger: "خالد فهد", driver: "لا يوجد", pickup: "الجبيهة", destination: "وسط البلد", passengersCount: 2, status: "قيد الانتظار" },
-];
+interface Ride {
+  id: string;
+  passenger_id: string;
+  driver_id: string | null;
+  passenger_name?: string;
+  driver_name?: string;
+  pickup_location: string;
+  destination: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+}
 
 const RideDetailsPage = () => {
   const { rideId } = useParams<{ rideId: string }>();
   const navigate = useNavigate();
+  const [ride, setRide] = useState<Ride | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const ride = dummyRides.find(r => r.id === rideId);
+  const fetchRideDetails = useCallback(async () => {
+    if (!rideId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rides')
+      .select(`
+        id,
+        pickup_location,
+        destination,
+        passengers_count,
+        status,
+        passenger_id,
+        driver_id,
+        profiles_passenger:passenger_id (full_name),
+        profiles_driver:driver_id (full_name)
+      `)
+      .eq('id', rideId)
+      .single();
+
+    if (error) {
+      toast.error(`فشل جلب تفاصيل الرحلة: ${error.message}`);
+      console.error("Error fetching ride details:", error);
+      setRide(null);
+    } else {
+      setRide({
+        id: data.id,
+        passenger_id: data.passenger_id,
+        driver_id: data.driver_id,
+        passenger_name: data.profiles_passenger?.full_name || 'غير معروف',
+        driver_name: data.profiles_driver?.full_name || 'لا يوجد',
+        pickup_location: data.pickup_location,
+        destination: data.destination,
+        passengers_count: data.passengers_count,
+        status: data.status,
+      });
+    }
+    setLoading(false);
+  }, [rideId]);
+
+  useEffect(() => {
+    fetchRideDetails();
+  }, [fetchRideDetails]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري تحميل تفاصيل الرحلة...</span>
+      </div>
+    );
+  }
 
   if (!ride) {
     return (
@@ -69,7 +127,7 @@ const RideDetailsPage = () => {
             <span className="sr-only">العودة</span>
           </Button>
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            تفاصيل الرحلة #{ride.id}
+            تفاصيل الرحلة #{ride.id.substring(0, 8)}...
           </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
             معلومات مفصلة عن الرحلة
@@ -79,7 +137,7 @@ const RideDetailsPage = () => {
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <p className="text-lg text-gray-800 dark:text-gray-200">
-              <span className="font-semibold">من:</span> {ride.pickup}
+              <span className="font-semibold">من:</span> {ride.pickup_location}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -91,25 +149,25 @@ const RideDetailsPage = () => {
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <p className="text-lg text-gray-800 dark:text-gray-200">
-              <span className="font-semibold">الراكب:</span> {ride.passenger}
+              <span className="font-semibold">الراكب:</span> {ride.passenger_name}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Car className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <p className="text-lg text-gray-800 dark:text-gray-200">
-              <span className="font-semibold">السائق:</span> {ride.driver}
+              <span className="font-semibold">السائق:</span> {ride.driver_name}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Users className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <p className="text-lg text-gray-800 dark:text-gray-200">
-              <span className="font-semibold">عدد الركاب:</span> {ride.passengersCount}
+              <span className="font-semibold">عدد الركاب:</span> {ride.passengers_count}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Info className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <p className="text-lg text-gray-800 dark:text-gray-200">
-              <span className="font-semibold">الحالة:</span> {ride.status}
+              <span className="font-semibold">الحالة:</span> {ride.status === 'pending' ? 'قيد الانتظار' : ride.status === 'accepted' ? 'مقبولة' : ride.status === 'completed' ? 'مكتملة' : 'ملغاة'}
             </p>
           </div>
         </CardContent>
