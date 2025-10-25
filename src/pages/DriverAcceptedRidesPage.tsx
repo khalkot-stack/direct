@@ -8,32 +8,23 @@ import { ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
-interface RideRequest {
+interface AcceptedRide {
   id: string;
   pickup_location: string;
   destination: string;
   passengers_count: number;
-  time: string; // This will be derived from created_at or a specific time field
+  status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_name?: string;
 }
 
-const FindRidesPage = () => {
+const DriverAcceptedRidesPage = () => {
   const navigate = useNavigate();
-  const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
+  const [acceptedRides, setAcceptedRides] = useState<AcceptedRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
 
-  const fetchPendingRides = useCallback(async () => {
+  const fetchAcceptedRides = useCallback(async (currentDriverId: string) => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("الرجاء تسجيل الدخول كسائق لعرض الرحلات.");
-      navigate("/auth");
-      setLoading(false);
-      return;
-    }
-    setDriverId(user.id);
-
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -44,49 +35,56 @@ const FindRidesPage = () => {
         status,
         profiles_passenger:passenger_id (full_name)
       `)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true });
+      .eq('driver_id', currentDriverId)
+      .in('status', ['accepted', 'completed']) // Show accepted and completed rides
+      .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error(`فشل جلب الرحلات المتاحة: ${error.message}`);
-      console.error("Error fetching pending rides:", error);
+      toast.error(`فشل جلب الرحلات المقبولة: ${error.message}`);
+      console.error("Error fetching accepted rides:", error);
     } else {
-      const formattedRequests: RideRequest[] = data.map((ride: any) => ({
+      const formattedRides: AcceptedRide[] = data.map((ride: any) => ({
         id: ride.id,
         pickup_location: ride.pickup_location,
         destination: ride.destination,
         passengers_count: ride.passengers_count,
-        time: "الآن", // Placeholder, could be calculated from created_at
+        status: ride.status,
         passenger_name: ride.profiles_passenger?.full_name || 'غير معروف',
       }));
-      setRideRequests(formattedRequests);
+      setAcceptedRides(formattedRides);
     }
     setLoading(false);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    fetchPendingRides();
-  }, [fetchPendingRides]);
+    const getDriverAndFetchRides = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setDriverId(user.id);
+        fetchAcceptedRides(user.id);
+      } else {
+        toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
+        navigate("/auth");
+      }
+    };
+    getDriverAndFetchRides();
+  }, [navigate, fetchAcceptedRides]);
 
-  const handleAcceptRide = async (rideId: string) => {
-    if (!driverId) {
-      toast.error("خطأ: لم يتم العثور على معرف السائق.");
-      return;
-    }
+  const handleCompleteRide = async (rideId: string) => {
     setLoading(true);
     const { error } = await supabase
       .from('rides')
-      .update({ driver_id: driverId, status: 'accepted' })
-      .eq('id', rideId);
-    setLoading(false);
+      .update({ status: 'completed' })
+      .eq('id', rideId)
+      .eq('driver_id', driverId); // Ensure only the assigned driver can complete
 
+    setLoading(false);
     if (error) {
-      toast.error(`فشل قبول الرحلة: ${error.message}`);
-      console.error("Error accepting ride:", error);
+      toast.error(`فشل إكمال الرحلة: ${error.message}`);
+      console.error("Error completing ride:", error);
     } else {
-      toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
-      fetchPendingRides(); // Refresh the list of pending rides
-      navigate("/driver-dashboard/accepted-rides"); // Redirect to accepted rides page
+      toast.success(`تم إكمال الرحلة رقم ${rideId.substring(0, 8)}... بنجاح.`);
+      if (driverId) fetchAcceptedRides(driverId); // Refresh the list
     }
   };
 
@@ -94,7 +92,7 @@ const FindRidesPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-        <span className="sr-only">جاري تحميل الرحلات المتاحة...</span>
+        <span className="sr-only">جاري تحميل الرحلات المقبولة...</span>
       </div>
     );
   }
@@ -113,22 +111,22 @@ const FindRidesPage = () => {
             <span className="sr-only">العودة</span>
           </Button>
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            البحث عن ركاب
+            رحلاتي المقبولة
           </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
-            الرحلات المتاحة حالياً
+            عرض الرحلات التي قبلتها أو أكملتها
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {rideRequests.length > 0 ? (
-            rideRequests.map((ride) => (
+          {acceptedRides.length > 0 ? (
+            acceptedRides.map((ride) => (
               <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div className="text-right sm:text-left mb-2 sm:mb-0">
                   <p className="text-lg font-medium text-gray-900 dark:text-white">
                     من: {ride.pickup_location} إلى: {ride.destination}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    عدد الركاب: {ride.passengers_count} | الوقت: {ride.time} | الراكب: {ride.passenger_name}
+                    عدد الركاب: {ride.passengers_count} | الحالة: {ride.status === 'accepted' ? 'مقبولة' : 'مكتملة'} | الراكب: {ride.passenger_name}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -140,18 +138,20 @@ const FindRidesPage = () => {
                   >
                     عرض التفاصيل
                   </Button>
-                  <Button
-                    onClick={() => handleAcceptRide(ride.id)}
-                    className="bg-green-500 hover:bg-green-600 text-white"
-                    disabled={loading}
-                  >
-                    {loading ? "جاري القبول..." : "قبول الرحلة"}
-                  </Button>
+                  {ride.status === 'accepted' && (
+                    <Button
+                      onClick={() => handleCompleteRide(ride.id)}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      disabled={loading}
+                    >
+                      {loading ? "جاري الإكمال..." : "إكمال الرحلة"}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-600 dark:text-gray-400">لا توجد رحلات متاحة حالياً.</p>
+            <p className="text-center text-gray-600 dark:text-gray-400">لم تقبل أي رحلات بعد.</p>
           )}
         </CardContent>
       </Card>
@@ -159,4 +159,4 @@ const FindRidesPage = () => {
   );
 };
 
-export default FindRidesPage;
+export default DriverAcceptedRidesPage;

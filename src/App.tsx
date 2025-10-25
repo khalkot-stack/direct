@@ -17,6 +17,7 @@ import OverviewPage from "./pages/admin/OverviewPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import RideManagementPage from "./pages/admin/RideManagementPage";
 import SettingsPage from "./pages/admin/SettingsPage";
+import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage"; // Import the new page
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
             <Route path="/driver-dashboard" element={<DriverDashboard />} />
             <Route path="/find-rides" element={<FindRidesPage />} />
+            <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} /> {/* New route */}
           </Route>
 
           {/* Protected Routes for Admin */}

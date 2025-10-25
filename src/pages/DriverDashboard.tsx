@@ -22,9 +22,11 @@ const DriverDashboard = () => {
                 البحث عن ركاب
               </Button>
             </Link>
-            <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
-              عرض طلباتي المقبولة
-            </Button>
+            <Link to="/driver-dashboard/accepted-rides"> {/* Updated link */}
+              <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
+                عرض طلباتي المقبولة
+              </Button>
+            </Link>
           </div>
           <div className="mt-6">
             <LogoutButton /> {/* Add LogoutButton here */}
