@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -16,73 +16,146 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
-interface User {
+interface Profile {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
-  type: string;
-  status: string;
+  user_type: "passenger" | "driver" | "admin";
+  status: "active" | "suspended" | "banned";
+  phone_number?: string;
 }
 
-const initialUsers: User[] = [
-  { id: "1", name: "أحمد محمود", email: "ahmad@example.com", type: "سائق", status: "نشط" },
-  { id: "2", name: "سارة علي", email: "sara@example.com", type: "راكب", status: "نشط" },
-  { id: "3", name: "ليلى خالد", email: "layla@example.com", type: "راكب", status: "معلق" },
-  { id: "4", name: "يوسف حسن", email: "yousef@example.com", type: "سائق", status: "نشط" },
-  { id: "5", name: "فاطمة سعيد", email: "fatima@example.com", type: "سائق", status: "نشط" },
-  { id: "6", name: "عمران السيد", email: "omran@example.com", type: "راكب", status: "نشط" },
-];
-
 const UserManagementPage = () => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
+  const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.status.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchProfiles = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      toast.error(`فشل جلب المستخدمين: ${error.message}`);
+      console.error("Error fetching profiles:", error);
+    } else {
+      setProfiles(data as Profile[]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
+
+  const filteredProfiles = profiles.filter(profile =>
+    profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    profile.user_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    profile.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddUser = () => {
-    setEditingUser(undefined);
+    setEditingProfile(undefined);
+    setIsNewUser(true);
     setIsFormDialogOpen(true);
   };
 
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
+  const handleEdit = (profile: Profile) => {
+    setEditingProfile(profile);
+    setIsNewUser(false);
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveUser = (updatedUser: User) => {
-    if (users.some(u => u.id === updatedUser.id)) {
-      setUsers(users.map(u => (u.id === updatedUser.id ? updatedUser : u)));
-      toast.success(`تم تحديث المستخدم ${updatedUser.name} بنجاح.`);
+  const handleSaveProfile = async (updatedProfile: Profile) => {
+    if (isNewUser) {
+      // For new users, we only create a profile entry.
+      // The actual auth.users entry is created via AuthPage registration.
+      // This scenario assumes admin is adding a profile for an already existing auth.user,
+      // or that the admin will manually create the auth.user.
+      // For simplicity, we'll assume the email provided here corresponds to an existing auth.user.
+      // A more robust solution would involve creating the auth.user via admin API.
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: updatedProfile.id, // This ID should ideally come from an existing auth.user
+          full_name: updatedProfile.full_name,
+          email: updatedProfile.email,
+          user_type: updatedProfile.user_type,
+          status: updatedProfile.status,
+          phone_number: updatedProfile.phone_number,
+        });
+
+      if (error) {
+        toast.error(`فشل إضافة المستخدم: ${error.message}`);
+        console.error("Error adding profile:", error);
+      } else {
+        toast.success(`تم إضافة المستخدم ${updatedProfile.full_name} بنجاح.`);
+        fetchProfiles();
+        setIsFormDialogOpen(false);
+      }
     } else {
-      setUsers([...users, updatedUser]);
-      toast.success(`تم إضافة المستخدم ${updatedUser.name} بنجاح.`);
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updatedProfile.full_name,
+          email: updatedProfile.email,
+          user_type: updatedProfile.user_type,
+          status: updatedProfile.status,
+          phone_number: updatedProfile.phone_number,
+        })
+        .eq('id', updatedProfile.id);
+
+      if (error) {
+        toast.error(`فشل تحديث المستخدم: ${error.message}`);
+        console.error("Error updating profile:", error);
+      } else {
+        toast.success(`تم تحديث المستخدم ${updatedProfile.full_name} بنجاح.`);
+        fetchProfiles();
+        setIsFormDialogOpen(false);
+      }
     }
   };
 
-  const handleDeleteClick = (userId: string) => {
-    setUserToDelete(userId);
+  const handleDeleteClick = (profileId: string) => {
+    setProfileToDelete(profileId);
     setIsConfirmDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (userToDelete) {
-      setUsers(users.filter(user => user.id !== userToDelete));
-      toast.warning(`تم حذف المستخدم بنجاح.`);
-      setUserToDelete(null);
+  const handleConfirmDelete = async () => {
+    if (profileToDelete) {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', profileToDelete);
+
+      if (error) {
+        toast.error(`فشل حذف المستخدم: ${error.message}`);
+        console.error("Error deleting profile:", error);
+      } else {
+        toast.warning(`تم حذف المستخدم بنجاح.`);
+        fetchProfiles();
+      }
+      setProfileToDelete(null);
     }
     setIsConfirmDialogOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري تحميل المستخدمين...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,7 +177,7 @@ const UserManagementPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الاسم</TableHead>
+                <TableHead>الاسم الكامل</TableHead>
                 <TableHead>البريد الإلكتروني</TableHead>
                 <TableHead>النوع</TableHead>
                 <TableHead>الحالة</TableHead>
@@ -112,18 +185,18 @@ const UserManagementPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.type}</TableCell>
-                    <TableCell>{user.status}</TableCell>
+              {filteredProfiles.length > 0 ? (
+                filteredProfiles.map((profile) => (
+                  <TableRow key={profile.id}>
+                    <TableCell>{profile.full_name}</TableCell>
+                    <TableCell>{profile.email}</TableCell>
+                    <TableCell>{profile.user_type === 'passenger' ? 'راكب' : profile.user_type === 'driver' ? 'سائق' : 'مدير'}</TableCell>
+                    <TableCell>{profile.status === 'active' ? 'نشط' : profile.status === 'suspended' ? 'معلق' : 'محظور'}</TableCell>
                     <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(user)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(profile)}>
                         تعديل
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(user.id)}>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(profile.id)}>
                         حذف
                       </Button>
                     </TableCell>
@@ -143,8 +216,9 @@ const UserManagementPage = () => {
       <UserFormDialog
         open={isFormDialogOpen}
         onOpenChange={setIsFormDialogOpen}
-        user={editingUser}
-        onSave={handleSaveUser}
+        profile={editingProfile}
+        onSave={handleSaveProfile}
+        isNewUser={isNewUser}
       />
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>

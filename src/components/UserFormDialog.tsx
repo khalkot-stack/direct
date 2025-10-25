@@ -15,93 +15,105 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-interface User {
+interface Profile {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
-  type: string;
-  status: string;
+  user_type: "passenger" | "driver" | "admin";
+  status: "active" | "suspended" | "banned";
+  phone_number?: string;
 }
 
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user?: User; // Optional user object for editing
-  onSave: (user: User) => void;
+  profile?: Profile; // Optional profile object for editing
+  onSave: (profile: Profile) => void;
+  isNewUser: boolean; // To differentiate between adding and editing
 }
 
-const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, user, onSave }) => {
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [type, setType] = useState(user?.type || "راكب");
-  const [status, setStatus] = useState(user?.status || "نشط");
+const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave, isNewUser }) => {
+  const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [email, setEmail] = useState(profile?.email || "");
+  const [userType, setUserType] = useState<"passenger" | "driver" | "admin">(profile?.user_type || "passenger");
+  const [status, setStatus] = useState<"active" | "suspended" | "banned">(profile?.status || "active");
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || "");
 
   useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setType(user.type);
-      setStatus(user.status);
+    if (profile) {
+      setFullName(profile.full_name);
+      setEmail(profile.email);
+      setUserType(profile.user_type);
+      setStatus(profile.status);
+      setPhoneNumber(profile.phone_number || "");
     } else {
-      setName("");
+      setFullName("");
       setEmail("");
-      setType("راكب");
-      setStatus("نشط");
+      setUserType("passenger");
+      setStatus("active");
+      setPhoneNumber("");
     }
-  }, [user, open]);
+  }, [profile, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !type || !status) {
-      toast.error("الرجاء ملء جميع الحقول.");
+    if (!fullName || !email || !userType || !status) {
+      toast.error("الرجاء ملء جميع الحقول المطلوبة.");
       return;
     }
 
-    const newUser: User = {
-      id: user?.id || `new-${Date.now()}`, // Generate a new ID if adding
-      name,
+    const newProfile: Profile = {
+      id: profile?.id || `new-${Date.now()}`, // ID will be set by Supabase for new users, or kept for existing
+      full_name: fullName,
       email,
-      type,
+      user_type: userType,
       status,
+      phone_number: phoneNumber,
     };
-    onSave(newUser);
-    onOpenChange(false); // Close dialog after saving
+    onSave(newProfile);
+    // Dialog will be closed by parent component after successful save
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{user ? "تعديل المستخدم" : "إضافة مستخدم جديد"}</DialogTitle>
+          <DialogTitle>{isNewUser ? "إضافة مستخدم جديد" : "تعديل المستخدم"}</DialogTitle>
           <DialogDescription>
-            {user ? "قم بتعديل تفاصيل المستخدم." : "أدخل تفاصيل المستخدم الجديد هنا."}
+            {isNewUser ? "أدخل تفاصيل المستخدم الجديد هنا." : "قم بتعديل تفاصيل المستخدم."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              الاسم
+            <Label htmlFor="full_name" className="text-right">
+              الاسم الكامل
             </Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
+            <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} className="col-span-3" required />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email" className="text-right">
               البريد الإلكتروني
             </Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" required />
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" required disabled={!isNewUser} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="type" className="text-right">
+            <Label htmlFor="phone_number" className="text-right">
+              رقم الهاتف
+            </Label>
+            <Input id="phone_number" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="user_type" className="text-right">
               النوع
             </Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={userType} onValueChange={(value: "passenger" | "driver" | "admin") => setUserType(value)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="اختر نوع المستخدم" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="راكب">راكب</SelectItem>
-                <SelectItem value="سائق">سائق</SelectItem>
-                <SelectItem value="مدير">مدير</SelectItem>
+                <SelectItem value="passenger">راكب</SelectItem>
+                <SelectItem value="driver">سائق</SelectItem>
+                <SelectItem value="admin">مدير</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -109,14 +121,14 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, use
             <Label htmlFor="status" className="text-right">
               الحالة
             </Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={(value: "active" | "suspended" | "banned") => setStatus(value)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="اختر حالة المستخدم" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="نشط">نشط</SelectItem>
-                <SelectItem value="معلق">معلق</SelectItem>
-                <SelectItem value="محظور">محظور</SelectItem>
+                <SelectItem value="active">نشط</SelectItem>
+                <SelectItem value="suspended">معلق</SelectItem>
+                <SelectItem value="banned">محظور</SelectItem>
               </SelectContent>
             </Select>
           </div>
