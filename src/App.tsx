@@ -17,9 +17,11 @@ import OverviewPage from "./pages/admin/OverviewPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import RideManagementPage from "./pages/admin/RideManagementPage";
 import SettingsPage from "./pages/admin/SettingsPage";
-import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage"; // Import the new page
+import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* هذا هو المسار الذي يربط الصفحة */}
 
           {/* Protected Routes for Passenger */}
           <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>
@@ -46,7 +50,7 @@ const App = () => (
           <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
             <Route path="/driver-dashboard" element={<DriverDashboard />} />
             <Route path="/find-rides" element={<FindRidesPage />} />
-            <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} /> {/* New route */}
+            <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
           </Route>
 
           {/* Protected Routes for Admin */}
