@@ -58,7 +58,7 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />}>
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
-              <Route path="rides" element={<RideManagementPage />} />
+              <Route path="rides" element="<RideManagementPage />" />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>
