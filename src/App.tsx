@@ -10,7 +10,8 @@ import DriverDashboard from "./pages/DriverDashboard";
 import RequestRidePage from "./pages/RequestRidePage";
 import FindRidesPage from "./pages/FindRidesPage";
 import HelpPage from "./pages/HelpPage";
-import PassengerRequestsPage from "./pages/PassengerRequestsPage"; // Import the new page
+import PassengerRequestsPage from "./pages/PassengerRequestsPage";
+import AdminDashboard from "./pages/AdminDashboard"; // Import the new AdminDashboard
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,7 +30,8 @@ const App = () => (
           <Route path="/request-ride" element={<RequestRidePage />} />
           <Route path="/find-rides" element={<FindRidesPage />} />
           <Route path="/help" element={<HelpPage />} />
-          <Route path="/passenger-requests" element={<PassengerRequestsPage />} /> {/* New route */}
+          <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} /> {/* New route for Admin Dashboard */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

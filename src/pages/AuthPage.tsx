@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase"; // Import supabase client
 
 const AuthPage = () => {
-  const [userType, setUserType] = useState<"passenger" | "driver">("passenger");
+  const [userType, setUserType] = useState<"passenger" | "driver" | "admin">("passenger");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
@@ -33,12 +33,17 @@ const AuthPage = () => {
       toast.error(`فشل تسجيل الدخول: ${error.message}`);
     } else if (data.user) {
       toast.success("تم تسجيل الدخول بنجاح!");
-      // You might want to store userType in Supabase user metadata or a separate table
-      // For now, we'll use the local state to decide redirection
-      if (userType === "passenger") {
+      // Fetch user type from Supabase metadata for redirection
+      const loggedInUserType = data.user.user_metadata.user_type; 
+      if (loggedInUserType === "passenger") {
         navigate("/passenger-dashboard");
-      } else {
+      } else if (loggedInUserType === "driver") {
         navigate("/driver-dashboard");
+      } else if (loggedInUserType === "admin") {
+        navigate("/admin-dashboard");
+      } else {
+        // Fallback if user_type is not defined or unexpected
+        navigate("/"); 
       }
     }
   };
@@ -63,8 +68,14 @@ const AuthPage = () => {
       toast.error(`فشل التسجيل: ${error.message}`);
     } else if (data.user) {
       toast.success("تم التسجيل بنجاح! يرجى تفعيل حسابك عبر البريد الإلكتروني.");
-      // Optionally redirect to login or a verification message page
-      // For now, we'll just show the toast.
+      // Redirect based on the user type selected during registration
+      if (userType === "passenger") {
+        navigate("/passenger-dashboard");
+      } else if (userType === "driver") {
+        navigate("/driver-dashboard");
+      } else if (userType === "admin") {
+        navigate("/admin-dashboard");
+      }
     }
   };
 
@@ -114,7 +125,7 @@ const AuthPage = () => {
                 </div>
                 <RadioGroup
                   defaultValue="passenger"
-                  onValueChange={(value: "passenger" | "driver") =>
+                  onValueChange={(value: "passenger" | "driver" | "admin") =>
                     setUserType(value)
                   }
                   className="flex justify-center space-x-4 rtl:space-x-reverse mt-4"
@@ -126,6 +137,10 @@ const AuthPage = () => {
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <RadioGroupItem value="driver" id="driver-login" />
                     <Label htmlFor="driver-login">سائق</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <RadioGroupItem value="admin" id="admin-login" />
+                    <Label htmlFor="admin-login">مدير</Label>
                   </div>
                 </RadioGroup>
                 <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
@@ -186,7 +201,7 @@ const AuthPage = () => {
                 </div>
                 <RadioGroup
                   defaultValue="passenger"
-                  onValueChange={(value: "passenger" | "driver") =>
+                  onValueChange={(value: "passenger" | "driver" | "admin") =>
                     setUserType(value)
                   }
                   className="flex justify-center space-x-4 rtl:space-x-reverse mt-4"
@@ -198,6 +213,10 @@ const AuthPage = () => {
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <RadioGroupItem value="driver" id="driver-register" />
                     <Label htmlFor="driver-register">سائق</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <RadioGroupItem value="admin" id="admin-register" />
+                    <Label htmlFor="admin-register">مدير</Label>
                   </div>
                 </RadioGroup>
                 <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
