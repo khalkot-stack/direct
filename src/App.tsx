@@ -15,7 +15,7 @@ import RideDetailsPage from "./pages/RideDetailsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import OverviewPage from "./pages/admin/OverviewPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
-import RideManagementPage from "./pages/admin/RideManagementPage";
+import RideManagementPage from "./pages/admin/RideManagementPage"; // Corrected import
 import SettingsPage from "./pages/admin/SettingsPage";
 import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -37,7 +37,7 @@ const App = () => (
           <Route path="/help" element={<HelpPage />} />
           <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* هذا هو المسار الذي يربط الصفحة */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected Routes for Passenger */}
           <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>
@@ -58,7 +58,7 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />}>
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
-              <Route path="rides" element="<RideManagementPage />" />
+              <Route path="rides" element={<RideManagementPage />} /> {/* Corrected this line */}
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>
