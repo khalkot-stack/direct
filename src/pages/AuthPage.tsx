@@ -7,29 +7,65 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase"; // Import supabase client
 
 const AuthPage = () => {
   const [userType, setUserType] = useState<"passenger" | "driver">("passenger");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerName, setRegisterName] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [loading, setLoading] = useState(false); // State for loading indicator
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    toast.success("تم تسجيل الدخول بنجاح!");
-    if (userType === "passenger") {
-      navigate("/passenger-dashboard");
-    } else {
-      navigate("/driver-dashboard");
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(`فشل تسجيل الدخول: ${error.message}`);
+    } else if (data.user) {
+      toast.success("تم تسجيل الدخول بنجاح!");
+      // You might want to store userType in Supabase user metadata or a separate table
+      // For now, we'll use the local state to decide redirection
+      if (userType === "passenger") {
+        navigate("/passenger-dashboard");
+      } else {
+        navigate("/driver-dashboard");
+      }
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate registration
-    toast.success("تم التسجيل بنجاح! يرجى تفعيل حسابك عبر البريد الإلكتروني.");
-    // After registration, typically redirect to login or a verification page
-    // For now, let's redirect to login tab
-    // You might want to add actual form handling and API calls here
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: registerEmail,
+      password: registerPassword,
+      options: {
+        data: {
+          full_name: registerName,
+          phone_number: registerPhone,
+          user_type: userType, // Store user type in metadata
+        },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(`فشل التسجيل: ${error.message}`);
+    } else if (data.user) {
+      toast.success("تم التسجيل بنجاح! يرجى تفعيل حسابك عبر البريد الإلكتروني.");
+      // Optionally redirect to login or a verification message page
+      // For now, we'll just show the toast.
+    }
   };
 
   return (
@@ -60,6 +96,8 @@ const AuthPage = () => {
                     placeholder="example@email.com"
                     required
                     className="mt-1"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
                   />
                 </div>
                 <div>
@@ -70,6 +108,8 @@ const AuthPage = () => {
                     placeholder="********"
                     required
                     className="mt-1"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                   />
                 </div>
                 <RadioGroup
@@ -88,8 +128,8 @@ const AuthPage = () => {
                     <Label htmlFor="driver-login">سائق</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6">
-                  تسجيل الدخول
+                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
+                  {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
                 </Button>
               </form>
             </TabsContent>
@@ -104,6 +144,8 @@ const AuthPage = () => {
                     placeholder="اسمك الكامل"
                     required
                     className="mt-1"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
                   />
                 </div>
                 <div>
@@ -114,6 +156,8 @@ const AuthPage = () => {
                     placeholder="07xxxxxxxxx"
                     required
                     className="mt-1"
+                    value={registerPhone}
+                    onChange={(e) => setRegisterPhone(e.target.value)}
                   />
                 </div>
                 <div>
@@ -124,6 +168,8 @@ const AuthPage = () => {
                     placeholder="example@email.com"
                     required
                     className="mt-1"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
                   />
                 </div>
                 <div>
@@ -134,6 +180,8 @@ const AuthPage = () => {
                     placeholder="********"
                     required
                     className="mt-1"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
                   />
                 </div>
                 <RadioGroup
@@ -152,8 +200,8 @@ const AuthPage = () => {
                     <Label htmlFor="driver-register">سائق</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6">
-                  إنشاء حساب
+                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
+                  {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                 </Button>
               </form>
             </TabsContent>
