@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -16,38 +16,76 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 interface Ride {
   id: string;
-  passenger: string;
-  driver: string;
-  pickup: string;
+  passenger_id: string;
+  driver_id: string | null;
+  passenger_name?: string;
+  driver_name?: string;
+  pickup_location: string;
   destination: string;
-  status: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
 }
 
-const initialRides: Ride[] = [
-  { id: "R001", passenger: "سارة علي", driver: "أحمد محمود", pickup: "شارع الجامعة", destination: "دوار السابع", status: "مكتملة" },
-  { id: "R002", passenger: "ليلى خالد", driver: "لا يوجد", pickup: "العبدلي", destination: "الصويفية", status: "قيد الانتظار" },
-  { id: "R003", passenger: "يوسف حسن", driver: "فاطمة سعيد", pickup: "جبل عمان", destination: "المدينة الرياضية", status: "ملغاة" },
-  { id: "R004", passenger: "علياء محمد", driver: "محمد سعيد", pickup: "الشميساني", destination: "مجمع رغدان", status: "مكتملة" },
-  { id: "R005", passenger: "خالد فهد", driver: "لا يوجد", pickup: "الجبيهة", destination: "وسط البلد", status: "قيد الانتظار" },
-];
-
 const RideManagementPage = () => {
-  const [rides, setRides] = useState<Ride[]>(initialRides);
+  const [rides, setRides] = useState<Ride[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingRide, setEditingRide] = useState<Ride | undefined>(undefined);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRides = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rides')
+      .select(`
+        id,
+        pickup_location,
+        destination,
+        passengers_count,
+        status,
+        passenger_id,
+        driver_id,
+        profiles_passenger:passenger_id (full_name),
+        profiles_driver:driver_id (full_name)
+      `);
+
+    if (error) {
+      toast.error(`فشل جلب الرحلات: ${error.message}`);
+      console.error("Error fetching rides:", error);
+    } else {
+      const formattedRides: Ride[] = data.map((ride: any) => ({
+        id: ride.id,
+        passenger_id: ride.passenger_id,
+        driver_id: ride.driver_id,
+        passenger_name: ride.profiles_passenger?.full_name || 'غير معروف',
+        driver_name: ride.profiles_driver?.full_name || 'لا يوجد',
+        pickup_location: ride.pickup_location,
+        destination: ride.destination,
+        passengers_count: ride.passengers_count,
+        status: ride.status,
+      }));
+      setRides(formattedRides);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchRides();
+  }, [fetchRides]);
 
   const filteredRides = rides.filter(ride =>
     ride.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ride.passenger.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ride.driver.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ride.pickup.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (ride.passenger_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (ride.driver_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ride.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -62,13 +100,48 @@ const RideManagementPage = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveRide = (updatedRide: Ride) => {
-    if (rides.some(r => r.id === updatedRide.id)) {
-      setRides(rides.map(r => (r.id === updatedRide.id ? updatedRide : r)));
-      toast.success(`تم تحديث الرحلة ${updatedRide.id} بنجاح.`);
-    } else {
-      setRides([...rides, updatedRide]);
-      toast.success(`تم إضافة الرحلة ${updatedRide.id} بنجاح.`);
+  const handleSaveRide = async (updatedRide: Ride) => {
+    if (updatedRide.id) { // Editing existing ride
+      const { error } = await supabase
+        .from('rides')
+        .update({
+          passenger_id: updatedRide.passenger_id,
+          driver_id: updatedRide.driver_id,
+          pickup_location: updatedRide.pickup_location,
+          destination: updatedRide.destination,
+          passengers_count: updatedRide.passengers_count,
+          status: updatedRide.status,
+        })
+        .eq('id', updatedRide.id);
+
+      if (error) {
+        toast.error(`فشل تحديث الرحلة: ${error.message}`);
+        console.error("Error updating ride:", error);
+      } else {
+        toast.success(`تم تحديث الرحلة ${updatedRide.id} بنجاح.`);
+        fetchRides();
+        setIsFormDialogOpen(false);
+      }
+    } else { // Adding new ride
+      const { data, error } = await supabase
+        .from('rides')
+        .insert({
+          passenger_id: updatedRide.passenger_id,
+          driver_id: updatedRide.driver_id,
+          pickup_location: updatedRide.pickup_location,
+          destination: updatedRide.destination,
+          passengers_count: updatedRide.passengers_count,
+          status: updatedRide.status,
+        });
+
+      if (error) {
+        toast.error(`فشل إضافة الرحلة: ${error.message}`);
+        console.error("Error adding ride:", error);
+      } else {
+        toast.success(`تم إضافة الرحلة بنجاح.`);
+        fetchRides();
+        setIsFormDialogOpen(false);
+      }
     }
   };
 
@@ -77,14 +150,33 @@ const RideManagementPage = () => {
     setIsConfirmDialogOpen(true);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (rideToCancel) {
-      setRides(rides.map(r => (r.id === rideToCancel ? { ...r, status: "ملغاة" } : r)));
-      toast.warning(`تم إلغاء الرحلة رقم ${rideToCancel}.`);
+      const { error } = await supabase
+        .from('rides')
+        .update({ status: "cancelled" })
+        .eq('id', rideToCancel);
+
+      if (error) {
+        toast.error(`فشل إلغاء الرحلة: ${error.message}`);
+        console.error("Error cancelling ride:", error);
+      } else {
+        toast.warning(`تم إلغاء الرحلة رقم ${rideToCancel}.`);
+        fetchRides();
+      }
       setRideToCancel(null);
     }
     setIsConfirmDialogOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري تحميل الرحلات...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,16 +212,16 @@ const RideManagementPage = () => {
                 filteredRides.map((ride) => (
                   <TableRow key={ride.id}>
                     <TableCell>{ride.id}</TableCell>
-                    <TableCell>{ride.passenger}</TableCell>
-                    <TableCell>{ride.driver}</TableCell>
-                    <TableCell>{ride.pickup}</TableCell>
+                    <TableCell>{ride.passenger_name}</TableCell>
+                    <TableCell>{ride.driver_name}</TableCell>
+                    <TableCell>{ride.pickup_location}</TableCell>
                     <TableCell>{ride.destination}</TableCell>
                     <TableCell>{ride.status}</TableCell>
                     <TableCell className="text-right space-x-2 rtl:space-x-reverse">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(ride)}>
                         تعديل
                       </Button>
-                      {ride.status !== "مكتملة" && ride.status !== "ملغاة" && (
+                      {ride.status !== "completed" && ride.status !== "cancelled" && (
                         <Button variant="destructive" size="sm" onClick={() => handleCancelClick(ride.id)}>
                           إلغاء
                         </Button>
