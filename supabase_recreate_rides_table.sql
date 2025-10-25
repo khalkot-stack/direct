@@ -1,79 +1,71 @@
--- WARNING: This script will DELETE ALL DATA in your 'rides' table.
--- Only run this if you are in a development environment and can afford to lose existing ride data.
+-- 1. Create ride_status ENUM
+DO $$ BEGIN
+  CREATE TYPE public.ride_status AS ENUM ('pending', 'accepted', 'completed', 'cancelled');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
--- 1. Drop the existing 'rides' table
+-- 2. Drop existing rides table if it exists
 DROP TABLE IF EXISTS public.rides CASCADE;
 
--- 2. Recreate the 'rides' table with 'id' as UUID primary key, foreign keys, and created_at
+-- 3. Create rides table
 CREATE TABLE public.rides (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    passenger_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-    driver_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
-    pickup_location text NOT NULL,
-    destination text NOT NULL,
-    passengers_count integer NOT NULL DEFAULT 1,
-    status text NOT NULL DEFAULT 'pending'::text, -- pending, accepted, completed, cancelled
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY, -- Use UUID for consistency with profiles
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  passenger_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  driver_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL, -- Driver can be null if not assigned
+  pickup_location text NOT NULL,
+  destination text NOT NULL,
+  passengers_count integer NOT NULL DEFAULT 1,
+  status public.ride_status DEFAULT 'pending'::public.ride_status NOT NULL
 );
 
--- 3. Enable Row Level Security for the 'rides' table
+-- 4. Enable Row Level Security (RLS) for the rides table
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 
--- 4. Re-add RLS policies for the 'rides' table (as provided previously)
---    Admins can manage all rides
-CREATE POLICY "Admins can manage all rides"
-ON public.rides
-FOR ALL
-USING (get_user_type() = 'admin')
-WITH CHECK (get_user_type() = 'admin');
+-- 5. RLS Policies for rides table
+-- Passengers can view their own rides
+CREATE POLICY "Passengers can view their own rides."
+  ON public.rides FOR SELECT
+  USING (auth.uid() = passenger_id);
 
---    Passengers can view their own rides
-CREATE POLICY "Passengers can view their own rides"
-ON public.rides
-FOR SELECT
-USING (passenger_id = auth.uid());
+-- Drivers can view pending rides and their accepted/completed rides
+CREATE POLICY "Drivers can view relevant rides."
+  ON public.rides FOR SELECT
+  USING (
+    (get_user_type() = 'driver' AND status = 'pending') OR
+    (get_user_type() = 'driver' AND driver_id = auth.uid())
+  );
 
---    Passengers can create new ride requests
-CREATE POLICY "Passengers can create new ride requests"
-ON public.rides
-FOR INSERT
-WITH CHECK (passenger_id = auth.uid() AND status = 'pending');
+-- Admins can view all rides
+CREATE POLICY "Admins can view all rides."
+  ON public.rides FOR SELECT
+  USING (get_user_type() = 'admin');
 
---    Passengers can update their own pending rides (e.g., cancel)
-CREATE POLICY "Passengers can update their own pending rides"
-ON public.rides
-FOR UPDATE
-USING (passenger_id = auth.uid() AND status = 'pending')
-WITH CHECK (passenger_id = auth.uid() AND status IN ('pending', 'cancelled'));
+-- Passengers can insert new rides
+CREATE POLICY "Passengers can insert new rides."
+  ON public.rides FOR INSERT
+  WITH CHECK (auth.uid() = passenger_id);
 
---    Passengers can delete their own pending rides
-CREATE POLICY "Passengers can delete their own pending rides"
-ON public.rides
-FOR DELETE
-USING (passenger_id = auth.uid() AND status = 'pending');
+-- Drivers can update rides they accept (set driver_id and status to accepted)
+CREATE POLICY "Drivers can accept and complete their assigned rides."
+  ON public.rides FOR UPDATE
+  USING (
+    (get_user_type() = 'driver' AND driver_id = auth.uid()) OR -- Driver can update their assigned rides
+    (get_user_type() = 'driver' AND status = 'pending' AND NEW.driver_id = auth.uid() AND NEW.status = 'accepted') -- Driver can accept a pending ride
+  )
+  WITH CHECK (
+    (get_user_type() = 'driver' AND driver_id = auth.uid()) OR
+    (get_user_type() = 'driver' AND status = 'pending' AND NEW.driver_id = auth.uid() AND NEW.status = 'accepted')
+  );
 
---    Drivers can view all pending rides
-CREATE POLICY "Drivers can view all pending rides"
-ON public.rides
-FOR SELECT
-USING (status = 'pending' AND get_user_type() = 'driver');
+-- Admins can update all rides
+CREATE POLICY "Admins can update all rides."
+  ON public.rides FOR UPDATE
+  USING (get_user_type() = 'admin')
+  WITH CHECK (get_user_type() = 'admin');
 
---    Drivers can view their accepted/completed rides
-CREATE POLICY "Drivers can view their accepted/completed rides"
-ON public.rides
-FOR SELECT
-USING (driver_id = auth.uid() AND get_user_type() = 'driver');
-
---    Drivers can accept a pending ride
-CREATE POLICY "Drivers can accept a pending ride"
-ON public.rides
-FOR UPDATE
-USING (status = 'pending' AND driver_id IS NULL AND get_user_type() = 'driver')
-WITH CHECK (driver_id = auth.uid() AND status = 'accepted');
-
---    Drivers can complete/cancel their accepted rides
-CREATE POLICY "Drivers can complete/cancel their accepted rides"
-ON public.rides
-FOR UPDATE
-USING (driver_id = auth.uid() AND status = 'accepted' AND get_user_type() = 'driver')
-WITH CHECK (driver_id = auth.uid() AND status IN ('completed', 'cancelled'));
+-- Admins can delete rides
+CREATE POLICY "Admins can delete rides."
+  ON public.rides FOR DELETE
+  USING (get_user_type() = 'admin');
