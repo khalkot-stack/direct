@@ -2,7 +2,7 @@
 -- Only run this if you are in a development environment and can afford to lose existing profile data.
 
 -- 1. Drop any existing foreign key constraints from other tables that might be referencing public.profiles.id
---    (e.g., from the 'rides' table if passenger_id or driver_id were partially created)
+--    (e.g., from the 'rides' table)
 ALTER TABLE public.rides DROP CONSTRAINT IF EXISTS rides_passenger_id_fkey;
 ALTER TABLE public.rides DROP CONSTRAINT IF EXISTS rides_driver_id_fkey;
 
