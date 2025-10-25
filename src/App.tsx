@@ -11,7 +11,11 @@ import RequestRidePage from "./pages/RequestRidePage";
 import FindRidesPage from "./pages/FindRidesPage";
 import HelpPage from "./pages/HelpPage";
 import PassengerRequestsPage from "./pages/PassengerRequestsPage";
-import AdminDashboard from "./pages/AdminDashboard"; // Import the new AdminDashboard
+import AdminDashboard from "./pages/AdminDashboard";
+import OverviewPage from "./pages/admin/OverviewPage"; // Import admin sub-pages
+import UserManagementPage from "./pages/admin/UserManagementPage";
+import RideManagementPage from "./pages/admin/RideManagementPage";
+import SettingsPage from "./pages/admin/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,7 +35,15 @@ const App = () => (
           <Route path="/find-rides" element={<FindRidesPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} /> {/* New route for Admin Dashboard */}
+          
+          {/* Admin Dashboard and its nested routes */}
+          <Route path="/admin-dashboard" element={<AdminDashboard />}>
+            <Route index element={<OverviewPage />} /> {/* Default child route for /admin-dashboard */}
+            <Route path="users" element={<UserManagementPage />} />
+            <Route path="rides" element={<RideManagementPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
