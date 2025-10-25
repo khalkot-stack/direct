@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 // Define an interface for the raw data returned by Supabase select with joins for a SINGLE row
-// For .single() queries, joined relations are typically single objects or null, not arrays.
+// Even with .single(), Supabase might return joined relations as an array of one item.
 interface SupabaseJoinedRideData {
   id: string;
   pickup_location: string;
@@ -18,8 +18,8 @@ interface SupabaseJoinedRideData {
   status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_id: string;
   driver_id: string | null;
-  profiles_passenger: { full_name: string } | null; // Expect a single object or null
-  profiles_driver: { full_name: string } | null;     // Expect a single object or null
+  profiles_passenger: Array<{ full_name: string }> | null; // Expect an array of one object or null
+  profiles_driver: Array<{ full_name: string }> | null;     // Expect an array of one object or null
 }
 
 interface Ride {
@@ -73,9 +73,9 @@ const RideDetailsPage = () => {
         id: data.id,
         passenger_id: data.passenger_id,
         driver_id: data.driver_id,
-        // Access full_name directly on the object, as .single() returns an object for joined relations
-        passenger_name: data.profiles_passenger?.full_name || 'غير معروف',
-        driver_name: data.profiles_driver?.full_name || 'لا يوجد',
+        // Access the first element of the array, if it exists, as Supabase might return an array even for .single()
+        passenger_name: data.profiles_passenger?.[0]?.full_name || 'غير معروف',
+        driver_name: data.profiles_driver?.[0]?.full_name || 'لا يوجد',
         pickup_location: data.pickup_location,
         destination: data.destination,
         passengers_count: data.passengers_count,
