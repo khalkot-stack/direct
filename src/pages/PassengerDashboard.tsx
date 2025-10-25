@@ -21,9 +21,11 @@ const PassengerDashboard = () => {
                 طلب رحلة جديدة
               </Button>
             </Link>
-            <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
-              عرض طلباتي
-            </Button>
+            <Link to="/passenger-requests"> {/* Updated link */}
+              <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
+                عرض طلباتي
+              </Button>
+            </Link>
           </div>
           <Link to="/" className="text-blue-500 hover:underline dark:text-blue-400">
             العودة للصفحة الرئيسية
