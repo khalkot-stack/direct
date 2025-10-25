@@ -3,12 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index"; // Now the Home Page
+import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import PassengerDashboard from "./pages/PassengerDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
 import RequestRidePage from "./pages/RequestRidePage";
-import FindRidesPage from "./pages/FindRidesPage"; // Import the new page
+import FindRidesPage from "./pages/FindRidesPage";
+import HelpPage from "./pages/HelpPage"; // Import the new HelpPage
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +26,8 @@ const App = () => (
           <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
           <Route path="/driver-dashboard" element={<DriverDashboard />} />
           <Route path="/request-ride" element={<RequestRidePage />} />
-          <Route path="/find-rides" element={<FindRidesPage />} /> {/* New route */}
+          <Route path="/find-rides" element={<FindRidesPage />} />
+          <Route path="/help" element={<HelpPage />} /> {/* New route for HelpPage */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
