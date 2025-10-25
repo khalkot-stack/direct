@@ -1,0 +1,1 @@
+passenger_id = auth.uid() AND status = 'pending'

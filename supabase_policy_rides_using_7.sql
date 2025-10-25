@@ -1,0 +1,1 @@
+driver_id = auth.uid() AND get_user_type() = 'driver'
