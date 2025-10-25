@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Car, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const data = [
   { name: 'يناير', users: 400, rides: 240 },
@@ -16,6 +19,51 @@ const data = [
 ];
 
 const OverviewPage = () => {
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [totalRides, setTotalRides] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOverviewData = useCallback(async () => {
+    setLoading(true);
+    // Fetch total users
+    const { count: usersCount, error: usersError } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    if (usersError) {
+      toast.error(`فشل جلب عدد المستخدمين: ${usersError.message}`);
+      console.error("Error fetching user count:", usersError);
+    } else {
+      setTotalUsers(usersCount);
+    }
+
+    // Fetch total rides
+    const { count: ridesCount, error: ridesError } = await supabase
+      .from('rides')
+      .select('*', { count: 'exact', head: true });
+
+    if (ridesError) {
+      toast.error(`فشل جلب عدد الرحلات: ${ridesError.message}`);
+      console.error("Error fetching ride count:", ridesError);
+    } else {
+      setTotalRides(ridesCount);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchOverviewData();
+  }, [fetchOverviewData]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري تحميل البيانات...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">نظرة عامة</h2>
@@ -26,8 +74,8 @@ const OverviewPage = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,250</div>
-            <p className="text-xs text-muted-foreground">+20% عن الشهر الماضي</p>
+            <div className="text-2xl font-bold">{totalUsers !== null ? totalUsers : "N/A"}</div>
+            <p className="text-xs text-muted-foreground">+20% عن الشهر الماضي</p> {/* Static for now */}
           </CardContent>
         </Card>
         <Card>
@@ -36,8 +84,8 @@ const OverviewPage = () => {
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">789</div>
-            <p className="text-xs text-muted-foreground">+15% عن الشهر الماضي</p>
+            <div className="text-2xl font-bold">{totalRides !== null ? totalRides : "N/A"}</div>
+            <p className="text-xs text-muted-foreground">+15% عن الشهر الماضي</p> {/* Static for now */}
           </CardContent>
         </Card>
         <Card>
@@ -46,8 +94,8 @@ const OverviewPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5,200 دينار</div>
-            <p className="text-xs text-muted-foreground">+10% عن الشهر الماضي</p>
+            <div className="text-2xl font-bold">5,200 دينار</div> {/* Static for now */}
+            <p className="text-xs text-muted-foreground">+10% عن الشهر الماضي</p> {/* Static for now */}
           </CardContent>
         </Card>
       </div>
