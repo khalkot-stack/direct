@@ -11,9 +11,9 @@ const PassengerRequestsPage = () => {
 
   // Dummy ride requests for demonstration
   const passengerRequests = [
-    { id: "req1", pickup: "شارع الجامعة", destination: "دوار السابع", passengers: 2, status: "قيد الانتظار", driver: "لا يوجد" },
-    { id: "req2", pickup: "العبدلي", destination: "الصويفية", passengers: 1, status: "مقبولة", driver: "أحمد محمود" },
-    { id: "req3", pickup: "جبل عمان", destination: "المدينة الرياضية", passengers: 3, status: "مكتملة", driver: "سارة علي" },
+    { id: "req1", pickup: "شارع الجامعة", destination: "دوار السابع", passengersCount: 2, status: "قيد الانتظار", driver: "لا يوجد" },
+    { id: "req2", pickup: "العبدلي", destination: "الصويفية", passengersCount: 1, status: "مقبولة", driver: "أحمد محمود" },
+    { id: "req3", pickup: "جبل عمان", destination: "المدينة الرياضية", passengersCount: 3, status: "مكتملة", driver: "سارة علي" },
   ];
 
   return (
@@ -45,7 +45,7 @@ const PassengerRequestsPage = () => {
                     من: {request.pickup} إلى: {request.destination}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    عدد الركاب: {request.passengers} | الحالة: {request.status}
+                    عدد الركاب: {request.passengersCount} | الحالة: {request.status}
                   </p>
                   {request.driver !== "لا يوجد" && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -53,7 +53,11 @@ const PassengerRequestsPage = () => {
                     </p>
                   )}
                 </div>
-                <Button variant="outline" className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white text-sm px-4 py-2 rounded-lg shadow-md">
+                <Button
+                  variant="outline"
+                  className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white text-sm px-4 py-2 rounded-lg shadow-md"
+                  onClick={() => navigate(`/ride-details/${request.id}`)}
+                >
                   عرض التفاصيل
                 </Button>
               </div>

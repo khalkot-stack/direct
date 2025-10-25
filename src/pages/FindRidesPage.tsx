@@ -12,9 +12,9 @@ const FindRidesPage = () => {
 
   // Dummy ride requests for demonstration
   const rideRequests = [
-    { id: "1", pickup: "شارع الجامعة", destination: "دوار السابع", passengers: 2, time: "الآن" },
-    { id: "2", pickup: "العبدلي", destination: "الصويفية", passengers: 1, time: "خلال 15 دقيقة" },
-    { id: "3", pickup: "جبل عمان", destination: "المدينة الرياضية", passengers: 3, time: "خلال 30 دقيقة" },
+    { id: "R001", pickup: "شارع الجامعة", destination: "دوار السابع", passengersCount: 2, time: "الآن" },
+    { id: "R002", pickup: "العبدلي", destination: "الصويفية", passengersCount: 1, time: "خلال 15 دقيقة" },
+    { id: "R003", pickup: "جبل عمان", destination: "المدينة الرياضية", passengersCount: 3, time: "خلال 30 دقيقة" },
   ];
 
   const handleAcceptRide = (rideId: string) => {
@@ -46,21 +46,31 @@ const FindRidesPage = () => {
         <CardContent className="space-y-4">
           {rideRequests.length > 0 ? (
             rideRequests.map((ride) => (
-              <div key={ride.id} className="flex items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <div>
+              <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <div className="text-right sm:text-left mb-2 sm:mb-0">
                   <p className="text-lg font-medium text-gray-900 dark:text-white">
                     من: {ride.pickup} إلى: {ride.destination}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    عدد الركاب: {ride.passengers} | الوقت: {ride.time}
+                    عدد الركاب: {ride.passengersCount} | الوقت: {ride.time}
                   </p>
                 </div>
-                <Button
-                  onClick={() => handleAcceptRide(ride.id)}
-                  className="bg-green-500 hover:bg-green-600 text-white"
-                >
-                  قبول الرحلة
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/ride-details/${ride.id}`)}
+                    className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white"
+                  >
+                    عرض التفاصيل
+                  </Button>
+                  <Button
+                    onClick={() => handleAcceptRide(ride.id)}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    قبول الرحلة
+                  </Button>
+                </div>
               </div>
             ))
           ) : (

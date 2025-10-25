@@ -11,8 +11,9 @@ import RequestRidePage from "./pages/RequestRidePage";
 import FindRidesPage from "./pages/FindRidesPage";
 import HelpPage from "./pages/HelpPage";
 import PassengerRequestsPage from "./pages/PassengerRequestsPage";
+import RideDetailsPage from "./pages/RideDetailsPage"; // Import the new page
 import AdminDashboard from "./pages/AdminDashboard";
-import OverviewPage from "./pages/admin/OverviewPage"; // Import admin sub-pages
+import OverviewPage from "./pages/admin/OverviewPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import RideManagementPage from "./pages/admin/RideManagementPage";
 import SettingsPage from "./pages/admin/SettingsPage";
@@ -35,10 +36,11 @@ const App = () => (
           <Route path="/find-rides" element={<FindRidesPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
+          <Route path="/ride-details/:rideId" element={<RideDetailsPage />} /> {/* New route */}
           
           {/* Admin Dashboard and its nested routes */}
           <Route path="/admin-dashboard" element={<AdminDashboard />}>
-            <Route index element={<OverviewPage />} /> {/* Default child route for /admin-dashboard */}
+            <Route index element={<OverviewPage />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="rides" element={<RideManagementPage />} />
             <Route path="settings" element={<SettingsPage />} />
