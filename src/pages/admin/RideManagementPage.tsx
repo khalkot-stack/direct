@@ -1,18 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-const rides = [
+const initialRides = [
   { id: "R001", passenger: "سارة علي", driver: "أحمد محمود", pickup: "شارع الجامعة", destination: "دوار السابع", status: "مكتملة" },
   { id: "R002", passenger: "ليلى خالد", driver: "لا يوجد", pickup: "العبدلي", destination: "الصويفية", status: "قيد الانتظار" },
   { id: "R003", passenger: "يوسف حسن", driver: "فاطمة سعيد", pickup: "جبل عمان", destination: "المدينة الرياضية", status: "ملغاة" },
+  { id: "R004", passenger: "علياء محمد", driver: "محمد سعيد", pickup: "الشميساني", destination: "مجمع رغدان", status: "مكتملة" },
+  { id: "R005", passenger: "خالد فهد", driver: "لا يوجد", pickup: "الجبيهة", destination: "وسط البلد", status: "قيد الانتظار" },
 ];
 
 const RideManagementPage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredRides = initialRides.filter(ride =>
+    ride.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.passenger.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.driver.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.pickup.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.status.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleViewDetails = (rideId: string) => {
     toast.info(`عرض تفاصيل الرحلة رقم ${rideId}`);
     // Implement actual view details logic here
@@ -29,6 +43,12 @@ const RideManagementPage = () => {
       <Card>
         <CardHeader>
           <CardTitle>قائمة الرحلات</CardTitle>
+          <Input
+            placeholder="ابحث عن رحلة..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm mt-4"
+          />
         </CardHeader>
         <CardContent>
           <Table>
@@ -44,26 +64,34 @@ const RideManagementPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rides.map((ride) => (
-                <TableRow key={ride.id}>
-                  <TableCell>{ride.id}</TableCell>
-                  <TableCell>{ride.passenger}</TableCell>
-                  <TableCell>{ride.driver}</TableCell>
-                  <TableCell>{ride.pickup}</TableCell>
-                  <TableCell>{ride.destination}</TableCell>
-                  <TableCell>{ride.status}</TableCell>
-                  <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(ride.id)}>
-                      تفاصيل
-                    </Button>
-                    {ride.status !== "مكتملة" && ride.status !== "ملغاة" && (
-                      <Button variant="destructive" size="sm" onClick={() => handleCancelRide(ride.id)}>
-                        إلغاء
+              {filteredRides.length > 0 ? (
+                filteredRides.map((ride) => (
+                  <TableRow key={ride.id}>
+                    <TableCell>{ride.id}</TableCell>
+                    <TableCell>{ride.passenger}</TableCell>
+                    <TableCell>{ride.driver}</TableCell>
+                    <TableCell>{ride.pickup}</TableCell>
+                    <TableCell>{ride.destination}</TableCell>
+                    <TableCell>{ride.status}</TableCell>
+                    <TableCell className="text-right space-x-2 rtl:space-x-reverse">
+                      <Button variant="outline" size="sm" onClick={() => handleViewDetails(ride.id)}>
+                        تفاصيل
                       </Button>
-                    )}
+                      {ride.status !== "مكتملة" && ride.status !== "ملغاة" && (
+                        <Button variant="destructive" size="sm" onClick={() => handleCancelRide(ride.id)}>
+                          إلغاء
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    لا توجد نتائج.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

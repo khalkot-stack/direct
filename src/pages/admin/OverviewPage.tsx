@@ -3,6 +3,17 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Car, DollarSign } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const data = [
+  { name: 'يناير', users: 400, rides: 240 },
+  { name: 'فبراير', users: 300, rides: 139 },
+  { name: 'مارس', users: 200, rides: 980 },
+  { name: 'أبريل', users: 278, rides: 390 },
+  { name: 'مايو', users: 189, rides: 480 },
+  { name: 'يونيو', users: 239, rides: 380 },
+  { name: 'يوليو', users: 349, rides: 430 },
+];
 
 const OverviewPage = () => {
   return (
@@ -40,6 +51,35 @@ const OverviewPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>إحصائيات شهرية</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                margin={{
+                  top: 5,
+                  right: 10,
+                  left: 10,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="users" fill="#8884d8" name="المستخدمون" />
+                <Bar dataKey="rides" fill="#82ca9d" name="الرحلات" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>أحدث الأنشطة</CardTitle>
