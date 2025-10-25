@@ -1,4 +1,6 @@
 id,full_name,email,user_type,status,phone_number,created_at
-a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11,أحمد علي,ahmad.ali@example.com,passenger,active,0791234567,2023-01-15T10:00:00Z
-b1cdef00-1d2e-3f4a-5b6c-7d8e9f0a1b2c,فاطمة محمد,fatima.mohammad@example.com,driver,active,0789876543,2023-02-20T11:30:00Z
-c2def011-2e3f-4a5b-6c7d-8e9f0a1b2c3d,سارة خالد,sara.khaled@example.com,admin,active,0775551234,2023-03-01T09:00:00Z
+a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11,أحمد علي,ahmed.ali@example.com,passenger,active,0791234567,2023-01-01T10:00:00Z
+b1cdef01-2e3f-4a5b-6c7d-8e9f0a1b2c3d,فاطمة محمد,fatima.mohamed@example.com,driver,active,0782345678,2023-01-02T11:00:00Z
+c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f,خالد حسن,khalid.hassan@example.com,admin,active,0773456789,2023-01-03T12:00:00Z
+d3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a,ليلى محمود,layla.mahmoud@example.com,passenger,suspended,0794567890,2023-01-04T13:00:00Z
+e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b,يوسف سعيد,youssef.saeed@example.com,driver,active,0785678901,2023-01-05T14:00:00Z
