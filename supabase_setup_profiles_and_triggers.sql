@@ -5,13 +5,16 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- 2. Create get_user_type function (for RLS policies)
+-- 2. Drop existing get_user_type function if it exists (to allow changing return type)
+DROP FUNCTION IF EXISTS public.get_user_type() CASCADE;
+
+-- 3. Create get_user_type function (for RLS policies)
 CREATE OR REPLACE FUNCTION public.get_user_type()
 RETURNS public.user_type AS $$
   SELECT (current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type'::public.user_type;
 $$ LANGUAGE sql STABLE;
 
--- 3. Recreate profiles table with RLS policies
+-- 4. Recreate profiles table with RLS policies
 DROP TABLE IF EXISTS public.profiles CASCADE;
 CREATE TABLE public.profiles (
   id uuid REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
@@ -42,7 +45,7 @@ CREATE POLICY "Admins can manage all profiles."
   USING (get_user_type() = 'admin')
   WITH CHECK (get_user_type() = 'admin');
 
--- 4. Create handle_new_user function and trigger
+-- 5. Create handle_new_user function and trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
