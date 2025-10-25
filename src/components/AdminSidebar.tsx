@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Home, Users, Car, Settings } from "lucide-react";
+import LogoutButton from "@/components/LogoutButton"; // Import LogoutButton
 
 interface AdminSidebarProps {
   className?: string;
@@ -61,7 +62,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className }) => {
           ))}
         </nav>
       </ScrollArea>
-      <div className="p-4 border-t dark:border-gray-700">
+      <div className="p-4 border-t dark:border-gray-700 space-y-2">
+        <LogoutButton /> {/* Add LogoutButton here */}
         <Link to="/">
           <Button variant="outline" className="w-full text-sidebar-foreground dark:text-sidebar-foreground hover:bg-sidebar-accent dark:hover:bg-sidebar-accent">
             العودة للصفحة الرئيسية

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LogoutButton from "@/components/LogoutButton"; // Import LogoutButton
 
 const DriverDashboard = () => {
   return (
@@ -24,6 +25,9 @@ const DriverDashboard = () => {
             <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
               عرض طلباتي المقبولة
             </Button>
+          </div>
+          <div className="mt-6">
+            <LogoutButton /> {/* Add LogoutButton here */}
           </div>
           <Link to="/" className="text-blue-500 hover:underline dark:text-blue-400">
             العودة للصفحة الرئيسية
