@@ -20,6 +20,20 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
+// Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
+interface SupabaseJoinedRideData {
+  id: string;
+  pickup_location: string;
+  destination: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  passenger_id: string;
+  driver_id: string | null;
+  // For multi-row queries, these are arrays of objects or null
+  profiles_passenger: Array<{ full_name: string }> | null;
+  profiles_driver: Array<{ full_name: string }> | null;
+}
+
 interface Ride {
   id: string;
   passenger_id: string;
@@ -61,12 +75,13 @@ const RideManagementPage = () => {
       toast.error(`فشل جلب الرحلات: ${error.message}`);
       console.error("Error fetching rides:", error);
     } else {
-      const formattedRides: Ride[] = data.map((ride: any) => ({
+      const formattedRides: Ride[] = data.map((ride: SupabaseJoinedRideData) => ({ // Cast to our defined interface
         id: ride.id,
         passenger_id: ride.passenger_id,
         driver_id: ride.driver_id,
-        passenger_name: ride.profiles_passenger?.full_name || 'غير معروف',
-        driver_name: ride.profiles_driver?.full_name || 'لا يوجد',
+        // Access the first element of the array, if it exists
+        passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف',
+        driver_name: ride.profiles_driver?.[0]?.full_name || 'لا يوجد',
         pickup_location: ride.pickup_location,
         destination: ride.destination,
         passengers_count: ride.passengers_count,
@@ -145,7 +160,7 @@ const RideManagementPage = () => {
     }
   };
 
-  const handleCancelClick = (rideId: string) => {
+  const handleDeleteClick = (rideId: string) => {
     setRideToCancel(rideId);
     setIsConfirmDialogOpen(true);
   };
@@ -222,7 +237,7 @@ const RideManagementPage = () => {
                         تعديل
                       </Button>
                       {ride.status !== "completed" && ride.status !== "cancelled" && (
-                        <Button variant="destructive" size="sm" onClick={() => handleCancelClick(ride.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(ride.id)}>
                           إلغاء
                         </Button>
                       )}
@@ -249,7 +264,7 @@ const RideManagementPage = () => {
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من إلغاء هذه الرحلة؟</AlertDialogTitle>
+            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
             <AlertDialogDescription>
               لا يمكن التراجع عن هذا الإجراء. سيتم تغيير حالة الرحلة إلى "ملغاة".
             </AlertDialogDescription>

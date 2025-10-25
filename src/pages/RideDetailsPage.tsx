@@ -4,9 +4,23 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, MapPin, User, Car, Info, Loader2 } from "lucide-react";
+import { ChevronLeft, MapPin, User, Car, Info, Loader2, Users } from "lucide-react"; // Added Users and Loader2
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+
+// Define an interface for the raw data returned by Supabase select with joins for a SINGLE row
+interface SupabaseJoinedRideData {
+  id: string;
+  pickup_location: string;
+  destination: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  passenger_id: string;
+  driver_id: string | null;
+  // For .single() query, these should be objects or null, not arrays
+  profiles_passenger: { full_name: string } | null;
+  profiles_driver: { full_name: string } | null;
+}
 
 interface Ride {
   id: string;
@@ -54,16 +68,18 @@ const RideDetailsPage = () => {
       console.error("Error fetching ride details:", error);
       setRide(null);
     } else {
+      const typedData = data as SupabaseJoinedRideData; // Cast to our defined interface
       setRide({
-        id: data.id,
-        passenger_id: data.passenger_id,
-        driver_id: data.driver_id,
-        passenger_name: data.profiles_passenger?.full_name || 'غير معروف',
-        driver_name: data.profiles_driver?.full_name || 'لا يوجد',
-        pickup_location: data.pickup_location,
-        destination: data.destination,
-        passengers_count: data.passengers_count,
-        status: data.status,
+        id: typedData.id,
+        passenger_id: typedData.passenger_id,
+        driver_id: typedData.driver_id,
+        // Access full_name directly on the object, as .single() returns an object
+        passenger_name: typedData.profiles_passenger?.full_name || 'غير معروف',
+        driver_name: typedData.profiles_driver?.full_name || 'لا يوجد',
+        pickup_location: typedData.pickup_location,
+        destination: typedData.destination,
+        passengers_count: typedData.passengers_count,
+        status: typedData.status,
       });
     }
     setLoading(false);

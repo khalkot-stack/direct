@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react"; // Added Loader2
 
 interface Profile {
   id: string;
@@ -118,7 +119,7 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
             <DialogTitle>جاري التحميل...</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-green-green-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-green-500" /> {/* Corrected text-green-green-500 to text-green-500 */}
           </div>
         </DialogContent>
       </Dialog>

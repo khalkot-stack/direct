@@ -8,6 +8,18 @@ import { ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
+// Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
+interface SupabaseJoinedRideData {
+  id: string;
+  pickup_location: string;
+  destination: string;
+  passengers_count: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  passenger_id: string;
+  driver_id: string | null;
+  profiles_passenger: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
+}
+
 interface RideRequest {
   id: string;
   pickup_location: string;
@@ -51,13 +63,13 @@ const FindRidesPage = () => {
       toast.error(`فشل جلب الرحلات المتاحة: ${error.message}`);
       console.error("Error fetching pending rides:", error);
     } else {
-      const formattedRequests: RideRequest[] = data.map((ride: any) => ({
+      const formattedRequests: RideRequest[] = data.map((ride: SupabaseJoinedRideData) => ({ // Cast to our defined interface
         id: ride.id,
         pickup_location: ride.pickup_location,
         destination: ride.destination,
         passengers_count: ride.passengers_count,
         time: "الآن", // Placeholder, could be calculated from created_at
-        passenger_name: ride.profiles_passenger?.full_name || 'غير معروف',
+        passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف', // Access first element
       }));
       setRideRequests(formattedRequests);
     }
