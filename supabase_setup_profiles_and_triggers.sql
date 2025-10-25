@@ -11,7 +11,7 @@ DROP FUNCTION IF EXISTS public.get_user_type() CASCADE;
 -- 3. Create get_user_type function (for RLS policies)
 CREATE OR REPLACE FUNCTION public.get_user_type()
 RETURNS public.user_type AS $$
-  SELECT (current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type'::public.user_type;
+  SELECT ((current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type')::public.user_type;
 $$ LANGUAGE sql STABLE;
 
 -- 4. Recreate profiles table with RLS policies
