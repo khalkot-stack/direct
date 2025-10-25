@@ -13,7 +13,7 @@ DROP FUNCTION IF EXISTS public.get_user_type() CASCADE;
 -- 3. Create get_user_type function (for RLS policies)
 CREATE OR REPLACE FUNCTION public.get_user_type()
 RETURNS public.user_type AS $$
-  SELECT ((current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type')::public.user_type;
+  SELECT COALESCE(((current_setting('request.jwt.claims', true)::jsonb)->'user_metadata'->>'user_type')::public.user_type, 'passenger'::public.user_type);
 $$ LANGUAGE sql STABLE;
 
 -- 4. Drop existing trigger if it exists
@@ -55,18 +55,13 @@ CREATE POLICY "Admins can manage all profiles."
 -- 7. Create handle_new_user function and trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
-DECLARE
-  _user_type public.user_type;
 BEGIN
-  -- Safely determine user_type, defaulting to 'passenger'
-  SELECT COALESCE(NEW.raw_user_meta_data->>'user_type', 'passenger') INTO _user_type;
-
   INSERT INTO public.profiles (id, full_name, email, user_type, phone_number, status)
   VALUES (
     NEW.id,
     NEW.raw_user_meta_data->>'full_name',
     NEW.email,
-    _user_type,
+    COALESCE((NEW.raw_user_meta_data->>'user_type')::public.user_type, 'passenger'::public.user_type), -- Explicit cast and coalesce for user_type
     NEW.raw_user_meta_data->>'phone_number',
     'active'
   );
