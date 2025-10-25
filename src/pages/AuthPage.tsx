@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase"; // Import supabase client
+import { Loader2 } from "lucide-react";
 
 const AuthPage = () => {
   const [userType, setUserType] = useState<"passenger" | "driver" | "admin">("passenger");
@@ -17,40 +18,71 @@ const AuthPage = () => {
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(true); // State for initial auth check
+  const [authActionLoading, setAuthActionLoading] = useState(false); // State for login/register buttons
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUserSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session) {
+        const userRole = session.user?.user_metadata?.user_type;
+        if (userRole === "passenger") {
+          navigate("/passenger-dashboard");
+        } else if (userRole === "driver") {
+          navigate("/driver-dashboard");
+        } else if (userRole === "admin") {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/"); // Fallback if user_type is not defined
+        }
+      }
+      setLoading(false);
+    };
+
+    checkUserSession();
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        const userRole = session.user?.user_metadata?.user_type;
+        if (userRole === "passenger") {
+          navigate("/passenger-dashboard");
+        } else if (userRole === "driver") {
+          navigate("/driver-dashboard");
+        } else if (userRole === "admin") {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/");
+        }
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setAuthActionLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: loginPassword,
     });
-    setLoading(false);
+    setAuthActionLoading(false);
 
     if (error) {
       toast.error(`فشل تسجيل الدخول: ${error.message}`);
     } else if (data.user) {
       toast.success("تم تسجيل الدخول بنجاح!");
-      // Fetch user type from Supabase metadata for redirection
-      const loggedInUserType = data.user.user_metadata.user_type; 
-      if (loggedInUserType === "passenger") {
-        navigate("/passenger-dashboard");
-      } else if (loggedInUserType === "driver") {
-        navigate("/driver-dashboard");
-      } else if (loggedInUserType === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        // Fallback if user_type is not defined or unexpected
-        navigate("/"); 
-      }
+      // Redirection is handled by the useEffect auth state listener
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setAuthActionLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: registerEmail,
       password: registerPassword,
@@ -62,22 +94,24 @@ const AuthPage = () => {
         },
       },
     });
-    setLoading(false);
+    setAuthActionLoading(false);
 
     if (error) {
       toast.error(`فشل التسجيل: ${error.message}`);
     } else if (data.user) {
       toast.success("تم التسجيل بنجاح! يرجى تفعيل حسابك عبر البريد الإلكتروني.");
-      // Redirect based on the user type selected during registration
-      if (userType === "passenger") {
-        navigate("/passenger-dashboard");
-      } else if (userType === "driver") {
-        navigate("/driver-dashboard");
-      } else if (userType === "admin") {
-        navigate("/admin-dashboard");
-      }
+      // Redirection is handled by the useEffect auth state listener
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="sr-only">جاري التحميل...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
@@ -143,8 +177,8 @@ const AuthPage = () => {
                     <Label htmlFor="admin-login">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
-                  {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={authActionLoading}>
+                  {authActionLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
                 </Button>
               </form>
             </TabsContent>
@@ -219,8 +253,8 @@ const AuthPage = () => {
                     <Label htmlFor="admin-register">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
-                  {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
+                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={authActionLoading}>
+                  {authActionLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                 </Button>
               </form>
             </TabsContent>
