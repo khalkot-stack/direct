@@ -1,13 +1,23 @@
 -- 1. Enable Row Level Security on the 'rides' table
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to get user_type from JWT
+CREATE OR REPLACE FUNCTION get_user_type()
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN ((auth.jwt() -> 'user_metadata')::jsonb) ->> 'user_type';
+END;
+$$;
+
 -- 2. Policy for Admins: Full access to all rides
 -- المدراء يمكنهم عرض، إضافة، تعديل، وحذف أي رحلة.
 CREATE POLICY "Admins can manage all rides"
 ON public.rides
 FOR ALL
-USING (auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'admin')
-WITH CHECK (auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'admin');
+USING (get_user_type() = 'admin')
+WITH CHECK (get_user_type() = 'admin');
 
 -- 3. Policy for Passengers: Select their own rides
 -- الركاب يمكنهم فقط عرض الرحلات التي طلبوها.
@@ -43,21 +53,21 @@ USING (passenger_id = auth.uid() AND status = 'pending');
 CREATE POLICY "Drivers can view all pending rides"
 ON public.rides
 FOR SELECT
-USING (status = 'pending' AND auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'driver');
+USING (status = 'pending' AND get_user_type() = 'driver');
 
 -- 8. Policy for Drivers: Select rides assigned to them
 -- السائقون يمكنهم عرض الرحلات التي تم قبولها أو إكمالها من قبلهم.
 CREATE POLICY "Drivers can view their accepted/completed rides"
 ON public.rides
 FOR SELECT
-USING (driver_id = auth.uid() AND auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'driver');
+USING (driver_id = auth.uid() AND get_user_type() = 'driver');
 
 -- 9. Policy for Drivers: Update to accept a pending ride
 -- السائقون يمكنهم قبول رحلة معلقة (تغيير driver_id و status).
 CREATE POLICY "Drivers can accept a pending ride"
 ON public.rides
 FOR UPDATE
-USING (status = 'pending' AND driver_id IS NULL AND auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'driver')
+USING (status = 'pending' AND driver_id IS NULL AND get_user_type() = 'driver')
 WITH CHECK (driver_id = auth.uid() AND status = 'accepted');
 
 -- 10. Policy for Drivers: Update to complete/cancel their accepted rides
@@ -65,5 +75,5 @@ WITH CHECK (driver_id = auth.uid() AND status = 'accepted');
 CREATE POLICY "Drivers can complete/cancel their accepted rides"
 ON public.rides
 FOR UPDATE
-USING (driver_id = auth.uid() AND status = 'accepted' AND auth.jwt() ->> 'user_metadata' ->> 'user_type' = 'driver')
+USING (driver_id = auth.uid() AND status = 'accepted' AND get_user_type() = 'driver')
 WITH CHECK (driver_id = auth.uid() AND status IN ('completed', 'cancelled'));
