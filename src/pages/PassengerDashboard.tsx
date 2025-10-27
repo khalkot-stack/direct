@@ -21,6 +21,8 @@ const PassengerDashboard = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4"> {/* Added padding-bottom for mobile nav */}
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg text-center">
         <CardHeader>
+          {/* Add Logo here */}
+          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
             لوحة تحكم الراكب
           </CardTitle>

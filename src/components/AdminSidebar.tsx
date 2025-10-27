@@ -41,7 +41,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className }) => {
   return (
     <div className={cn("h-full flex flex-col border-r dark:border-gray-700 bg-sidebar dark:bg-sidebar-background", className)}>
       <div className="p-4 border-b dark:border-gray-700">
-        <h2 className="text-2xl font-bold text-sidebar-primary dark:text-sidebar-primary-foreground">لوحة المدير</h2>
+        {/* Add Logo here */}
+        <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-12 mb-2" /> {/* Even smaller for sidebar */}
+        <h2 className="text-2xl font-bold text-sidebar-primary dark:text-sidebar-primary-foreground text-center">لوحة المدير</h2>
       </div>
       <ScrollArea className="flex-1 py-4">
         <nav className="grid items-start px-4 text-sm font-medium">

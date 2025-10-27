@@ -117,6 +117,8 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
         <CardHeader className="text-center">
+          {/* Add Logo here */}
+          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
             مرحباً بك في DIRECT
           </CardTitle>
