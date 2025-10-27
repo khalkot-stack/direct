@@ -54,7 +54,7 @@ const UserSettingsPage = () => {
             هذه صفحة الإعدادات الخاصة بك. يمكنك تعديل معلوماتك الشخصية وتفضيلات التطبيق هنا.
           </p>
           <div className="space-y-2">
-            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/user-profile-edit")}>
+            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate(userRole === "driver" ? "/driver-dashboard/profile" : "/passenger-dashboard/profile")}>
               تعديل الملف الشخصي
             </Button>
             {userRole === "driver" && (
