@@ -7,12 +7,12 @@ import AuthPage from './pages/AuthPage';
 import PassengerDashboard from './pages/PassengerDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import PassengerRequestsPage from './pages/PassengerRequestsPage';
-// import RequestRidePage from './pages/RequestRidePage'; // Removed import
+import RequestRidePage from './pages/RequestRidePage'; // Keep import for dedicated route
 import FindRidesPage from './pages/FindRidesPage';
-import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage'; // Corrected import
+import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage';
 import RideDetailsPage from './pages/RideDetailsPage';
-import DriverProfileSettingsPage from './pages/DriverProfileSettingsPage'; // Corrected import
-import PassengerProfilePage from './pages/PassengerProfilePage'; // Corrected import
+import DriverProfileSettingsPage from './pages/DriverProfileSettingsPage';
+import PassengerProfilePage from './pages/PassengerProfilePage';
 import { Toaster } from "@/components/ui/sonner";
 import BottomNavigationBar from './components/BottomNavigationBar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -25,7 +25,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UserSettingsPage from './pages/UserSettingsPage';
 import ReportsPage from './pages/ReportsPage';
-import NotificationsPage from './pages/NotificationsPage'; // Added missing import
+import NotificationsPage from './pages/NotificationsPage';
 import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
@@ -49,6 +49,7 @@ function App() {
             <Route path="/" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><UserLayout /></ProtectedRoute>}>
               {/* Passenger Routes */}
               <Route path="passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerDashboard /></ProtectedRoute>} />
+              <Route path="passenger-dashboard/request-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><RequestRidePage /></ProtectedRoute>} /> {/* New route */}
               <Route path="passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerRequestsPage /></ProtectedRoute>} />
               <Route path="passenger-dashboard/profile" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerProfilePage /></ProtectedRoute>} />
               

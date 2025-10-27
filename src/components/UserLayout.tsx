@@ -22,15 +22,15 @@ const UserLayout: React.FC = () => {
 
   const passengerNavItems: NavItem[] = [
     { name: "الرئيسية", href: "/passenger-dashboard", icon: Home },
-    { name: "الخريطة", href: "/request-ride", icon: MapPin },
-    { name: "رحلاتي", href: "/passenger-requests", icon: Car },
+    { name: "طلب رحلة", href: "/passenger-dashboard/request-ride", icon: MapPin }, // Updated path
+    { name: "رحلاتي", href: "/passenger-dashboard/my-rides", icon: Car },
     { name: "الإشعارات", href: "/notifications", icon: Bell },
     { name: "الإعدادات", href: "/user-settings", icon: Settings },
   ];
 
   const driverNavItems: NavItem[] = [
     { name: "الرئيسية", href: "/driver-dashboard", icon: Home },
-    { name: "البحث", href: "/find-rides", icon: Search },
+    { name: "البحث", href: "/driver-dashboard/find-rides", icon: Search },
     { name: "رحلاتي", href: "/driver-dashboard/accepted-rides", icon: CalendarDays },
     { name: "الإشعارات", href: "/notifications", icon: Bell },
     { name: "الإعدادات", href: "/user-settings", icon: Settings },
@@ -40,8 +40,14 @@ const UserLayout: React.FC = () => {
     const checkUser = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (error || !session) {
-        toast.error("الرجاء تسجيل الدخول للوصول إلى هذه الصفحة.");
+      if (error) {
+        toast.error(`خطأ في التحقق من الجلسة: ${error.message}`);
+        navigate("/auth");
+        return;
+      }
+
+      if (!session) {
+        toast.warning("الرجاء تسجيل الدخول للوصول إلى هذه الصفحة.");
         navigate("/auth");
         return;
       }
@@ -79,7 +85,7 @@ const UserLayout: React.FC = () => {
       <div className="flex-1">
         <Outlet />
       </div>
-      <BottomNavigationBar navItems={currentNavItems.map(item => ({ ...item, isActive: isActive(item.href) }))} />
+      {/* BottomNavigationBar is now rendered by App.tsx, not here */}
     </div>
   );
 };

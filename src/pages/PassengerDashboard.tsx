@@ -8,13 +8,13 @@ import { MapPin, Car, History, User, Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import RequestRidePage from "./RequestRidePage"; // Import the RequestRidePage component
+// import RequestRidePage from "./RequestRidePage"; // Removed import as it's now a dedicated page
 
 const PassengerDashboard = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("راكب");
   const [loading, setLoading] = useState(true);
-  const [showRequestRideForm, setShowRequestRideForm] = useState(false); // New state for form visibility
+  // const [showRequestRideForm, setShowRequestRideForm] = useState(false); // Removed state
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -45,14 +45,7 @@ const PassengerDashboard = () => {
     fetchUserProfile();
   }, [navigate]);
 
-  const handleRideRequested = () => {
-    setShowRequestRideForm(false); // Hide the form
-    navigate("/passenger-dashboard/my-rides"); // Navigate to my rides page
-  };
-
-  const handleCancelRequest = () => {
-    setShowRequestRideForm(false); // Hide the form
-  };
+  // Removed handleRideRequested and handleCancelRequest as they are no longer needed here
 
   if (loading) {
     return (
@@ -73,37 +66,28 @@ const PassengerDashboard = () => {
           />
         </div>
         <CardContent className="space-y-6">
-          {showRequestRideForm ? (
-            <RequestRidePage
-              isEmbedded={true}
-              onRideRequested={handleRideRequested}
-              onCancel={handleCancelRequest}
-            />
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-4">
-                <Button
-                  onClick={() => setShowRequestRideForm(true)} // Show the form on click
-                  className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                >
-                  <MapPin className="h-5 w-5" />
-                  طلب رحلة جديدة
-                </Button>
-                <Link to="/passenger-dashboard/my-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-                  <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                    <History className="h-5 w-5" />
-                    رحلاتي
-                  </Button>
-                </Link>
-                <Link to="/passenger-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-                  <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                    <User className="h-5 w-5" />
-                    ملفي الشخصي
-                  </Button>
-                </Link>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-1 gap-4">
+            <Link to="/passenger-dashboard/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Updated to navigate */}
+              <Button
+                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2"
+              >
+                <MapPin className="h-5 w-5" />
+                طلب رحلة جديدة
+              </Button>
+            </Link>
+            <Link to="/passenger-dashboard/my-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                <History className="h-5 w-5" />
+                رحلاتي
+              </Button>
+            </Link>
+            <Link to="/passenger-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                <User className="h-5 w-5" />
+                ملفي الشخصي
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

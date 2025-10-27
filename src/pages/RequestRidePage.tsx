@@ -13,13 +13,9 @@ import PageHeader from "@/components/PageHeader";
 import { Loader2 } from "lucide-react";
 // import LocationPickerMap from "@/components/LocationPickerMap"; // Removed import
 
-interface RequestRidePageProps {
-  isEmbedded?: boolean;
-  onRideRequested?: () => void;
-  onCancel?: () => void;
-}
+// Removed RequestRidePageProps interface as it's no longer embedded
 
-const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, onRideRequested, onCancel }) => {
+const RequestRidePage: React.FC = () => { // Removed props
   const navigate = useNavigate();
   const [pickupLocation, setPickupLocation] = useState("");
   const [destination, setDestination] = useState("");
@@ -34,13 +30,11 @@ const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, o
         setUserId(user.id);
       } else {
         toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
-        if (!isEmbedded) { // Only navigate if not embedded
-          navigate("/auth");
-        }
+        navigate("/auth"); // Always navigate if not logged in
       }
     };
     getUserId();
-  }, [navigate, isEmbedded]);
+  }, [navigate]);
 
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,23 +78,18 @@ const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, o
       console.error("Error requesting ride:", error);
     } else {
       toast.success("تم طلب الرحلة بنجاح! جاري البحث عن سائق.");
-      if (onRideRequested) {
-        onRideRequested(); // Call the callback provided by the parent
-      } else {
-        navigate("/passenger-dashboard/my-rides"); // Fallback if not embedded or no callback
-      }
+      navigate("/passenger-dashboard/my-rides"); // Always navigate to my rides after request
     }
   };
 
   return (
-    <div className={isEmbedded ? "" : "min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4"}>
-      <div className={isEmbedded ? "" : "w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg"}>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4"> {/* Removed conditional class */}
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg"> {/* Removed conditional class */}
         <div className="p-6">
           <PageHeader
-            title="طلب رحلة جديدة" // Reverted title to "طلب رحلة جديدة" as it's a request form
+            title="طلب رحلة جديدة"
             description="أدخل تفاصيل رحلتك وسنبحث لك عن سائق."
-            backPath={isEmbedded ? undefined : "/passenger-dashboard"} // Remove backPath if embedded, parent handles back
-            onBackClick={isEmbedded && onCancel ? onCancel : undefined} // Use onCancel for back button when embedded
+            backPath="/passenger-dashboard" // Always navigate back to passenger dashboard
           />
         </div>
         <CardContent className="space-y-6">
@@ -143,16 +132,7 @@ const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, o
             </div>
 
             <div className="flex gap-4">
-              {isEmbedded && onCancel && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel}
-                  className="flex-1 text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
-                >
-                  إلغاء
-                </Button>
-              )}
+              {/* Removed cancel button as it's now a dedicated page with a back button */}
               <Button
                 type="submit"
                 className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
@@ -170,7 +150,7 @@ const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, o
             </div>
           </form>
         </CardContent>
-      </div>
+      </Card>
     </div>
   );
 };

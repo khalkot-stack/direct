@@ -19,7 +19,7 @@ const BottomNavigationBar = () => {
       if (user) {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('user_type') // Corrected from 'role' to 'user_type'
+          .select('user_type')
           .eq('id', user.id)
           .single();
 
@@ -28,7 +28,7 @@ const BottomNavigationBar = () => {
           toast.error("فشل جلب دور المستخدم.");
           setUserRole(null);
         } else if (profile) {
-          setUserRole(profile.user_type); // Use profile.user_type
+          setUserRole(profile.user_type);
         }
       } else {
         setUserRole(null);
@@ -58,7 +58,7 @@ const BottomNavigationBar = () => {
     if (userRole === 'passenger') {
       return [
         { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
-        // { name: 'طلب رحلة', icon: MapPin, path: '/request-ride' }, // Removed
+        { name: 'طلب رحلة', icon: MapPin, path: '/passenger-dashboard/request-ride' }, // Added this item
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
         { name: 'ملفي', icon: User, path: '/passenger-dashboard/profile' },
       ];
@@ -79,8 +79,8 @@ const BottomNavigationBar = () => {
   const navItems = getNavItems();
 
   // Hide navigation bar on specific pages (e.g., auth page, or when RequestRidePage is embedded)
-  const hideOnPaths = ['/auth'];
-  if (hideOnPaths.includes(location.pathname)) {
+  const hideOnPaths = ['/auth', '/admin-dashboard', '/admin-dashboard/users', '/admin-dashboard/rides', '/admin-dashboard/settings'];
+  if (hideOnPaths.includes(location.pathname) || location.pathname.startsWith('/admin-dashboard')) {
     return null;
   }
 
