@@ -8,7 +8,7 @@ const Index = () => {
       {/* Logo Container at the top */}
       <div className="w-full flex justify-center pt-8 pb-4">
         <div className="bg-white p-4 rounded-lg shadow-lg">
-          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="h-24" />
+          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
         </div>
       </div>
 

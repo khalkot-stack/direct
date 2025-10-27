@@ -115,7 +115,7 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg mt-4 md:mt-8"> {/* Adjusted mt-4 md:mt-8 */}
         <CardHeader className="text-center">
           <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">

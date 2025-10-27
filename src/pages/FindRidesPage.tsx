@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Car } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import PageHeader from "@/components/PageHeader"; // Import PageHeader
-import EmptyState from "@/components/EmptyState"; // Import EmptyState
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -20,6 +20,7 @@ interface SupabaseJoinedRideData {
   passenger_id: string;
   driver_id: string | null;
   profiles_passenger: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
+  created_at: string; // Added created_at for sorting and display
 }
 
 interface RideRequest {
@@ -29,6 +30,7 @@ interface RideRequest {
   passengers_count: number;
   time: string; // This will be derived from created_at or a specific time field
   passenger_name?: string;
+  status: "pending" | "accepted" | "completed" | "cancelled"; // Include status for filtering
 }
 
 const FindRidesPage = () => {
@@ -36,6 +38,16 @@ const FindRidesPage = () => {
   const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
+
+  const formatRideData = (ride: SupabaseJoinedRideData): RideRequest => ({
+    id: ride.id,
+    pickup_location: ride.pickup_location,
+    destination: ride.destination,
+    passengers_count: ride.passengers_count,
+    time: new Date(ride.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف',
+    status: ride.status,
+  });
 
   const fetchPendingRides = useCallback(async () => {
     setLoading(true);
@@ -56,7 +68,10 @@ const FindRidesPage = () => {
         destination,
         passengers_count,
         status,
-        profiles_passenger:passenger_id (full_name)
+        passenger_id,
+        driver_id,
+        profiles_passenger:passenger_id (full_name),
+        created_at
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
@@ -65,22 +80,66 @@ const FindRidesPage = () => {
       toast.error(`فشل جلب الرحلات المتاحة: ${error.message}`);
       console.error("Error fetching pending rides:", error);
     } else {
-      const formattedRequests: RideRequest[] = data.map((ride: SupabaseJoinedRideData) => ({ // Cast to our defined interface
-        id: ride.id,
-        pickup_location: ride.pickup_location,
-        destination: ride.destination,
-        passengers_count: ride.passengers_count,
-        time: "الآن", // Placeholder, could be calculated from created_at
-        passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف', // Access first element
-      }));
-      setRideRequests(formattedRequests);
+      setRideRequests(data.map(formatRideData));
     }
     setLoading(false);
   }, [navigate]);
 
   useEffect(() => {
     fetchPendingRides();
-  }, [fetchPendingRides]);
+
+    const channel = supabase
+      .channel('pending_rides_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'rides' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+            // Fetch the full ride data including passenger name
+            supabase
+              .from('rides')
+              .select(`
+                id,
+                pickup_location,
+                destination,
+                passengers_count,
+                status,
+                passenger_id,
+                driver_id,
+                profiles_passenger:passenger_id (full_name),
+                created_at
+              `)
+              .eq('id', payload.new.id)
+              .single()
+              .then(({ data, error }) => {
+                if (error) {
+                  console.error("Error fetching new ride for realtime:", error);
+                } else if (data) {
+                  setRideRequests((prev) => {
+                    const newRide = formatRideData(data as SupabaseJoinedRideData);
+                    // Ensure no duplicates and add new ride
+                    if (!prev.some(ride => ride.id === newRide.id)) {
+                      toast.info(`رحلة جديدة متاحة: من ${newRide.pickup_location} إلى ${newRide.destination}`);
+                      return [...prev, newRide].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                    }
+                    return prev;
+                  });
+                }
+              });
+          } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+            setRideRequests((prev) => prev.filter((ride) => ride.id !== payload.old.id));
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.new.driver_id !== driverId) {
+                toast.warning(`تم قبول الرحلة من ${payload.old.pickup_location} إلى ${payload.old.destination} بواسطة سائق آخر.`);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPendingRides, driverId]); // Include driverId in dependencies for the realtime filter
 
   const handleAcceptRide = async (rideId: string) => {
     if (!driverId) {
@@ -91,7 +150,8 @@ const FindRidesPage = () => {
     const { error } = await supabase
       .from('rides')
       .update({ driver_id: driverId, status: 'accepted' })
-      .eq('id', rideId);
+      .eq('id', rideId)
+      .eq('status', 'pending'); // Ensure only pending rides can be accepted
     setLoading(false);
 
     if (error) {
@@ -99,7 +159,7 @@ const FindRidesPage = () => {
       console.error("Error accepting ride:", error);
     } else {
       toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
-      fetchPendingRides(); // Refresh the list of pending rides
+      // Realtime subscription will handle removing this ride from the list
       navigate("/driver-dashboard/accepted-rides"); // Redirect to accepted rides page
     }
   };
@@ -155,8 +215,8 @@ const FindRidesPage = () => {
                         جاري القبول...
                       </>
                     ) : (
-                      "قبول الرحلة"
-                    )}
+                        "قبول الرحلة"
+                      )}
                   </Button>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { Settings, Loader2 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader"; // Import PageHeader
+import { toast } from "sonner"; // Import toast
 
 const UserSettingsPage = () => {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ const UserSettingsPage = () => {
     };
     fetchUserRole();
   }, []);
+
+  const handleChangeLanguage = () => {
+    toast.info("تغيير اللغة غير متاح حاليًا. هذه ميزة قيد التطوير!");
+  };
 
   if (loading) {
     return (
@@ -60,7 +65,7 @@ const UserSettingsPage = () => {
                 إدارة معلومات السيارة
               </Button>
             )}
-            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={handleChangeLanguage}>
               تغيير اللغة
             </Button>
             <Button variant="outline" className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/reports")}>
