@@ -44,32 +44,24 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           
-          {/* Protected Routes for Passenger */}
-          <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>
-            <Route element={<UserLayout />}> {/* Passenger-specific layout with bottom nav */}
+          {/* Protected Routes for Passenger and Driver (common layout) */}
+          <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]} />}>
+            <Route element={<UserLayout />}>
               <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
               <Route path="/request-ride" element={<RequestRidePage />} />
               <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
-              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/user-settings" element={<UserSettingsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/user-profile-edit" element={<UserProfileEditPage />} />
-            </Route>
-          </Route>
-
-          {/* Protected Routes for Driver */}
-          <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
-            <Route element={<UserLayout />}> {/* Driver-specific layout with bottom nav */}
+              
               <Route path="/driver-dashboard" element={<DriverDashboard />} />
               <Route path="/find-rides" element={<FindRidesPage />} />
               <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
-              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} /> {/* Also accessible by driver */}
-              <Route path="/notifications" element={<NotificationsPage />} /> {/* Also accessible by driver */}
-              <Route path="/user-settings" element={<UserSettingsPage />} /> {/* Also accessible by driver */}
-              <Route path="/driver-settings" element={<DriverProfileSettingsPage />} />
-              <Route path="/reports" element={<ReportsPage />} /> {/* Also accessible by driver */}
-              <Route path="/user-profile-edit" element={<UserProfileEditPage />} /> {/* Also accessible by driver */}
+              
+              {/* Common pages for both passenger and driver */}
+              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/user-settings" element={<UserSettingsPage />} />
+              <Route path="/driver-settings" element={<DriverProfileSettingsPage />} /> {/* Driver specific setting, but under common layout */}
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/user-profile-edit" element={<UserProfileEditPage />} />
             </Route>
           </Route>
 
