@@ -7,7 +7,7 @@ import AuthPage from './pages/AuthPage';
 import PassengerDashboard from './pages/PassengerDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import PassengerRequestsPage from './pages/PassengerRequestsPage';
-import RequestRidePage from './pages/RequestRidePage'; // Keep import for dedicated route
+import RequestRidePage from './pages/RequestRidePage';
 import FindRidesPage from './pages/FindRidesPage';
 import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage';
 import RideDetailsPage from './pages/RideDetailsPage';
@@ -45,29 +45,27 @@ function App() {
             <Route path="/help" element={<HelpPage />} />
             <Route path="/about-us" element={<AboutUsPage />} />
 
-            {/* User Layout for Passenger and Driver Dashboards */}
-            <Route path="/" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><UserLayout /></ProtectedRoute>}>
-              {/* Passenger Routes */}
-              <Route path="passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerDashboard /></ProtectedRoute>} />
-              <Route path="passenger-dashboard/request-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><RequestRidePage /></ProtectedRoute>} /> {/* New route */}
-              <Route path="passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerRequestsPage /></ProtectedRoute>} />
-              <Route path="passenger-dashboard/profile" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerProfilePage /></ProtectedRoute>} />
+            {/* Protected User Routes (Passenger & Driver) */}
+            <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><UserLayout /></ProtectedRoute>}>
+              <Route path="passenger-dashboard" element={<PassengerDashboard />} />
+              <Route path="passenger-dashboard/request-ride" element={<RequestRidePage />} />
+              <Route path="passenger-dashboard/my-rides" element={<PassengerRequestsPage />} />
+              <Route path="passenger-dashboard/profile" element={<PassengerProfilePage />} />
               
-              {/* Driver Routes */}
-              <Route path="driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverDashboard /></ProtectedRoute>} />
-              <Route path="driver-dashboard/find-rides" element={<ProtectedRoute allowedRoles={["driver"]}><FindRidesPage /></ProtectedRoute>} />
-              <Route path="driver-dashboard/accepted-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAcceptedRidesPage /></ProtectedRoute>} />
-              <Route path="driver-dashboard/profile" element={<ProtectedRoute allowedRoles={["driver"]}><DriverProfileSettingsPage /></ProtectedRoute>} />
+              <Route path="driver-dashboard" element={<DriverDashboard />} />
+              <Route path="driver-dashboard/find-rides" element={<FindRidesPage />} />
+              <Route path="driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
+              <Route path="driver-dashboard/profile" element={<DriverProfileSettingsPage />} />
               
               {/* Shared User Settings */}
-              <Route path="user-settings" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><UserSettingsPage /></ProtectedRoute>} />
-              <Route path="driver-settings" element={<ProtectedRoute allowedRoles={["driver"]}><DriverProfileSettingsPage /></ProtectedRoute>} />
-              <Route path="reports" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><ReportsPage /></ProtectedRoute>} />
-              <Route path="notifications" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><NotificationsPage /></ProtectedRoute>} />
-              <Route path="ride-details/:rideId" element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><RideDetailsPage /></ProtectedRoute>} />
+              <Route path="user-settings" element={<UserSettingsPage />} />
+              <Route path="driver-settings" element={<DriverProfileSettingsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="ride-details/:rideId" element={<RideDetailsPage />} />
             </Route>
 
-            {/* Admin Routes */}
+            {/* Protected Admin Routes */}
             <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />

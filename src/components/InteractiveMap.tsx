@@ -43,13 +43,15 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     libraries: ["places"],
   });
 
-  const mapRef = useRef<GoogleMap | null>(null);
+  // Correctly type mapRef to hold the actual Google Maps Map instance
+  const mapRef = useRef<google.maps.Map | null>(null);
   const [mapCenter, setMapCenter] = useState(center);
   const [mapZoom, setMapZoom] = useState(zoom);
 
   useEffect(() => {
     if (markers.length > 0 && mapRef.current) {
-      const bounds = new google.maps.LatLngBounds();
+      // Use window.google.maps.LatLngBounds to ensure correct type
+      const bounds = new window.google.maps.LatLngBounds();
       markers.forEach(marker => {
         bounds.extend({ lat: marker.lat, lng: marker.lng });
       });
@@ -64,7 +66,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, [markers, zoom]);
 
-  const onMapLoad = useCallback((map: GoogleMap) => {
+  // Ensure the map parameter is typed as google.maps.Map
+  const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
 
@@ -86,7 +89,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       mapContainerStyle={containerStyle}
       center={mapCenter}
       zoom={mapZoom}
-      onLoad={onMapLoad}
+      onLoad={onMapLoad} // This now correctly expects google.maps.Map
       options={{
         streetViewControl: false,
         mapTypeControl: false,

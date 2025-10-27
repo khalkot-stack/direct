@@ -47,7 +47,7 @@ const BottomNavigationBar = () => {
     });
 
     return () => {
-      authListener?.unsubscribe();
+      authListener?.subscription.unsubscribe(); // Corrected: access unsubscribe via .subscription
     };
   }, []);
 
@@ -79,7 +79,7 @@ const BottomNavigationBar = () => {
   const navItems = getNavItems();
 
   // Hide navigation bar on specific pages (e.g., auth page, or when RequestRidePage is embedded)
-  const hideOnPaths = ['/auth', '/admin-dashboard', '/admin-dashboard/users', '/admin-dashboard/rides', '/admin-dashboard/settings'];
+  const hideOnPaths = ['/auth', '/admin-dashboard', '/admin-dashboard/users', '/admin-dashboard/rides', '/admin-dashboard/settings', '/forgot-password', '/reset-password', '/help', '/about-us'];
   if (hideOnPaths.includes(location.pathname) || location.pathname.startsWith('/admin-dashboard')) {
     return null;
   }

@@ -2,9 +2,8 @@
 
 import React from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Menu, ChevronLeft } from "lucide-react"; // Changed ChevronLeft to Menu for hamburger icon
+import { Menu } from "lucide-react"; // Changed ChevronLeft to Menu for hamburger icon
 import AdminSidebar from "@/components/AdminSidebar";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -32,7 +31,7 @@ const AdminDashboard = () => {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">لوحة تحكم المدير</h1>
         </div>
         <div className="flex-1 p-4 overflow-auto">
-          <Outlet />
+          <Outlet /> {/* This is where nested routes will render */}
         </div>
       </div>
     );
