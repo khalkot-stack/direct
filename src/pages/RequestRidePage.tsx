@@ -85,7 +85,7 @@ const RequestRidePage = () => {
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
         <div className="p-6">
           <PageHeader
-            title="طلب رحلة جديدة"
+            title="البحث عن ركاب" // Changed title here
             description="أدخل تفاصيل رحلتك وسنبحث لك عن سائق."
             backPath="/passenger-dashboard"
           />
