@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Settings } from "lucide-react";
+import { ChevronLeft, Settings, Loader2 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase"; // Import supabase
 
@@ -59,7 +59,7 @@ const UserSettingsPage = () => {
             هذه صفحة الإعدادات الخاصة بك. يمكنك تعديل معلوماتك الشخصية وتفضيلات التطبيق هنا.
           </p>
           <div className="space-y-2">
-            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white" onClick={() => navigate("/user-profile-edit")}>
               تعديل الملف الشخصي
             </Button>
             {userRole === "driver" && (
@@ -72,6 +72,9 @@ const UserSettingsPage = () => {
             )}
             <Button variant="outline" className="w-full">
               تغيير اللغة
+            </Button>
+            <Button variant="outline" className="w-full text-red-500 border-red-500 hover:bg-red-500 hover:text-white" onClick={() => navigate("/reports")}>
+              بلاغات وشكاوى
             </Button>
             <LogoutButton />
           </div>

@@ -22,7 +22,9 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
-import DriverProfileSettingsPage from "./pages/DriverProfileSettingsPage"; // New import
+import DriverProfileSettingsPage from "./pages/DriverProfileSettingsPage";
+import ReportsPage from "./pages/ReportsPage";
+import UserProfileEditPage from "./pages/UserProfileEditPage"; // New import
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -43,7 +45,9 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/user-settings" element={<UserSettingsPage />} />
-          <Route path="/driver-settings" element={<DriverProfileSettingsPage />} /> {/* New route */}
+          <Route path="/driver-settings" element={<DriverProfileSettingsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/user-profile-edit" element={<UserProfileEditPage />} /> {/* New route */}
 
           {/* Protected Routes for Passenger */}
           <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>

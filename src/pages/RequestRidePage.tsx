@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MapPin, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import LocationPickerMap from "@/components/LocationPickerMap"; // Import the new map component
 
@@ -25,6 +25,7 @@ const RequestRidePage = () => {
   const [passengersCount, setPassengersCount] = useState("1");
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [step, setStep] = useState(1); // 1: Input details, 2: Confirm ride
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,8 +40,7 @@ const RequestRidePage = () => {
     fetchUser();
   }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRequestSubmit = async () => {
     if (!userId) {
       toast.error("خطأ: لم يتم العثور على معرف المستخدم.");
       return;
@@ -75,6 +75,15 @@ const RequestRidePage = () => {
     }
   };
 
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pickupLocation || !destination || !pickupLocation.address || !destination.address) {
+      toast.error("الرجاء تحديد موقع الانطلاق والوجهة بشكل صحيح.");
+      return;
+    }
+    setStep(2);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
@@ -82,7 +91,7 @@ const RequestRidePage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/passenger-dashboard")}
+            onClick={() => step === 1 ? navigate("/passenger-dashboard") : setStep(1)}
             className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -92,39 +101,73 @@ const RequestRidePage = () => {
             طلب رحلة جديدة
           </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
-            املأ التفاصيل لطلب رحلتك
+            {step === 1 ? "املأ التفاصيل لطلب رحلتك" : "تأكيد تفاصيل رحلتك"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <LocationPickerMap
-              label="موقع الانطلاق"
-              onLocationSelect={setPickupLocation}
-              initialLocation={pickupLocation}
-            />
-            <LocationPickerMap
-              label="الوجهة"
-              onLocationSelect={setDestination}
-              initialLocation={destination}
-            />
-            <div>
-              <Label htmlFor="passengers">عدد الركاب</Label>
-              <Select value={passengersCount} onValueChange={setPassengersCount}>
-                <SelectTrigger id="passengers" className="w-full mt-1">
-                  <SelectValue placeholder="اختر عدد الركاب" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 راكب</SelectItem>
-                  <SelectItem value="2">2 ركاب</SelectItem>
-                  <SelectItem value="3">3 ركاب</SelectItem>
-                  <SelectItem value="4">4 ركاب</SelectItem>
-                </SelectContent>
-              </Select>
+          {step === 1 && (
+            <form onSubmit={handleNextStep} className="space-y-6">
+              <LocationPickerMap
+                label="موقع الانطلاق"
+                onLocationSelect={setPickupLocation}
+                initialLocation={pickupLocation || undefined}
+              />
+              <LocationPickerMap
+                label="الوجهة"
+                onLocationSelect={setDestination}
+                initialLocation={destination || undefined}
+              />
+              <div>
+                <Label htmlFor="passengers">عدد الركاب</Label>
+                <Select value={passengersCount} onValueChange={setPassengersCount}>
+                  <SelectTrigger id="passengers" className="w-full mt-1">
+                    <SelectValue placeholder="اختر عدد الركاب" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 راكب</SelectItem>
+                    <SelectItem value="2">2 ركاب</SelectItem>
+                    <SelectItem value="3">3 ركاب</SelectItem>
+                    <SelectItem value="4">4 ركاب</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6">
+                التالي
+              </Button>
+            </form>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6 text-right">
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <p className="text-lg text-gray-800 dark:text-gray-200">
+                  <span className="font-semibold">من:</span> {pickupLocation?.address}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <p className="text-lg text-gray-800 dark:text-gray-200">
+                  <span className="font-semibold">إلى:</span> {destination?.address}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <p className="text-lg text-gray-800 dark:text-gray-200">
+                  <span className="font-semibold">عدد الركاب:</span> {passengersCount}
+                </p>
+              </div>
+              {/* You can add estimated fare/time here if you have the logic */}
+              <div className="flex justify-between gap-4 mt-6">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  تعديل
+                </Button>
+                <Button onClick={handleRequestSubmit} className="flex-1 bg-green-500 hover:bg-green-600 text-white" disabled={loading}>
+                  {loading ? "جاري طلب الرحلة..." : "تأكيد وطلب الرحلة"}
+                </Button>
+              </div>
             </div>
-            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
-              {loading ? "جاري طلب الرحلة..." : "طلب الرحلة"}
-            </Button>
-          </form>
+          )}
         </CardContent>
       </Card>
     </div>
