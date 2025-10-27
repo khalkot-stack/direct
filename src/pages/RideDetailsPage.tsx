@@ -139,7 +139,7 @@ const RideDetailsPage = () => {
             />
           </div>
           <CardContent>
-            <Button onClick={() => navigate(-1)} className="mt-6 bg-primary hover:bg-primary-dark text-primary-foreground">
+            <Button onClick={() => navigate(-1)} className="mt-6 bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               العودة
             </Button>
           </CardContent>
@@ -185,11 +185,11 @@ const RideDetailsPage = () => {
               <p className="text-lg text-gray-800 dark:text-gray-200">
                 <span className="font-semibold">هاتف الراكب:</span> {ride.passenger_phone}
               </p>
-              <Button variant="outline" size="sm" onClick={() => handleCall(ride.passenger_phone)} className="ml-auto flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+              <Button variant="outline" size="sm" onClick={() => handleCall(ride.passenger_phone)} className="ml-auto flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                 <Phone className="h-4 w-4" />
                 اتصال
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.passenger_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.passenger_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                 <MessageSquare className="h-4 w-4" />
                 رسالة
               </Button>
@@ -207,11 +207,11 @@ const RideDetailsPage = () => {
               <p className="text-lg text-gray-800 dark:text-gray-200">
                 <span className="font-semibold">هاتف السائق:</span> {ride.driver_phone}
               </p>
-              <Button variant="outline" size="sm" onClick={() => handleCall(ride.driver_phone)} className="ml-auto flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+              <Button variant="outline" size="sm" onClick={() => handleCall(ride.driver_phone)} className="ml-auto flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                 <Phone className="h-4 w-4" />
                 اتصال
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.driver_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.driver_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                 <MessageSquare className="h-4 w-4" />
                 رسالة
               </Button>

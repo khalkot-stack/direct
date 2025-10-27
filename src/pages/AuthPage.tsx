@@ -178,7 +178,7 @@ const AuthPage = () => {
                     <Label htmlFor="admin-login">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
                   {authActionLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
@@ -266,7 +266,7 @@ const AuthPage = () => {
                     <Label htmlFor="admin-register">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
                   {authActionLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />

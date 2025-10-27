@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { MapPin, Users } from "lucide-react";
+import { MapPin, Users, Loader2 } from "lucide-react"; // Added Loader2
 import { supabase } from "@/lib/supabase";
 import LocationPickerMap from "@/components/LocationPickerMap";
 import PageHeader from "@/components/PageHeader"; // Import PageHeader
@@ -122,7 +122,7 @@ const RequestRidePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6">
+              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                 التالي
               </Button>
             </form>
@@ -149,10 +149,10 @@ const RequestRidePage = () => {
                 </p>
               </div>
               <div className="flex justify-between gap-4 mt-6">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                   تعديل
                 </Button>
-                <Button onClick={handleRequestSubmit} className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground" disabled={loading}>
+                <Button onClick={handleRequestSubmit} className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />

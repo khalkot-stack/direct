@@ -49,21 +49,21 @@ const UserSettingsPage = () => {
             هذه صفحة الإعدادات الخاصة بك. يمكنك تعديل معلوماتك الشخصية وتفضيلات التطبيق هنا.
           </p>
           <div className="space-y-2">
-            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground" onClick={() => navigate("/user-profile-edit")}>
+            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/user-profile-edit")}>
               تعديل الملف الشخصي
             </Button>
             {userRole === "driver" && (
               <Button
-                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground"
+                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
                 onClick={() => navigate("/driver-settings")}
               >
                 إدارة معلومات السيارة
               </Button>
             )}
-            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground">
+            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               تغيير اللغة
             </Button>
-            <Button variant="outline" className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => navigate("/reports")}>
+            <Button variant="outline" className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/reports")}>
               بلاغات وشكاوى
             </Button>
             <LogoutButton />

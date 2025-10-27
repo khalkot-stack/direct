@@ -147,14 +147,14 @@ const DriverAcceptedRidesPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => navigate(`/ride-details/${ride.id}`)}
-                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
+                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
                   >
                     عرض التفاصيل
                   </Button>
                   {ride.status === 'accepted' && (
                     <Button
                       onClick={() => handleCompleteRide(ride.id)}
-                      className="bg-primary hover:bg-primary-dark text-primary-foreground"
+                      className="bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
                       disabled={loading}
                     >
                       {loading ? (

@@ -169,14 +169,14 @@ const PassengerRequestsPage = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md"
+                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
                     onClick={() => navigate(`/ride-details/${request.id}`)}
                   >
                     عرض التفاصيل
                   </Button>
                   {request.status === "completed" && !request.has_rated && request.driver_id && (
                     <Button
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md"
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
                       onClick={() => handleRateDriver(request)}
                     >
                       تقييم السائق

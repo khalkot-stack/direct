@@ -84,7 +84,7 @@ const ReportsPage = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground mt-6" disabled={loading}>
+            <Button type="submit" className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
