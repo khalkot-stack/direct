@@ -8,6 +8,7 @@ import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button"; // التأكد من وجود الاستيراد الصحيح
 
 const AppSettingsPage = () => {
   const navigate = useNavigate();
