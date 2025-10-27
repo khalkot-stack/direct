@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, User, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
 
 interface UserProfile {
   id: string;
@@ -77,7 +78,7 @@ const UserProfileEditPage = () => {
       console.error("Error saving user profile:", error);
     } else {
       toast.success("تم حفظ الملف الشخصي بنجاح!");
-      fetchUserProfile(); // Refresh data
+      fetchUserProfile();
     }
   };
 
@@ -93,23 +94,12 @@ const UserProfileEditPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/user-settings")}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            تعديل الملف الشخصي
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            تحديث معلوماتك الشخصية
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title="تعديل الملف الشخصي"
+            description="تحديث معلوماتك الشخصية"
+          />
+        </div>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid w-full items-center gap-1.5">

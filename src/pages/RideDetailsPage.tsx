@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, MapPin, User, Car, Info, Loader2, Users, Phone, MessageSquare } from "lucide-react";
+import { MapPin, User, Car, Info, Loader2, Users, Phone, MessageSquare } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
 
 // Define an interface for the raw data returned by Supabase select with joins for a SINGLE row
 // Even with .single(), Supabase might return joined relations as an array of one item.
@@ -131,24 +132,13 @@ const RideDetailsPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg text-center">
-          <CardHeader>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-            >
-              <ChevronLeft className="h-6 w-6" />
-              <span className="sr-only">العودة</span>
-            </Button>
-            <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-              الرحلة غير موجودة
-            </CardTitle>
-          </CardHeader>
+          <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+            <PageHeader
+              title="الرحلة غير موجودة"
+              description="عذرًا، لم نتمكن من العثور على تفاصيل الرحلة المطلوبة."
+            />
+          </div>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-400">
-              عذرًا، لم نتمكن من العثور على تفاصيل الرحلة المطلوبة.
-            </p>
             <Button onClick={() => navigate(-1)} className="mt-6 bg-blue-500 hover:bg-blue-600 text-white">
               العودة
             </Button>
@@ -164,23 +154,12 @@ const RideDetailsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            تفاصيل الرحلة #{ride.id.substring(0, 8)}...
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            معلومات مفصلة عن الرحلة
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title={`تفاصيل الرحلة #${ride.id.substring(0, 8)}...`}
+            description="معلومات مفصلة عن الرحلة"
+          />
+        </div>
         <CardContent className="space-y-4 text-right">
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -200,17 +179,19 @@ const RideDetailsPage = () => {
               <span className="font-semibold">الراكب:</span> {ride.passenger_name}
             </p>
           </div>
-          {isDriver && ride.status === "accepted" && ( // Driver can see passenger contact info if ride is accepted
+          {isDriver && ride.status === "accepted" && (
             <div className="flex items-center gap-3">
               <Phone className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               <p className="text-lg text-gray-800 dark:text-gray-200">
                 <span className="font-semibold">هاتف الراكب:</span> {ride.passenger_phone}
               </p>
-              <Button variant="outline" size="sm" onClick={() => handleCall(ride.passenger_phone)} className="ml-auto">
+              <Button variant="outline" size="sm" onClick={() => handleCall(ride.passenger_phone)} className="ml-auto flex items-center gap-1">
                 <Phone className="h-4 w-4" />
+                اتصال
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.passenger_phone)}>
+              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.passenger_phone)} className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
+                رسالة
               </Button>
             </div>
           )}
@@ -220,17 +201,19 @@ const RideDetailsPage = () => {
               <span className="font-semibold">السائق:</span> {ride.driver_name}
             </p>
           </div>
-          {isPassenger && ride.status === "accepted" && ride.driver_id && ( // Passenger can see driver contact info if ride is accepted
+          {isPassenger && ride.status === "accepted" && ride.driver_id && (
             <div className="flex items-center gap-3">
               <Phone className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               <p className="text-lg text-gray-800 dark:text-gray-200">
                 <span className="font-semibold">هاتف السائق:</span> {ride.driver_phone}
               </p>
-              <Button variant="outline" size="sm" onClick={() => handleCall(ride.driver_phone)} className="ml-auto">
+              <Button variant="outline" size="sm" onClick={() => handleCall(ride.driver_phone)} className="ml-auto flex items-center gap-1">
                 <Phone className="h-4 w-4" />
+                اتصال
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.driver_phone)}>
+              <Button variant="outline" size="sm" onClick={() => handleMessage(ride.driver_phone)} className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
+                رسالة
               </Button>
             </div>
           )}

@@ -1,34 +1,20 @@
 "use client";
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
 
 const HelpPage = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            تعرف على المزيد حول DIRECT
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            كل ما تحتاج معرفته عن تطبيقنا
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title="تعرف على المزيد حول DIRECT"
+            description="كل ما تحتاج معرفته عن تطبيقنا"
+            backPath="/"
+          />
+        </div>
         <CardContent className="space-y-6 text-right">
           <section>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">ما هو DIRECT؟</h3>

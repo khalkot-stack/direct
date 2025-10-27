@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Car, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
 
 interface DriverProfile {
   id: string;
@@ -36,7 +37,7 @@ const DriverProfileSettingsPage = () => {
 
     if (!user || user.user_metadata?.user_type !== "driver") {
       toast.error("ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة.");
-      navigate("/user-settings"); // Redirect if not a driver
+      navigate("/user-settings");
       setLoading(false);
       return;
     }
@@ -83,7 +84,7 @@ const DriverProfileSettingsPage = () => {
       console.error("Error saving vehicle info:", error);
     } else {
       toast.success("تم حفظ معلومات السيارة بنجاح!");
-      fetchDriverProfile(); // Refresh data
+      fetchDriverProfile();
     }
   };
 
@@ -99,23 +100,12 @@ const DriverProfileSettingsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/user-settings")}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            إدارة معلومات السيارة
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            تحديث تفاصيل سيارتك
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title="إدارة معلومات السيارة"
+            description="تحديث تفاصيل سيارتك"
+          />
+        </div>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid w-full items-center gap-1.5">

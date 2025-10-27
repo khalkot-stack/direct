@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { Loader2, Car } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
+import EmptyState from "@/components/EmptyState"; // Import EmptyState
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -112,23 +114,13 @@ const DriverAcceptedRidesPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/driver-dashboard")}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            رحلاتي المقبولة
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            عرض الرحلات التي قبلتها أو أكملتها
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title="رحلاتي المقبولة"
+            description="عرض الرحلات التي قبلتها أو أكملتها"
+            backPath="/driver-dashboard"
+          />
+        </div>
         <CardContent className="space-y-4">
           {acceptedRides.length > 0 ? (
             acceptedRides.map((ride) => (
@@ -163,7 +155,11 @@ const DriverAcceptedRidesPage = () => {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-600 dark:text-gray-400">لم تقبل أي رحلات بعد.</p>
+            <EmptyState
+              icon={Car}
+              title="لم تقبل أي رحلات بعد"
+              description="ابحث عن رحلات جديدة واقبلها لتظهر هنا."
+            />
           )}
         </CardContent>
       </Card>

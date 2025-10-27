@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronLeft, MapPin, Users } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import LocationPickerMap from "@/components/LocationPickerMap"; // Import the new map component
+import LocationPickerMap from "@/components/LocationPickerMap";
+import PageHeader from "@/components/PageHeader"; // Import PageHeader
 
 interface LocationData {
   lat: number;
@@ -71,7 +72,7 @@ const RequestRidePage = () => {
       console.error("Error requesting ride:", error);
     } else {
       toast.success(`تم طلب رحلة من ${pickupLocation.address} إلى ${destination.address} لـ ${passengersCount} ركاب.`);
-      navigate("/passenger-requests"); // Redirect to passenger requests page
+      navigate("/passenger-requests");
     }
   };
 
@@ -87,23 +88,13 @@ const RequestRidePage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <CardHeader className="text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => step === 1 ? navigate("/passenger-dashboard") : setStep(1)}
-            className="absolute top-4 right-4 rtl:left-4 rtl:right-auto"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="sr-only">العودة</span>
-          </Button>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            طلب رحلة جديدة
-          </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">
-            {step === 1 ? "املأ التفاصيل لطلب رحلتك" : "تأكيد تفاصيل رحلتك"}
-          </CardDescription>
-        </CardHeader>
+        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+          <PageHeader
+            title="طلب رحلة جديدة"
+            description={step === 1 ? "املأ التفاصيل لطلب رحلتك" : "تأكيد تفاصيل رحلتك"}
+            backPath={step === 1 ? "/passenger-dashboard" : undefined} // Go back to dashboard or previous step
+          />
+        </div>
         <CardContent>
           {step === 1 && (
             <form onSubmit={handleNextStep} className="space-y-6">
@@ -157,7 +148,6 @@ const RequestRidePage = () => {
                   <span className="font-semibold">عدد الركاب:</span> {passengersCount}
                 </p>
               </div>
-              {/* You can add estimated fare/time here if you have the logic */}
               <div className="flex justify-between gap-4 mt-6">
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                   تعديل
