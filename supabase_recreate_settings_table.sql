@@ -16,21 +16,15 @@ ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 -- Create RLS policies
 -- Only admins can view settings
 CREATE POLICY "Admins can view settings" ON public.settings
-FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR SELECT USING (public.is_admin());
 
 -- Only admins can insert settings (e.g., initial setup)
 CREATE POLICY "Admins can insert settings" ON public.settings
-FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR INSERT WITH CHECK (public.is_admin());
 
 -- Only admins can update settings
 CREATE POLICY "Admins can update settings" ON public.settings
-FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR UPDATE USING (public.is_admin());
 
 -- Trigger to update `updated_at` column
 CREATE OR REPLACE TRIGGER set_settings_updated_at

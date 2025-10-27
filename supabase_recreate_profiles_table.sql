@@ -27,27 +27,19 @@ FOR UPDATE USING (auth.uid() = id);
 
 -- Policy for admins to view all profiles
 CREATE POLICY "Admins can view all profiles" ON public.profiles
-FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR SELECT USING (public.is_admin());
 
 -- Policy for admins to insert new profiles (e.g., for new users or manual creation)
 CREATE POLICY "Admins can insert profiles" ON public.profiles
-FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR INSERT WITH CHECK (public.is_admin());
 
 -- Policy for admins to update any profile
 CREATE POLICY "Admins can update any profile" ON public.profiles
-FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR UPDATE USING (public.is_admin());
 
 -- Policy for admins to delete any profile
 CREATE POLICY "Admins can delete any profile" ON public.profiles
-FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
-);
+FOR DELETE USING (public.is_admin());
 
 -- Create an index on user_type for faster lookups
 CREATE INDEX profiles_user_type_idx ON public.profiles (user_type);

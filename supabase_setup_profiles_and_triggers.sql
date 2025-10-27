@@ -1,4 +1,16 @@
--- Create a function to create a profile for new users
+-- Helper function to check if current user is admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+  SELECT auth.jwt() -> 'app_metadata' ->> 'user_type' = 'admin';
+$$ LANGUAGE sql STABLE;
+
+-- Helper function to get current user's type
+CREATE OR REPLACE FUNCTION public.get_user_type()
+RETURNS text AS $$
+  SELECT auth.jwt() -> 'app_metadata' ->> 'user_type';
+$$ LANGUAGE sql STABLE;
+
+-- Create a function to create a profile for new users and update app_metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -14,6 +26,12 @@ BEGIN
 
   INSERT INTO public.profiles (id, full_name, email, phone_number, user_type)
   VALUES (NEW.id, _full_name, NEW.email, _phone_number, _user_type);
+
+  -- IMPORTANT: Update app_metadata for RLS checks
+  UPDATE auth.users
+  SET raw_app_meta_data = raw_app_meta_data || jsonb_build_object('user_type', _user_type)
+  WHERE id = NEW.id;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
