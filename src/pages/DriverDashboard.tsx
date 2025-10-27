@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Car, History, User, Bell, Settings, BarChart, Loader2 } from 'lucide-react'; // Added Loader2
+import { Search, Car, History, User, Bell, Settings, BarChart, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,23 +21,72 @@ const DriverDashboard = () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        toast.error("فشل جلب معلومات المستخدم.");
+        toast.error("فشل جلب معلومات المستخدم. الرجاء تسجيل الدخول.");
         navigate('/auth');
+        setLoading(false);
         return;
       }
 
+      let currentProfile;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('full_name, avatar_url, user_type')
         .eq('id', user.id)
         .single();
 
-      if (profileError) {
+      if (profileError && profileError.code === 'PGRST116') { // No profile found
+        console.warn("No profile found for user, attempting to create one based on auth metadata.");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata.full_name || 'السائق',
+            email: user.email,
+            user_type: user.user_metadata.user_type || 'driver', // Default to driver if not explicitly set in metadata
+            phone_number: user.user_metadata.phone_number || null,
+            status: 'active', // Default status
+          })
+          .select('full_name, avatar_url, user_type')
+          .single();
+
+        if (insertError) {
+          toast.error(`فشل إنشاء ملف تعريف السائق: ${insertError.message}`);
+          console.error("Error creating driver profile:", insertError);
+          navigate('/auth');
+          setLoading(false);
+          return;
+        } else if (newProfile) {
+          currentProfile = newProfile;
+          toast.success("تم إنشاء ملف تعريف السائق بنجاح.");
+        }
+      } else if (profileError) { // Other types of errors fetching profile
+        toast.error(`فشل جلب ملف تعريف السائق: ${profileError.message}`);
         console.error("Error fetching driver profile:", profileError);
-        toast.error("فشل جلب ملف تعريف السائق.");
+        navigate('/auth');
+        setLoading(false);
+        return;
       } else if (profile) {
-        setDriverName(profile.full_name || 'السائق');
-        setDriverAvatar(profile.avatar_url || '');
+        currentProfile = profile;
+      }
+
+      if (currentProfile) {
+        setDriverName(currentProfile.full_name || 'السائق');
+        setDriverAvatar(currentProfile.avatar_url || '');
+
+        // Double-check user_type from the profile table
+        if (currentProfile.user_type !== 'driver') {
+          toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم السائق.");
+          // Redirect based on actual role or to home
+          if (currentProfile.user_type === 'passenger') {
+            navigate('/passenger-dashboard');
+          } else if (currentProfile.user_type === 'admin') {
+            navigate('/admin-dashboard');
+          } else {
+            navigate('/');
+          }
+          setLoading(false);
+          return;
+        }
       }
       setLoading(false);
     };
