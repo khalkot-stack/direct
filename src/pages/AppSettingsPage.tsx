@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Settings, Bell, FileText, Globe, LogOut, Loader2 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase";
@@ -19,7 +18,19 @@ const AppSettingsPage = () => {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserRole(user.user_metadata?.user_type || null);
+        // Fetch user_type from profiles table
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user role from profile:", error);
+          setUserRole(null);
+        } else if (profile) {
+          setUserRole(profile.user_type);
+        }
       }
       setLoading(false);
     };
@@ -39,6 +50,7 @@ const AppSettingsPage = () => {
     );
   }
 
+  // Determine the correct back path based on user role
   const backPath = userRole === "passenger" ? "/passenger-dashboard" : userRole === "driver" ? "/driver-dashboard" : "/";
 
   return (

@@ -100,15 +100,7 @@ const ProfileSettingsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="sr-only">جاري تحميل الملف الشخصي...</span>
-      </div>
-    );
-  }
-
+  // Determine the correct back path based on user role
   const backPath = profile?.user_type === "passenger" ? "/passenger-dashboard" : profile?.user_type === "driver" ? "/driver-dashboard" : "/";
 
   return (

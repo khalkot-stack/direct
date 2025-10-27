@@ -11,10 +11,9 @@ import RequestRidePage from './pages/RequestRidePage';
 import FindRidesPage from './pages/FindRidesPage';
 import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage';
 import RideDetailsPage from './pages/RideDetailsPage';
-import ProfileSettingsPage from './pages/ProfileSettingsPage'; // New unified profile page
-import AppSettingsPage from './pages/AppSettingsPage'; // New unified app settings page
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import AppSettingsPage from './pages/AppSettingsPage';
 import { Toaster } from "@/components/ui/sonner";
-import BottomNavigationBar from './components/BottomNavigationBar';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import OverviewPage from './pages/admin/OverviewPage';
@@ -28,8 +27,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
-import UserLayout from './components/UserLayout';
-
+import MainLayout from './components/MainLayout'; // Import the new MainLayout
 
 function App() {
   return (
@@ -44,8 +42,8 @@ function App() {
             <Route path="/help" element={<HelpPage />} />
             <Route path="/about-us" element={<AboutUsPage />} />
 
-            {/* Protected User Routes (Passenger & Driver) */}
-            <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><UserLayout /></ProtectedRoute>}>
+            {/* Protected User Routes (Passenger & Driver) with MainLayout */}
+            <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><MainLayout /></ProtectedRoute>}>
               <Route path="passenger-dashboard" element={<PassengerDashboard />} />
               <Route path="passenger-dashboard/request-ride" element={<RequestRidePage />} />
               <Route path="passenger-dashboard/my-rides" element={<PassengerRequestsPage />} />
@@ -54,11 +52,11 @@ function App() {
               <Route path="driver-dashboard/find-rides" element={<FindRidesPage />} />
               <Route path="driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
               
-              {/* Unified Profile & App Settings */}
+              {/* Unified Profile & App Settings accessible via MainLayout */}
               <Route path="profile-settings" element={<ProfileSettingsPage />} />
               <Route path="app-settings" element={<AppSettingsPage />} />
-              <Route path="reports" element={<ReportsPage />} /> {/* Still direct access for now */}
-              <Route path="notifications" element={<NotificationsPage />} /> {/* Still direct access for now */}
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               
               <Route path="ride-details/:rideId" element={<RideDetailsPage />} />
             </Route>
@@ -75,7 +73,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
-        <BottomNavigationBar />
+        {/* BottomNavigationBar is now inside MainLayout, so remove it from here */}
         <Toaster richColors />
       </div>
     </Router>

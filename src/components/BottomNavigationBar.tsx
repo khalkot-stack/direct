@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MapPin, Car, History, User, Settings } from 'lucide-react'; // Added Settings icon
+import { Home, MapPin, Car, History, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -60,28 +60,27 @@ const BottomNavigationBar = () => {
         { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
         { name: 'طلب رحلة', icon: MapPin, path: '/passenger-dashboard/request-ride' },
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
-        { name: 'الإعدادات', icon: Settings, path: '/app-settings' }, // Unified settings
+        { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     } else if (userRole === 'driver') {
       return [
         { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
         { name: 'البحث عن ركاب', icon: Car, path: '/driver-dashboard/find-rides' },
         { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
-        { name: 'الإعدادات', icon: Settings, path: '/app-settings' }, // Unified settings
+        { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     }
-    return [
-      { name: 'الرئيسية', icon: Home, path: '/' },
-      { name: 'تسجيل الدخول', icon: User, path: '/auth' },
-    ];
+    // If user is not logged in or role is admin, this component should not be rendered by MainLayout.
+    // However, as a fallback or for testing, we can return empty or default items.
+    return [];
   };
 
   const navItems = getNavItems();
 
-  // Hide navigation bar on specific pages (e.g., auth page, admin dashboard, etc.)
-  const hideOnPaths = ['/auth', '/admin-dashboard', '/admin-dashboard/users', '/admin-dashboard/rides', '/admin-dashboard/settings', '/forgot-password', '/reset-password', '/help', '/about-us'];
-  if (hideOnPaths.includes(location.pathname) || location.pathname.startsWith('/admin-dashboard')) {
-    return null;
+  // This component is now rendered conditionally by MainLayout, so no need for internal hide logic.
+  // If it's rendered, it means the user is authenticated as passenger or driver.
+  if (navItems.length === 0) {
+    return null; // Should not happen if MainLayout is used correctly
   }
 
   return (
