@@ -15,11 +15,13 @@ import RideDetailsPage from "./pages/RideDetailsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import OverviewPage from "./pages/admin/OverviewPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
-import RideManagementPage from "./pages/admin/RideManagementPage"; // Corrected import
+import RideManagementPage from "./pages/admin/RideManagementPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import NotificationsPage from "./pages/NotificationsPage"; // New import
+import UserSettingsPage from "./pages/UserSettingsPage"; // New import
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -38,6 +40,8 @@ const App = () => (
           <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} /> {/* New route */}
+          <Route path="/user-settings" element={<UserSettingsPage />} /> {/* New route */}
 
           {/* Protected Routes for Passenger */}
           <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>
@@ -58,7 +62,7 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />}>
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
-              <Route path="rides" element={<RideManagementPage />} /> {/* Corrected this line */}
+              <Route path="rides" element={<RideManagementPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>

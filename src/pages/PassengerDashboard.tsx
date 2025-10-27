@@ -1,11 +1,24 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import LogoutButton from "@/components/LogoutButton"; // Import LogoutButton
+import LogoutButton from "@/components/LogoutButton";
+import BottomNavigationBar from "@/components/BottomNavigationBar"; // Import BottomNavigationBar
+import { Home, MapPin, Car, Bell, Settings } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PassengerDashboard = () => {
+  const isMobile = useIsMobile();
+
+  const passengerNavItems = [
+    { name: "الرئيسية", href: "/passenger-dashboard", icon: Home },
+    { name: "الخريطة", href: "/request-ride", icon: MapPin }, // Using request-ride as map placeholder
+    { name: "رحلاتي", href: "/passenger-requests", icon: Car },
+    { name: "الإشعارات", href: "/notifications", icon: Bell },
+    { name: "الإعدادات", href: "/user-settings", icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4"> {/* Added padding-bottom for mobile nav */}
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg text-center">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -28,14 +41,19 @@ const PassengerDashboard = () => {
               </Button>
             </Link>
           </div>
-          <div className="mt-6">
-            <LogoutButton /> {/* Add LogoutButton here */}
-          </div>
-          <Link to="/" className="text-blue-500 hover:underline dark:text-blue-400">
-            العودة للصفحة الرئيسية
-          </Link>
+          {!isMobile && ( // Only show logout button outside of mobile nav
+            <div className="mt-6">
+              <LogoutButton />
+            </div>
+          )}
+          {!isMobile && ( // Only show home link outside of mobile nav
+            <Link to="/" className="text-blue-500 hover:underline dark:text-blue-400">
+              العودة للصفحة الرئيسية
+            </Link>
+          )}
         </CardContent>
       </Card>
+      <BottomNavigationBar navItems={passengerNavItems} />
     </div>
   );
 };
