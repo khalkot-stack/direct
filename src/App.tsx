@@ -25,6 +25,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UserSettingsPage from './pages/UserSettingsPage';
 import ReportsPage from './pages/ReportsPage';
+import NotificationsPage from './pages/NotificationsPage'; // Added missing import
 import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
