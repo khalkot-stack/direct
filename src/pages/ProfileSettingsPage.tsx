@@ -1,238 +1,291 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Session,
+  createClientComponentClient,
+} from "@supabase/auth-helpers-nextjs";
+import { Database } from "../lib/database.types";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import PageHeader from "@/components/PageHeader";
-import AvatarUpload from "@/components/AvatarUpload"; // Import AvatarUpload
+import { Loader2 } from "lucide-react";
+import { Switch } from "../components/ui/switch";
 
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  phone_number?: string;
-  user_type: "passenger" | "driver" | "admin";
-  car_model?: string;
-  car_color?: string;
-  license_plate?: string;
-  avatar_url?: string; // Added avatar_url
-}
+type Profiles = Database["public"]["Tables"]["profiles"]["Row"];
 
-const ProfileSettingsPage = () => {
-  const navigate = useNavigate();
+export default function ProfileSettingsPage({
+  session,
+}: {
+  session: Session | null;
+}) {
+  const supabase = createClientComponentClient<Database>();
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [fullname, setFullname] = useState<Profiles["full_name"]>(null);
+  const [username, setUsername] = useState<Profiles["username"]>(null);
+  const [website, setWebsite] = useState<Profiles["website"]>(null);
+  const [avatar_url, setAvatarUrl] = useState<Profiles["avatar_url"]>(null);
+  const [isDriver, setIsDriver] = useState<Profiles["is_driver"]>(false);
+  const [carModel, setCarModel] = useState<Profiles["car_model"]>(null);
+  const [carColor, setCarColor] = useState<Profiles["car_color"]>(null);
+  const [licensePlate, setLicensePlate] =
+    useState<Profiles["license_plate"]>(null);
 
-  const [fullName, setFullName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [carModel, setCarModel] = useState("");
-  const [carColor, setCarColor] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // State for avatar URL
+  const user = session?.user;
 
-  const fetchUserProfile = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+  const getProfile = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    if (!user) {
-      toast.error("الرجاء تسجيل الدخول لتعديل ملفك الشخصي.");
-      navigate("/auth");
+      const { data, error, status } = await supabase
+        .from("profiles")
+        .select(`full_name, username, website, avatar_url, is_driver, car_model, car_color, license_plate`)
+        .eq("id", user?.id)
+        .single();
+
+      if (error && status !== 406) {
+        throw error;
+      }
+
+      if (data) {
+        setFullname(data.full_name);
+        setUsername(data.username);
+        setWebsite(data.website);
+        setAvatarUrl(data.avatar_url);
+        setIsDriver(data.is_driver);
+        setCarModel(data.car_model);
+        setCarColor(data.car_color);
+        setLicensePlate(data.license_plate);
+      }
+    } catch (error) {
+      toast.error("Error loading user profile!");
+      console.error(error);
+    } finally {
       setLoading(false);
+    }
+  }, [user, supabase]);
+
+  useEffect(() => {
+    getProfile();
+  }, [getProfile]);
+
+  async function updateProfile({
+    username,
+    website,
+    avatar_url,
+    is_driver,
+    car_model,
+    car_color,
+    license_plate,
+  }: {
+    username: Profiles["username"];
+    website: Profiles["website"];
+    avatar_url: Profiles["avatar_url"];
+    is_driver: Profiles["is_driver"];
+    car_model: Profiles["car_model"];
+    car_color: Profiles["car_color"];
+    license_plate: Profiles["license_plate"];
+  }) {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase.from("profiles").upsert({
+        id: user?.id as string,
+        full_name: fullname,
+        username,
+        website,
+        avatar_url,
+        is_driver,
+        car_model,
+        car_color,
+        license_plate,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      toast.success("Profile updated!");
+    } catch (error) {
+      toast.error("Error updating the profile!");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      toast.error("You must select an image to upload.");
       return;
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, phone_number, user_type, car_model, car_color, license_plate, avatar_url') // Select avatar_url
-      .eq('id', user.id)
-      .single();
+    const file = event.target.files[0];
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${user?.id}/${Math.random()}.${fileExt}`;
 
-    if (error) {
-      toast.error(`فشل جلب بيانات الملف الشخصي: ${error.message}`);
-      console.error("Error fetching user profile:", error);
-    } else if (data) {
-      setProfile(data as UserProfile);
-      setFullName(data.full_name || "");
-      setPhoneNumber(data.phone_number || "");
-      setCarModel(data.car_model || "");
-      setCarColor(data.car_color || "");
-      setLicensePlate(data.license_plate || "");
-      setAvatarUrl(data.avatar_url || null); // Set avatar URL
-    }
-    setLoading(false);
-  }, [navigate]);
+    try {
+      setLoading(true);
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, [fetchUserProfile]);
+      if (uploadError) {
+        throw uploadError;
+      }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
+      const { data: publicUrlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
 
-    setIsSaving(true);
-    const updateData: Partial<UserProfile> = {
-      full_name: fullName,
-      phone_number: phoneNumber,
-      // avatar_url is handled by AvatarUpload component directly
-    };
-
-    if (profile.user_type === "driver") {
-      updateData.car_model = carModel;
-      updateData.car_color = carColor;
-      updateData.license_plate = licensePlate;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', profile.id);
-    setIsSaving(false);
-
-    if (error) {
-      toast.error(`فشل حفظ الملف الشخصي: ${error.message}`);
-      console.error("Error saving user profile:", error);
-    } else {
-      toast.success("تم حفظ الملف الشخصي بنجاح!");
-      // No need to re-fetch profile here, as AvatarUpload handles its own updates and calls onUploadSuccess
-      // If other fields were updated, a re-fetch might be desired, but for now, we assume the form state is sufficient.
+      if (publicUrlData) {
+        setAvatarUrl(publicUrlData.publicUrl);
+        await updateProfile({
+          username,
+          website,
+          avatar_url: publicUrlData.publicUrl,
+          is_driver: isDriver,
+          car_model: carModel,
+          car_color: carColor,
+          license_plate: licensePlate,
+        });
+      }
+    } catch (error) {
+      toast.error("Error uploading avatar: " + (error as Error).message);
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleAvatarUploadSuccess = (newUrl: string) => {
-    setAvatarUrl(newUrl);
-    // Optionally, re-fetch profile if other parts of the profile depend on avatar_url
-    // For now, just update the local state.
-  };
-
-  // Determine the correct back path based on user role
-  const backPath = profile?.user_type === "passenger" ? "/passenger-dashboard" : profile?.user_type === "driver" ? "/driver-dashboard" : "/";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6">
-          <PageHeader
-            title="تعديل الملف الشخصي"
-            description="تحديث معلوماتك الشخصية"
-            backPath={backPath}
-          />
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            إعدادات الملف الشخصي
+          </h2>
         </div>
-        <CardContent>
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="sr-only">جاري تحميل الملف الشخصي...</span>
-            </div>
-          ) : profile ? (
-            <form onSubmit={handleSave} className="space-y-6">
-              {profile.id && ( // Only render AvatarUpload if userId is available
-                <AvatarUpload
-                  userId={profile.id}
-                  initialAvatarUrl={avatarUrl}
-                  onUploadSuccess={handleAvatarUploadSuccess}
-                />
-              )}
+        <div className="flex flex-col items-center space-y-4">
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={avatar_url || "https://github.com/shadcn.png"} />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+          <Input
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
+          <Label htmlFor="avatar-upload" className="cursor-pointer">
+            <Button asChild>
+              <span>تغيير الصورة الرمزية</span>
+            </Button>
+          </Label>
+        </div>
+        <div className="space-y-4">
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Input id="email" type="text" value={user?.email} disabled />
+          </div>
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="fullName">الاسم الكامل</Label>
+            <Input
+              id="fullName"
+              type="text"
+              value={fullname || ""}
+              onChange={(e) => setFullname(e.target.value)}
+            />
+          </div>
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="username">اسم المستخدم</Label>
+            <Input
+              id="username"
+              type="text"
+              value={username || ""}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="website">الموقع الإلكتروني</Label>
+            <Input
+              id="website"
+              type="url"
+              value={website || ""}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-between space-x-2">
+            <Label htmlFor="is-driver">هل أنت سائق؟</Label>
+            <Switch
+              id="is-driver"
+              checked={isDriver}
+              onCheckedChange={setIsDriver}
+            />
+          </div>
 
+          {isDriver && (
+            <>
               <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="full-name">الاسم الكامل</Label>
+                <Label htmlFor="car-model">موديل السيارة</Label>
                 <Input
-                  id="full-name"
+                  id="car-model"
                   type="text"
-                  placeholder="اسمك الكامل"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="mt-1"
-                  required
+                  value={carModel || ""}
+                  onChange={(e) => setCarModel(e.target.value)}
                 />
               </div>
               <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="car-color">لون السيارة</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={profile?.email || ""}
-                  className="mt-1"
-                  disabled // Email is usually not editable directly here
+                  id="car-color"
+                  type="text"
+                  value={carColor || ""}
+                  onChange={(e) => setCarColor(e.target.value)}
                 />
               </div>
               <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="phone-number">رقم الهاتف</Label>
+                <Label htmlFor="license-plate">رقم اللوحة</Label>
                 <Input
-                  id="phone-number"
-                  type="tel"
-                  placeholder="07xxxxxxxxx"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="mt-1"
+                  id="license-plate"
+                  type="text"
+                  value={licensePlate || ""}
+                  onChange={(e) => setLicensePlate(e.target.value)}
                 />
               </div>
-
-              {profile.user_type === "driver" && (
-                <>
-                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="car-model">موديل السيارة</Label>
-                    <Input
-                      id="car-model"
-                      type="text"
-                      placeholder="مثال: تويوتا كامري"
-                      value={carModel}
-                      onChange={(e) => setCarModel(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="car-color">لون السيارة</Label>
-                    <Input
-                      id="car-color"
-                      type="text"
-                      placeholder="مثال: أبيض"
-                      value={carColor}
-                      onChange={(e) => setCarColor(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="license-plate">رقم اللوحة</Label>
-                    <Input
-                      id="license-plate"
-                      type="text"
-                      placeholder="مثال: 12-34567"
-                      value={licensePlate}
-                      onChange={(e) => setLicensePlate(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </>
-              )}
-
-              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                    جاري الحفظ...
-                  </>
-                ) : (
-                  "حفظ التغييرات"
-                )}
-              </Button>
-            </form>
-          ) : (
-            <p className="text-center text-gray-600 dark:text-gray-400">
-              تعذر تحميل الملف الشخصي.
-            </p>
+            </>
           )}
-        </CardContent>
-      </Card>
+
+          <Button
+            className="w-full"
+            onClick={() =>
+              updateProfile({
+                username,
+                website,
+                avatar_url,
+                is_driver: isDriver,
+                car_model: carModel,
+                car_color: carColor,
+                license_plate: licensePlate,
+              })
+            }
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "تحديث الملف الشخصي"
+            )}
+          </Button>
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={() => supabase.auth.signOut()}
+          >
+            تسجيل الخروج
+          </Button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default ProfileSettingsPage;
+}
