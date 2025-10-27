@@ -1,2 +1,2 @@
 ALTER TABLE profiles
-ADD COLUMN avatar_url TEXT DEFAULT NULL;
+    ADD COLUMN avatar_url TEXT;
