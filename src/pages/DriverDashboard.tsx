@@ -1,66 +1,142 @@
 "use client";
 
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, CalendarDays } from "lucide-react"; // Removed unused icons
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, Car, History, User, Bell, Settings, BarChart } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const DriverDashboard = () => {
-  const [userName, setUserName] = useState("أيها السائق");
+  const navigate = useNavigate();
+  const [driverName, setDriverName] = useState('السائق');
+  const [driverAvatar, setDriverAvatar] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
+    const fetchDriverProfile = async () => {
+      setLoading(true);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-        if (error) {
-          console.error("Error fetching driver profile:", error);
-          toast.error("فشل جلب اسم المستخدم.");
-        } else if (profile) {
-          setUserName(profile.full_name || "أيها السائق");
-        }
+      if (userError || !user) {
+        toast.error("فشل جلب معلومات المستخدم.");
+        navigate('/auth');
+        return;
       }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching driver profile:", profileError);
+        toast.error("فشل جلب ملف تعريف السائق.");
+      } else if (profile) {
+        setDriverName(profile.full_name || 'السائق');
+        setDriverAvatar(profile.avatar_url || '');
+      }
+      setLoading(false);
     };
-    fetchUserName();
-  }, []);
+
+    fetchDriverProfile();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
+        <p className="text-lg text-gray-700 dark:text-gray-300">جاري تحميل لوحة تحكم السائق...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4">
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg text-center mt-4 md:mt-8"> {/* Adjusted mt-8 md:mt-12 to mt-4 md:mt-8 */}
-        <CardHeader>
-          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            مرحباً بك يا {userName}!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-lg text-gray-700 dark:text-gray-300">
-            من هنا يمكنك البحث عن الركاب وقبول الطلبات.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link to="/find-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Added hover effect */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20"> {/* Added pb-20 for bottom nav bar */}
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <Avatar className="h-12 w-12 border-2 border-primary">
+              <AvatarImage src={driverAvatar} alt={driverName} />
+              <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold">مرحباً، {driverName}!</h1>
+              <p className="text-gray-600 dark:text-gray-400">لوحة تحكم السائق</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
+            <Bell className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            <span className="sr-only">الإشعارات</span>
+          </Button>
+        </div>
+
+        <div className="mb-8">
+            <Link to="/driver-dashboard/find-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Corrected path */}
               <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <Search className="h-5 w-5" />
                 البحث عن ركاب
               </Button>
             </Link>
-            <Link to="/driver-dashboard/accepted-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Added hover effect */}
-              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                عرض طلباتي المقبولة
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الرحلات المتاحة</CardTitle>
+              <Car className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">5</div> {/* Placeholder data */}
+              <p className="text-xs text-muted-foreground">رحلات جديدة تنتظرك</p>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الرحلات المكتملة</CardTitle>
+              <History className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">120</div> {/* Placeholder data */}
+              <p className="text-xs text-muted-foreground">إجمالي الرحلات المكتملة</p>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">التقييم</CardTitle>
+              <BarChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">4.8 <span className="text-sm font-normal">/ 5</span></div> {/* Placeholder data */}
+              <p className="text-xs text-muted-foreground">متوسط تقييم الركاب</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4">إجراءات سريعة</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <Link to="/driver-dashboard/accepted-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+            <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
+              <History className="h-8 w-8 mb-2 text-blue-500" />
+              <p className="text-sm font-medium">رحلاتي المقبولة</p>
+            </Card>
+          </Link>
+          <Link to="/driver-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+            <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
+              <User className="h-8 w-8 mb-2 text-green-500" />
+              <p className="text-sm font-medium">ملفي الشخصي</p>
+            </Card>
+          </Link>
+          <Link to="/user-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+            <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Settings className="h-8 w-8 mb-2 text-purple-500" />
+              <p className="text-sm font-medium">الإعدادات</p>
+            </Card>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
