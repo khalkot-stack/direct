@@ -34,8 +34,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath })
         <ChevronLeft className="h-6 w-6" />
         <span className="sr-only">العودة</span>
       </Button>
-      {/* Add Logo here */}
-      <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" /> {/* Smaller logo for internal pages */}
+      {/* Removed logo from PageHeader for simplicity */}
       <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
         {title}
       </CardTitle>
