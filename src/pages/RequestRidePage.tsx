@@ -51,6 +51,7 @@ const RequestRidePage: React.FC = () => { // Removed props
 
     // For simplicity, we'll use dummy lat/lng for now.
     // In a real app, you'd use a geocoding service to get these from the address.
+    // A full map integration would be needed to get accurate coordinates.
     const dummyLat = 31.9539; // Amman latitude
     const dummyLng = 35.9106; // Amman longitude
 

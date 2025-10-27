@@ -24,7 +24,7 @@ const AdminDashboard = () => {
                 <span className="sr-only">فتح القائمة</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="p-0 w-64">
+            <SheetContent side="left" className="p-0 w-64"> {/* Changed side to 'left' */}
               <AdminSidebar />
             </SheetContent>
           </Sheet>

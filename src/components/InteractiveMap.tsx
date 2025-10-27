@@ -84,6 +84,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     );
   }
 
+  // A simple SVG path for a map pin icon
+  const mapPinSvgPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z";
+
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
@@ -103,7 +106,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           title={marker.title}
           onClick={() => onMarkerClick && onMarkerClick(marker)}
           icon={{
-            path: MapPin.toString(),
+            path: mapPinSvgPath, // Using a valid SVG path string
             fillColor: marker.iconColor || "hsl(var(--primary))",
             fillOpacity: 1,
             strokeWeight: 0,
