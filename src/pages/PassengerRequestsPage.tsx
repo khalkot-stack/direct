@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import RatingDialog from "@/components/RatingDialog"; // Import RatingDialog
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -17,6 +18,7 @@ interface SupabaseJoinedRideData {
   status: "pending" | "accepted" | "completed" | "cancelled";
   driver_id: string | null;
   profiles_driver: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
+  ratings: Array<{ rating: number; comment: string }> | null; // Assuming a 'ratings' table with a foreign key to 'rides'
 }
 
 interface RideRequest {
@@ -25,7 +27,11 @@ interface RideRequest {
   destination: string;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
+  driver_id: string | null;
   driver_name?: string;
+  has_rated?: boolean; // To track if the passenger has already rated this ride
+  current_rating?: number;
+  current_comment?: string;
 }
 
 const PassengerRequestsPage = () => {
@@ -33,6 +39,8 @@ const PassengerRequestsPage = () => {
   const [passengerRequests, setPassengerRequests] = useState<RideRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [rideToRate, setRideToRate] = useState<RideRequest | null>(null);
 
   const fetchPassengerRides = useCallback(async (currentUserId: string) => {
     setLoading(true);
@@ -45,7 +53,8 @@ const PassengerRequestsPage = () => {
         passengers_count,
         status,
         driver_id,
-        profiles_driver:driver_id (full_name)
+        profiles_driver:driver_id (full_name),
+        ratings!inner(rating, comment)
       `)
       .eq('passenger_id', currentUserId)
       .order('created_at', { ascending: false });
@@ -54,13 +63,17 @@ const PassengerRequestsPage = () => {
       toast.error(`فشل جلب طلبات الرحلات: ${error.message}`);
       console.error("Error fetching passenger rides:", error);
     } else {
-      const formattedRequests: RideRequest[] = data.map((ride: SupabaseJoinedRideData) => ({ // Cast to our defined interface
+      const formattedRequests: RideRequest[] = data.map((ride: SupabaseJoinedRideData) => ({
         id: ride.id,
         pickup_location: ride.pickup_location,
         destination: ride.destination,
         passengers_count: ride.passengers_count,
         status: ride.status,
-        driver_name: ride.profiles_driver?.[0]?.full_name || 'لا يوجد', // Access first element
+        driver_id: ride.driver_id,
+        driver_name: ride.profiles_driver?.[0]?.full_name || 'لا يوجد',
+        has_rated: ride.ratings && ride.ratings.length > 0,
+        current_rating: ride.ratings?.[0]?.rating,
+        current_comment: ride.ratings?.[0]?.comment,
       }));
       setPassengerRequests(formattedRequests);
     }
@@ -80,6 +93,34 @@ const PassengerRequestsPage = () => {
     };
     getUserAndFetchRides();
   }, [navigate, fetchPassengerRides]);
+
+  const handleRateDriver = (ride: RideRequest) => {
+    setRideToRate(ride);
+    setIsRatingDialogOpen(true);
+  };
+
+  const handleSaveRating = async (rating: number, comment: string) => {
+    if (!rideToRate || !userId || !rideToRate.driver_id) {
+      toast.error("خطأ: لا يمكن حفظ التقييم.");
+      return;
+    }
+
+    const { error } = await supabase.from('ratings').insert({
+      ride_id: rideToRate.id,
+      rater_id: userId,
+      rated_user_id: rideToRate.driver_id,
+      rating: rating,
+      comment: comment,
+    });
+
+    if (error) {
+      toast.error(`فشل حفظ التقييم: ${error.message}`);
+      console.error("Error saving rating:", error);
+    } else {
+      toast.success("تم حفظ تقييمك بنجاح!");
+      if (userId) fetchPassengerRides(userId); // Refresh rides to show "Rated" status
+    }
+  };
 
   if (loading) {
     return (
@@ -126,14 +167,30 @@ const PassengerRequestsPage = () => {
                       السائق: {request.driver_name}
                     </p>
                   )}
+                  {request.has_rated && request.current_rating !== undefined && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      تقييمك: {request.current_rating} <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      {request.current_comment && ` ("${request.current_comment}")`}
+                    </p>
+                  )}
                 </div>
-                <Button
-                  variant="outline"
-                  className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white text-sm px-4 py-2 rounded-lg shadow-md"
-                  onClick={() => navigate(`/ride-details/${request.id}`)}
-                >
-                  عرض التفاصيل
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white text-sm px-4 py-2 rounded-lg shadow-md"
+                    onClick={() => navigate(`/ride-details/${request.id}`)}
+                  >
+                    عرض التفاصيل
+                  </Button>
+                  {request.status === "completed" && !request.has_rated && request.driver_id && (
+                    <Button
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md"
+                      onClick={() => handleRateDriver(request)}
+                    >
+                      تقييم السائق
+                    </Button>
+                  )}
+                </div>
               </div>
             ))
           ) : (
@@ -141,6 +198,16 @@ const PassengerRequestsPage = () => {
           )}
         </CardContent>
       </Card>
+      {rideToRate && (
+        <RatingDialog
+          open={isRatingDialogOpen}
+          onOpenChange={setIsRatingDialogOpen}
+          onSave={handleSaveRating}
+          targetUserName={rideToRate.driver_name || "السائق"}
+          initialRating={rideToRate.current_rating}
+          initialComment={rideToRate.current_comment}
+        />
+      )}
     </div>
   );
 };
