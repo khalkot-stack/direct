@@ -27,7 +27,8 @@ import ReportsPage from "./pages/ReportsPage";
 import UserProfileEditPage from "./pages/UserProfileEditPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import UserLayout from "./components/UserLayout"; // New import
+import UserLayout from "./components/UserLayout";
+import AboutUsPage from "./pages/AboutUsPage"; // New import
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/about-us" element={<AboutUsPage />} /> {/* New route */}
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           

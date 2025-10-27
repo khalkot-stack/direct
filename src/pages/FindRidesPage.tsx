@@ -9,11 +9,14 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
   id: string;
   pickup_location: string;
+  pickup_lat: number; // Added latitude
+  pickup_lng: number; // Added longitude
   destination: string;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
@@ -26,6 +29,8 @@ interface SupabaseJoinedRideData {
 interface RideRequest {
   id: string;
   pickup_location: string;
+  pickup_lat: number;
+  pickup_lng: number;
   destination: string;
   passengers_count: number;
   time: string; // This will be derived from created_at or a specific time field
@@ -42,6 +47,8 @@ const FindRidesPage = () => {
   const formatRideData = (ride: SupabaseJoinedRideData): RideRequest => ({
     id: ride.id,
     pickup_location: ride.pickup_location,
+    pickup_lat: ride.pickup_lat,
+    pickup_lng: ride.pickup_lng,
     destination: ride.destination,
     passengers_count: ride.passengers_count,
     time: new Date(ride.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
@@ -65,6 +72,8 @@ const FindRidesPage = () => {
       .select(`
         id,
         pickup_location,
+        pickup_lat,
+        pickup_lng,
         destination,
         passengers_count,
         status,
@@ -101,6 +110,8 @@ const FindRidesPage = () => {
               .select(`
                 id,
                 pickup_location,
+                pickup_lat,
+                pickup_lng,
                 destination,
                 passengers_count,
                 status,
@@ -164,6 +175,15 @@ const FindRidesPage = () => {
     }
   };
 
+  const mapMarkers = rideRequests.map(ride => ({
+    id: ride.id,
+    lat: ride.pickup_lat,
+    lng: ride.pickup_lng,
+    title: `رحلة من: ${ride.pickup_location}`,
+    description: `إلى: ${ride.destination} (${ride.passengers_count} ركاب)`,
+    iconColor: "hsl(var(--primary))", // Green for pending rides
+  }));
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -184,6 +204,10 @@ const FindRidesPage = () => {
           />
         </div>
         <CardContent className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right">الرحلات على الخريطة</h3>
+          <InteractiveMap markers={mapMarkers} onMarkerClick={(marker) => toast.info(marker.title)} />
+
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right mt-6">قائمة الرحلات</h3>
           {rideRequests.length > 0 ? (
             rideRequests.map((ride) => (
               <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
