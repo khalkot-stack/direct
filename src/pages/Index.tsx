@@ -4,9 +4,15 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-primary-dark text-white p-4 text-center">
-      <div className="max-w-3xl mx-auto">
-        <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto mb-6 h-24" />
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-gray-900 to-primary-dark text-white p-4 text-center">
+      {/* Logo Container at the top */}
+      <div className="w-full flex justify-center pt-8 pb-4">
+        <div className="bg-white p-4 rounded-lg shadow-lg">
+          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="h-24" />
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto flex-1 flex flex-col justify-center">
         <p className="text-2xl md:text-3xl mb-8 font-light">
           وسيلتك الذكية للتنقل داخل الأردن
         </p>
