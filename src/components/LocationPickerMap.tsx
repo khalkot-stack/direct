@@ -19,6 +19,12 @@ const defaultCenter = {
   lng: 35.9106, // Amman, Jordan longitude
 };
 
+interface LocationData {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
 interface LocationPickerMapProps {
   label: string;
   onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
@@ -31,7 +37,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({ label, onLocation
     libraries: ["places"],
   });
 
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(initialLocation || null);
+  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(initialLocation || null);
   const [currentCenter, setCurrentCenter] = useState(initialLocation ? { lat: initialLocation.lat, lng: initialLocation.lng } : defaultCenter);
   const mapRef = useRef<GoogleMap | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
@@ -103,7 +109,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({ label, onLocation
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center h-[300px] bg-gray-200 dark:bg-gray-700 rounded-lg">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل الخريطة...</span>
       </div>
     );
@@ -137,7 +143,7 @@ const LocationPickerMap: React.FC<LocationPickerMapProps> = ({ label, onLocation
             position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
             icon={{
               path: MapPin.toString(), // Using Lucide icon as SVG path
-              fillColor: "#10B981", // Green color
+              fillColor: "hsl(var(--primary))", // Using primary color
               fillOpacity: 1,
               strokeWeight: 0,
               scale: 1.5,

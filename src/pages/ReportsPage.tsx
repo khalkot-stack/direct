@@ -53,7 +53,7 @@ const ReportsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="بلاغات وشكاوى"
             description="أرسل بلاغًا أو شكوى لفريق الدعم"
@@ -84,7 +84,7 @@ const ReportsPage = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-red-500 hover:bg-red-600 text-white mt-6" disabled={loading}>
+            <Button type="submit" className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground mt-6" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />

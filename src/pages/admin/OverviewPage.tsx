@@ -58,7 +58,7 @@ const OverviewPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل البيانات...</span>
       </div>
     );
@@ -120,8 +120,8 @@ const OverviewPage = () => {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="users" fill="#8884d8" name="المستخدمون" />
-                <Bar dataKey="rides" fill="#82ca9d" name="الرحلات" />
+                <Bar dataKey="users" fill="hsl(var(--primary))" name="المستخدمون" />
+                <Bar dataKey="rides" fill="hsl(var(--secondary))" name="الرحلات" />
               </BarChart>
             </ResponsiveContainer>
           </div>

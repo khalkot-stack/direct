@@ -91,7 +91,7 @@ const DriverProfileSettingsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل معلومات السيارة...</span>
       </div>
     );
@@ -100,7 +100,7 @@ const DriverProfileSettingsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="إدارة معلومات السيارة"
             description="تحديث تفاصيل سيارتك"
@@ -141,8 +141,15 @@ const DriverProfileSettingsPage = () => {
                 className="mt-1"
               />
             </div>
-            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={isSaving}>
-              {isSaving ? "جاري الحفظ..." : "حفظ المعلومات"}
+            <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "حفظ المعلومات"
+              )}
             </Button>
           </form>
         </CardContent>

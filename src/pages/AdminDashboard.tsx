@@ -4,8 +4,8 @@ import React from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
-import AdminSidebar from "@/components/AdminSidebar"; // Import the new sidebar component
+import { Menu, ChevronLeft } from "lucide-react"; // Changed ChevronLeft to Menu for hamburger icon
+import AdminSidebar from "@/components/AdminSidebar";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -21,7 +21,7 @@ const AdminDashboard = () => {
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="mr-2">
-                <ChevronLeft className="h-6 w-6 rotate-180" /> {/* Hamburger icon */}
+                <Menu className="h-6 w-6" /> {/* Hamburger icon */}
                 <span className="sr-only">فتح القائمة</span>
               </Button>
             </SheetTrigger>

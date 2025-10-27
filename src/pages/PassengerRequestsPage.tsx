@@ -127,7 +127,7 @@ const PassengerRequestsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل طلبات الرحلات...</span>
       </div>
     );
@@ -136,7 +136,7 @@ const PassengerRequestsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="طلبات رحلاتي"
             description="عرض حالة طلبات رحلاتك"
@@ -161,7 +161,7 @@ const PassengerRequestsPage = () => {
                   )}
                   {request.has_rated && request.current_rating !== undefined && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                      تقييمك: {request.current_rating} <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      تقييمك: {request.current_rating} <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                       {request.current_comment && ` ("${request.current_comment}")`}
                     </p>
                   )}
@@ -169,7 +169,7 @@ const PassengerRequestsPage = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white text-sm px-4 py-2 rounded-lg shadow-md"
+                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md"
                     onClick={() => navigate(`/ride-details/${request.id}`)}
                   >
                     عرض التفاصيل

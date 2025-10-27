@@ -18,10 +18,9 @@ const PassengerDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4"> {/* Added padding-bottom for mobile nav */}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg text-center">
         <CardHeader>
-          {/* Add Logo here */}
           <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
             لوحة تحكم الراكب
@@ -43,12 +42,12 @@ const PassengerDashboard = () => {
               </Button>
             </Link>
           </div>
-          {!isMobile && ( // Only show logout button outside of mobile nav
+          {!isMobile && (
             <div className="mt-6">
               <LogoutButton />
             </div>
           )}
-          {!isMobile && ( // Only show home link outside of mobile nav
+          {!isMobile && (
             <Link to="/" className="text-blue-500 hover:underline dark:text-blue-400">
               العودة للصفحة الرئيسية
             </Link>

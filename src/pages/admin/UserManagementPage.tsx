@@ -80,7 +80,6 @@ const UserManagementPage = () => {
       // The actual auth.users entry is created via AuthPage registration.
       // This scenario assumes admin is adding a profile for an already existing auth.user,
       // or that the admin will manually create the auth.user.
-      // For simplicity, we'll assume the email provided here corresponds to an existing auth.user.
       // A more robust solution would involve creating the auth.user via admin API.
       const { data, error } = await supabase
         .from('profiles')
@@ -151,7 +150,7 @@ const UserManagementPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل المستخدمين...</span>
       </div>
     );
@@ -163,7 +162,7 @@ const UserManagementPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>قائمة المستخدمين</CardTitle>
-          <Button onClick={handleAddUser} className="bg-green-500 hover:bg-green-600 text-white">
+          <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
             إضافة مستخدم جديد
           </Button>
         </CardHeader>
@@ -193,7 +192,7 @@ const UserManagementPage = () => {
                     <TableCell>{profile.user_type === 'passenger' ? 'راكب' : profile.user_type === 'driver' ? 'سائق' : 'مدير'}</TableCell>
                     <TableCell>{profile.status === 'active' ? 'نشط' : profile.status === 'suspended' ? 'معلق' : 'محظور'}</TableCell>
                     <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(profile)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(profile)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">
                         تعديل
                       </Button>
                       <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(profile.id)}>

@@ -72,7 +72,7 @@ const RatingDialog: React.FC<RatingDialogProps> = ({
                 className={cn(
                   "h-8 w-8 cursor-pointer transition-colors",
                   (hoverRating || rating) >= star
-                    ? "fill-yellow-400 text-yellow-400"
+                    ? "fill-yellow-500 text-yellow-500" // Using a more vibrant yellow
                     : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600",
                 )}
                 onClick={() => setRating(star)}

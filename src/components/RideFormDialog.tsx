@@ -119,7 +119,7 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
             <DialogTitle>جاري التحميل...</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-green-500" /> {/* Corrected text-green-green-500 to text-green-500 */}
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </DialogContent>
       </Dialog>
@@ -202,7 +202,7 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
             </Select>
           </div>
           <DialogFooter>
-            <Button type="submit">حفظ التغييرات</Button>
+            <Button type="submit" className="bg-primary hover:bg-primary-dark text-primary-foreground">حفظ التغييرات</Button>
           </DialogFooter>
         </form>
       </DialogContent>

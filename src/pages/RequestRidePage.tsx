@@ -88,11 +88,11 @@ const RequestRidePage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="طلب رحلة جديدة"
             description={step === 1 ? "املأ التفاصيل لطلب رحلتك" : "تأكيد تفاصيل رحلتك"}
-            backPath={step === 1 ? "/passenger-dashboard" : undefined} // Go back to dashboard or previous step
+            backPath={step === 1 ? "/passenger-dashboard" : undefined}
           />
         </div>
         <CardContent>
@@ -122,7 +122,7 @@ const RequestRidePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6">
+              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6">
                 التالي
               </Button>
             </form>
@@ -131,29 +131,36 @@ const RequestRidePage = () => {
           {step === 2 && (
             <div className="space-y-6 text-right">
               <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <MapPin className="h-5 w-5 text-muted-foreground" />
                 <p className="text-lg text-gray-800 dark:text-gray-200">
                   <span className="font-semibold">من:</span> {pickupLocation?.address}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <MapPin className="h-5 w-5 text-muted-foreground" />
                 <p className="text-lg text-gray-800 dark:text-gray-200">
                   <span className="font-semibold">إلى:</span> {destination?.address}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <Users className="h-5 w-5 text-muted-foreground" />
                 <p className="text-lg text-gray-800 dark:text-gray-200">
                   <span className="font-semibold">عدد الركاب:</span> {passengersCount}
                 </p>
               </div>
               <div className="flex justify-between gap-4 mt-6">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground">
                   تعديل
                 </Button>
-                <Button onClick={handleRequestSubmit} className="flex-1 bg-green-500 hover:bg-green-600 text-white" disabled={loading}>
-                  {loading ? "جاري طلب الرحلة..." : "تأكيد وطلب الرحلة"}
+                <Button onClick={handleRequestSubmit} className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      جاري طلب الرحلة...
+                    </>
+                  ) : (
+                    "تأكيد وطلب الرحلة"
+                  )}
                 </Button>
               </div>
             </div>

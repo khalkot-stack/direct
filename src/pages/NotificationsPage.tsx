@@ -12,7 +12,7 @@ const NotificationsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="الإشعارات"
             description="جميع التنبيهات والتحديثات الخاصة بك"

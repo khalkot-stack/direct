@@ -28,7 +28,7 @@ const UserSettingsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري التحميل...</span>
       </div>
     );
@@ -37,7 +37,7 @@ const UserSettingsPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="الإعدادات"
             description="إدارة ملفك الشخصي وتفضيلات التطبيق"
@@ -49,21 +49,21 @@ const UserSettingsPage = () => {
             هذه صفحة الإعدادات الخاصة بك. يمكنك تعديل معلوماتك الشخصية وتفضيلات التطبيق هنا.
           </p>
           <div className="space-y-2">
-            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white" onClick={() => navigate("/user-profile-edit")}>
+            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground" onClick={() => navigate("/user-profile-edit")}>
               تعديل الملف الشخصي
             </Button>
             {userRole === "driver" && (
               <Button
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground"
                 onClick={() => navigate("/driver-settings")}
               >
                 إدارة معلومات السيارة
               </Button>
             )}
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground">
               تغيير اللغة
             </Button>
-            <Button variant="outline" className="w-full text-red-500 border-red-500 hover:bg-red-500 hover:text-white" onClick={() => navigate("/reports")}>
+            <Button variant="outline" className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => navigate("/reports")}>
               بلاغات وشكاوى
             </Button>
             <LogoutButton />

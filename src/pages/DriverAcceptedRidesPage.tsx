@@ -39,6 +39,15 @@ const DriverAcceptedRidesPage = () => {
 
   const fetchAcceptedRides = useCallback(async (currentDriverId: string) => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
+      navigate("/auth");
+      setLoading(false);
+      return;
+    }
+    setDriverId(user.id);
+
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -105,7 +114,7 @@ const DriverAcceptedRidesPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل الرحلات المقبولة...</span>
       </div>
     );
@@ -114,7 +123,7 @@ const DriverAcceptedRidesPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="رحلاتي المقبولة"
             description="عرض الرحلات التي قبلتها أو أكملتها"
@@ -138,17 +147,24 @@ const DriverAcceptedRidesPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => navigate(`/ride-details/${ride.id}`)}
-                    className="text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white"
+                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
                   >
                     عرض التفاصيل
                   </Button>
                   {ride.status === 'accepted' && (
                     <Button
                       onClick={() => handleCompleteRide(ride.id)}
-                      className="bg-green-500 hover:bg-green-600 text-white"
+                      className="bg-primary hover:bg-primary-dark text-primary-foreground"
                       disabled={loading}
                     >
-                      {loading ? "جاري الإكمال..." : "إكمال الرحلة"}
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                          جاري الإكمال...
+                        </>
+                      ) : (
+                        "إكمال الرحلة"
+                      )}
                     </Button>
                   )}
                 </div>

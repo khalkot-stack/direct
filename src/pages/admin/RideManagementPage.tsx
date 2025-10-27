@@ -187,7 +187,7 @@ const RideManagementPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل الرحلات...</span>
       </div>
     );
@@ -199,7 +199,7 @@ const RideManagementPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>قائمة الرحلات</CardTitle>
-          <Button onClick={handleAddRide} className="bg-green-500 hover:bg-green-600 text-white">
+          <Button onClick={handleAddRide} className="bg-primary hover:bg-primary-dark text-primary-foreground">
             إضافة رحلة جديدة
           </Button>
         </CardHeader>
@@ -233,7 +233,7 @@ const RideManagementPage = () => {
                     <TableCell>{ride.destination}</TableCell>
                     <TableCell>{ride.status}</TableCell>
                     <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(ride)}>
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(ride)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">
                         تعديل
                       </Button>
                       {ride.status !== "completed" && ride.status !== "cancelled" && (

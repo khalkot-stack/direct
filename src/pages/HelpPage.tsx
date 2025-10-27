@@ -8,7 +8,7 @@ const HelpPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6"> {/* Added padding to the div containing PageHeader */}
+        <div className="p-6">
           <PageHeader
             title="تعرف على المزيد حول DIRECT"
             description="كل ما تحتاج معرفته عن تطبيقنا"
@@ -44,7 +44,7 @@ const HelpPage = () => {
           <section>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">تواصل معنا</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              إذا كان لديك أي أسئلة أو استفسارات، لا تتردد في التواصل مع فريق الدعم لدينا عبر البريد الإلكتروني: <a href="mailto:support@direct.com" className="text-blue-500 hover:underline">support@direct.com</a>
+              إذا كان لديك أي أسئلة أو استفسارات، لا تتردد في التواصل مع فريق الدعم لدينا عبر البريد الإلكتروني: <a href="mailto:support@direct.com" className="text-primary hover:underline dark:text-primary">support@direct.com</a>
             </p>
           </section>
         </CardContent>

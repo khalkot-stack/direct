@@ -117,7 +117,6 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
         <CardHeader className="text-center">
-          {/* Add Logo here */}
           <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
           <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
             مرحباً بك في DIRECT
@@ -180,8 +179,20 @@ const AuthPage = () => {
                   </div>
                 </RadioGroup>
                 <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
-                  {authActionLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+                  {authActionLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      جاري تسجيل الدخول...
+                    </>
+                  ) : (
+                    "تسجيل الدخول"
+                  )}
                 </Button>
+                <div className="mt-4 text-center text-sm">
+                  <Link to="/forgot-password" className="text-blue-500 hover:underline dark:text-blue-400">
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
               </form>
             </TabsContent>
 
@@ -256,7 +267,14 @@ const AuthPage = () => {
                   </div>
                 </RadioGroup>
                 <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
-                  {authActionLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
+                  {authActionLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      جاري إنشاء الحساب...
+                    </>
+                  ) : (
+                    "إنشاء حساب"
+                  )}
                 </Button>
               </form>
             </TabsContent>

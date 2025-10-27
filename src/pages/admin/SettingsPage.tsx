@@ -95,7 +95,7 @@ const SettingsPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل الإعدادات...</span>
       </div>
     );
@@ -132,8 +132,15 @@ const SettingsPage = () => {
                 onCheckedChange={setNotificationsEnabled}
               />
             </div>
-            <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white" disabled={isSaving}>
-              {isSaving ? "جاري الحفظ..." : "حفظ الإعدادات"}
+            <Button type="submit" className="bg-primary hover:bg-primary-dark text-primary-foreground" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "حفظ الإعدادات"
+              )}
             </Button>
           </form>
         </CardContent>

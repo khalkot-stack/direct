@@ -133,7 +133,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             </Select>
           </div>
           <DialogFooter>
-            <Button type="submit">حفظ التغييرات</Button>
+            <Button type="submit" className="bg-primary hover:bg-primary-dark text-primary-foreground">حفظ التغييرات</Button>
           </DialogFooter>
         </form>
       </DialogContent>
