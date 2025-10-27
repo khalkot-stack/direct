@@ -3,18 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Car, History, User, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { MapPin, History, User, Loader2, Settings } from "lucide-react"; // Added Settings icon
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-// import RequestRidePage from "./RequestRidePage"; // Removed import as it's now a dedicated page
 
 const PassengerDashboard = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("راكب");
   const [loading, setLoading] = useState(true);
-  // const [showRequestRideForm, setShowRequestRideForm] = useState(false); // Removed state
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -45,8 +43,6 @@ const PassengerDashboard = () => {
     fetchUserProfile();
   }, [navigate]);
 
-  // Removed handleRideRequested and handleCancelRequest as they are no longer needed here
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -67,7 +63,7 @@ const PassengerDashboard = () => {
         </div>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
-            <Link to="/passenger-dashboard/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Updated to navigate */}
+            <Link to="/passenger-dashboard/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button
                 className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2"
               >
@@ -81,10 +77,16 @@ const PassengerDashboard = () => {
                 رحلاتي
               </Button>
             </Link>
-            <Link to="/passenger-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+            <Link to="/profile-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <User className="h-5 w-5" />
                 ملفي الشخصي
+              </Button>
+            </Link>
+            <Link to="/app-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                <Settings className="h-5 w-5" />
+                الإعدادات
               </Button>
             </Link>
           </div>

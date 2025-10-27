@@ -11,8 +11,8 @@ import RequestRidePage from './pages/RequestRidePage';
 import FindRidesPage from './pages/FindRidesPage';
 import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage';
 import RideDetailsPage from './pages/RideDetailsPage';
-import DriverProfileSettingsPage from './pages/DriverProfileSettingsPage';
-import PassengerProfilePage from './pages/PassengerProfilePage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage'; // New unified profile page
+import AppSettingsPage from './pages/AppSettingsPage'; // New unified app settings page
 import { Toaster } from "@/components/ui/sonner";
 import BottomNavigationBar from './components/BottomNavigationBar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -23,7 +23,6 @@ import RideManagementPage from './pages/admin/RideManagementPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import UserSettingsPage from './pages/UserSettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import HelpPage from './pages/HelpPage';
@@ -50,18 +49,17 @@ function App() {
               <Route path="passenger-dashboard" element={<PassengerDashboard />} />
               <Route path="passenger-dashboard/request-ride" element={<RequestRidePage />} />
               <Route path="passenger-dashboard/my-rides" element={<PassengerRequestsPage />} />
-              <Route path="passenger-dashboard/profile" element={<PassengerProfilePage />} />
               
               <Route path="driver-dashboard" element={<DriverDashboard />} />
               <Route path="driver-dashboard/find-rides" element={<FindRidesPage />} />
               <Route path="driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
-              <Route path="driver-dashboard/profile" element={<DriverProfileSettingsPage />} />
               
-              {/* Shared User Settings */}
-              <Route path="user-settings" element={<UserSettingsPage />} />
-              <Route path="driver-settings" element={<DriverProfileSettingsPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
+              {/* Unified Profile & App Settings */}
+              <Route path="profile-settings" element={<ProfileSettingsPage />} />
+              <Route path="app-settings" element={<AppSettingsPage />} />
+              <Route path="reports" element={<ReportsPage />} /> {/* Still direct access for now */}
+              <Route path="notifications" element={<NotificationsPage />} /> {/* Still direct access for now */}
+              
               <Route path="ride-details/:rideId" element={<RideDetailsPage />} />
             </Route>
 

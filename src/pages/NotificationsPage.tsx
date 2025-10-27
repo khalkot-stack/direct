@@ -99,15 +99,6 @@ const NotificationsPage = () => {
     setMarkingAsRead(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="sr-only">جاري تحميل الإشعارات...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
@@ -115,6 +106,7 @@ const NotificationsPage = () => {
           <PageHeader
             title="الإشعارات"
             description="جميع التنبيهات والتحديثات الخاصة بك"
+            backPath="/app-settings" {/* Updated back path */}
           />
         </div>
         <CardContent className="space-y-4">

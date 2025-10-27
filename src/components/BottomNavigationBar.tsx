@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MapPin, Car, History, User } from 'lucide-react';
+import { Home, MapPin, Car, History, User, Settings } from 'lucide-react'; // Added Settings icon
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -47,7 +47,7 @@ const BottomNavigationBar = () => {
     });
 
     return () => {
-      authListener?.subscription.unsubscribe(); // Corrected: access unsubscribe via .subscription
+      authListener?.subscription.unsubscribe();
     };
   }, []);
 
@@ -58,16 +58,16 @@ const BottomNavigationBar = () => {
     if (userRole === 'passenger') {
       return [
         { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
-        { name: 'طلب رحلة', icon: MapPin, path: '/passenger-dashboard/request-ride' }, // Added this item
+        { name: 'طلب رحلة', icon: MapPin, path: '/passenger-dashboard/request-ride' },
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
-        { name: 'ملفي', icon: User, path: '/passenger-dashboard/profile' },
+        { name: 'الإعدادات', icon: Settings, path: '/app-settings' }, // Unified settings
       ];
     } else if (userRole === 'driver') {
       return [
         { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
         { name: 'البحث عن ركاب', icon: Car, path: '/driver-dashboard/find-rides' },
         { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
-        { name: 'ملفي', icon: User, path: '/driver-dashboard/profile' },
+        { name: 'الإعدادات', icon: Settings, path: '/app-settings' }, // Unified settings
       ];
     }
     return [
@@ -78,7 +78,7 @@ const BottomNavigationBar = () => {
 
   const navItems = getNavItems();
 
-  // Hide navigation bar on specific pages (e.g., auth page, or when RequestRidePage is embedded)
+  // Hide navigation bar on specific pages (e.g., auth page, admin dashboard, etc.)
   const hideOnPaths = ['/auth', '/admin-dashboard', '/admin-dashboard/users', '/admin-dashboard/rides', '/admin-dashboard/settings', '/forgot-password', '/reset-password', '/help', '/about-us'];
   if (hideOnPaths.includes(location.pathname) || location.pathname.startsWith('/admin-dashboard')) {
     return null;

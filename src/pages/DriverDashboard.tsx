@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Car, History, User, Bell, Settings, BarChart } from 'lucide-react';
+import { Search, Car, History, User, Bell, Settings, BarChart, Loader2 } from 'lucide-react'; // Added Loader2
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,13 +48,14 @@ const DriverDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
-        <p className="text-lg text-gray-700 dark:text-gray-300">جاري تحميل لوحة تحكم السائق...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">جاري تحميل لوحة تحكم السائق...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20"> {/* Added pb-20 for bottom nav bar */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -74,7 +75,7 @@ const DriverDashboard = () => {
         </div>
 
         <div className="mb-8">
-            <Link to="/driver-dashboard/find-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Corrected path */}
+            <Link to="/driver-dashboard/find-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <Search className="h-5 w-5" />
                 البحث عن ركاب
@@ -123,13 +124,13 @@ const DriverDashboard = () => {
               <p className="text-sm font-medium">رحلاتي المقبولة</p>
             </Card>
           </Link>
-          <Link to="/driver-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+          <Link to="/profile-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
               <User className="h-8 w-8 mb-2 text-green-500" />
               <p className="text-sm font-medium">ملفي الشخصي</p>
             </Card>
           </Link>
-          <Link to="/user-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+          <Link to="/app-settings" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
               <Settings className="h-8 w-8 mb-2 text-purple-500" />
               <p className="text-sm font-medium">الإعدادات</p>

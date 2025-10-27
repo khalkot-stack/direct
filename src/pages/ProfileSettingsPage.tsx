@@ -2,23 +2,27 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import PageHeader from "@/components/PageHeader"; // Import PageHeader
+import PageHeader from "@/components/PageHeader";
 
 interface UserProfile {
   id: string;
   full_name: string;
   email: string;
   phone_number?: string;
+  user_type: "passenger" | "driver" | "admin";
+  car_model?: string;
+  car_color?: string;
+  license_plate?: string;
 }
 
-const UserProfileEditPage = () => {
+const ProfileSettingsPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,6 +30,9 @@ const UserProfileEditPage = () => {
 
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [carModel, setCarModel] = useState("");
+  const [carColor, setCarColor] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
 
   const fetchUserProfile = useCallback(async () => {
     setLoading(true);
@@ -40,7 +47,7 @@ const UserProfileEditPage = () => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, phone_number')
+      .select('id, full_name, email, phone_number, user_type, car_model, car_color, license_plate')
       .eq('id', user.id)
       .single();
 
@@ -51,6 +58,9 @@ const UserProfileEditPage = () => {
       setProfile(data as UserProfile);
       setFullName(data.full_name || "");
       setPhoneNumber(data.phone_number || "");
+      setCarModel(data.car_model || "");
+      setCarColor(data.car_color || "");
+      setLicensePlate(data.license_plate || "");
     }
     setLoading(false);
   }, [navigate]);
@@ -64,12 +74,20 @@ const UserProfileEditPage = () => {
     if (!profile) return;
 
     setIsSaving(true);
+    const updateData: Partial<UserProfile> = {
+      full_name: fullName,
+      phone_number: phoneNumber,
+    };
+
+    if (profile.user_type === "driver") {
+      updateData.car_model = carModel;
+      updateData.car_color = carColor;
+      updateData.license_plate = licensePlate;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        full_name: fullName,
-        phone_number: phoneNumber,
-      })
+      .update(updateData)
       .eq('id', profile.id);
     setIsSaving(false);
 
@@ -78,7 +96,7 @@ const UserProfileEditPage = () => {
       console.error("Error saving user profile:", error);
     } else {
       toast.success("تم حفظ الملف الشخصي بنجاح!");
-      fetchUserProfile();
+      fetchUserProfile(); // Re-fetch to ensure UI is updated
     }
   };
 
@@ -91,6 +109,8 @@ const UserProfileEditPage = () => {
     );
   }
 
+  const backPath = profile?.user_type === "passenger" ? "/passenger-dashboard" : profile?.user_type === "driver" ? "/driver-dashboard" : "/";
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
@@ -98,6 +118,7 @@ const UserProfileEditPage = () => {
           <PageHeader
             title="تعديل الملف الشخصي"
             description="تحديث معلوماتك الشخصية"
+            backPath={backPath}
           />
         </div>
         <CardContent>
@@ -115,6 +136,16 @@ const UserProfileEditPage = () => {
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Input
+                id="email"
+                type="email"
+                value={profile?.email || ""}
+                className="mt-1"
+                disabled // Email is usually not editable directly here
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
               <Label htmlFor="phone-number">رقم الهاتف</Label>
               <Input
                 id="phone-number"
@@ -125,6 +156,45 @@ const UserProfileEditPage = () => {
                 className="mt-1"
               />
             </div>
+
+            {profile?.user_type === "driver" && (
+              <>
+                <div className="grid w-full items-center gap-1.5">
+                  <Label htmlFor="car-model">موديل السيارة</Label>
+                  <Input
+                    id="car-model"
+                    type="text"
+                    placeholder="مثال: تويوتا كامري"
+                    value={carModel}
+                    onChange={(e) => setCarModel(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid w-full items-center gap-1.5">
+                  <Label htmlFor="car-color">لون السيارة</Label>
+                  <Input
+                    id="car-color"
+                    type="text"
+                    placeholder="مثال: أبيض"
+                    value={carColor}
+                    onChange={(e) => setCarColor(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid w-full items-center gap-1.5">
+                  <Label htmlFor="license-plate">رقم اللوحة</Label>
+                  <Input
+                    id="license-plate"
+                    type="text"
+                    placeholder="مثال: 12-34567"
+                    value={licensePlate}
+                    onChange={(e) => setLicensePlate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </>
+            )}
+
             <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={isSaving}>
               {isSaving ? (
                 <>
@@ -142,4 +212,4 @@ const UserProfileEditPage = () => {
   );
 };
 
-export default UserProfileEditPage;
+export default ProfileSettingsPage;

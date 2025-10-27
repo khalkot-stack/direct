@@ -41,13 +41,14 @@ const ReportsPage = () => {
       message,
     });
 
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     setLoading(false);
     toast.success("تم إرسال بلاغك بنجاح! سنتواصل معك قريباً.");
     setSubject("");
     setMessage("");
-    navigate("/user-settings");
+    navigate("/app-settings"); // Updated back path
   };
 
   return (
@@ -57,6 +58,7 @@ const ReportsPage = () => {
           <PageHeader
             title="بلاغات وشكاوى"
             description="أرسل بلاغًا أو شكوى لفريق الدعم"
+            backPath="/app-settings" // Updated back path
           />
         </div>
         <CardContent>

@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Loader2 } from "lucide-react";
+import { Settings, Bell, FileText, Globe, LogOut, Loader2 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase";
-import PageHeader from "@/components/PageHeader"; // Import PageHeader
-import { toast } from "sonner"; // Import toast
+import PageHeader from "@/components/PageHeader";
+import { toast } from "sonner";
 
-const UserSettingsPage = () => {
+const AppSettingsPage = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,36 +39,38 @@ const UserSettingsPage = () => {
     );
   }
 
+  const backPath = userRole === "passenger" ? "/passenger-dashboard" : userRole === "driver" ? "/driver-dashboard" : "/";
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
         <div className="p-6">
           <PageHeader
-            title="الإعدادات"
-            description="إدارة ملفك الشخصي وتفضيلات التطبيق"
+            title="إعدادات التطبيق"
+            description="إدارة تفضيلات التطبيق والإشعارات والبلاغات"
+            backPath={backPath}
           />
         </div>
         <CardContent className="space-y-6 text-center">
           <Settings className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
           <p className="text-lg text-gray-700 dark:text-gray-300">
-            هذه صفحة الإعدادات الخاصة بك. يمكنك تعديل معلوماتك الشخصية وتفضيلات التطبيق هنا.
+            هذه صفحة الإعدادات العامة للتطبيق.
           </p>
           <div className="space-y-2">
-            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate(userRole === "driver" ? "/driver-dashboard/profile" : "/passenger-dashboard/profile")}>
+            <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/profile-settings")}>
+              <FileText className="h-4 w-4 ml-2 rtl:mr-2" />
               تعديل الملف الشخصي
             </Button>
-            {userRole === "driver" && (
-              <Button
-                className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                onClick={() => navigate("/driver-settings")}
-              >
-                إدارة معلومات السيارة
-              </Button>
-            )}
+            <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/notifications")}>
+              <Bell className="h-4 w-4 ml-2 rtl:mr-2" />
+              الإشعارات
+            </Button>
             <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={handleChangeLanguage}>
+              <Globe className="h-4 w-4 ml-2 rtl:mr-2" />
               تغيير اللغة
             </Button>
             <Button variant="outline" className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" onClick={() => navigate("/reports")}>
+              <FileText className="h-4 w-4 ml-2 rtl:mr-2" />
               بلاغات وشكاوى
             </Button>
             <LogoutButton />
@@ -79,4 +81,4 @@ const UserSettingsPage = () => {
   );
 };
 
-export default UserSettingsPage;
+export default AppSettingsPage;
