@@ -46,3 +46,8 @@ CREATE INDEX profiles_user_type_idx ON public.profiles (user_type);
 
 -- Create an index on email for faster lookups
 CREATE INDEX profiles_email_idx ON public.profiles (email);
+
+-- Trigger to update `updated_at` column
+CREATE OR REPLACE TRIGGER set_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
