@@ -24,9 +24,10 @@ import NotificationsPage from "./pages/NotificationsPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
 import DriverProfileSettingsPage from "./pages/DriverProfileSettingsPage";
 import ReportsPage from "./pages/ReportsPage";
-import UserProfileEditPage from "./pages/UserProfileEditPage"; // New import
+import UserProfileEditPage from "./pages/UserProfileEditPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserLayout from "./components/UserLayout"; // New import
 
 const queryClient = new QueryClient();
 
@@ -40,30 +41,39 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/help" element={<HelpPage />} />
-          <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/user-settings" element={<UserSettingsPage />} />
-          <Route path="/driver-settings" element={<DriverProfileSettingsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/user-profile-edit" element={<UserProfileEditPage />} /> {/* New route */}
-
+          
           {/* Protected Routes for Passenger */}
           <Route element={<ProtectedRoute allowedRoles={["passenger"]} />}>
-            <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
-            <Route path="/request-ride" element={<RequestRidePage />} />
-            <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
+            <Route element={<UserLayout />}> {/* Passenger-specific layout with bottom nav */}
+              <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
+              <Route path="/request-ride" element={<RequestRidePage />} />
+              <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
+              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/user-settings" element={<UserSettingsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/user-profile-edit" element={<UserProfileEditPage />} />
+            </Route>
           </Route>
 
           {/* Protected Routes for Driver */}
           <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
-            <Route path="/driver-dashboard" element={<DriverDashboard />} />
-            <Route path="/find-rides" element={<FindRidesPage />} />
-            <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
+            <Route element={<UserLayout />}> {/* Driver-specific layout with bottom nav */}
+              <Route path="/driver-dashboard" element={<DriverDashboard />} />
+              <Route path="/find-rides" element={<FindRidesPage />} />
+              <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
+              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} /> {/* Also accessible by driver */}
+              <Route path="/notifications" element={<NotificationsPage />} /> {/* Also accessible by driver */}
+              <Route path="/user-settings" element={<UserSettingsPage />} /> {/* Also accessible by driver */}
+              <Route path="/driver-settings" element={<DriverProfileSettingsPage />} />
+              <Route path="/reports" element={<ReportsPage />} /> {/* Also accessible by driver */}
+              <Route path="/user-profile-edit" element={<UserProfileEditPage />} /> {/* Also accessible by driver */}
+            </Route>
           </Route>
 
-          {/* Protected Routes for Admin */}
+          {/* Protected Routes for Admin (without UserLayout/BottomNavigationBar) */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin-dashboard" element={<AdminDashboard />}>
               <Route index element={<OverviewPage />} />

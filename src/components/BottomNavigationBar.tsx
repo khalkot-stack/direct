@@ -11,6 +11,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
+  isActive?: boolean; // Added isActive prop
 }
 
 interface BottomNavigationBarProps {
@@ -34,7 +35,7 @@ const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({ navItems }) =
               variant="ghost"
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full",
-                location.pathname === item.href || (item.href === "/passenger-dashboard" && location.pathname === "/passenger-dashboard/") || (item.href === "/driver-dashboard" && location.pathname === "/driver-dashboard/")
+                item.isActive // Use item.isActive directly
                   ? "text-primary dark:text-primary"
                   : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary",
               )}
