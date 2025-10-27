@@ -4,26 +4,25 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car } from "lucide-react";
+import { Loader2, Car, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
-// import InteractiveMap from "@/components/InteractiveMap"; // Removed InteractiveMap import
+import RideSearchDialog from "@/components/RideSearchDialog"; // Import the new dialog
 
-// Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
   id: string;
   pickup_location: string;
-  pickup_lat: number; // Added latitude
-  pickup_lng: number; // Added longitude
+  pickup_lat: number;
+  pickup_lng: number;
   destination: string;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_id: string;
   driver_id: string | null;
-  profiles_passenger: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
-  created_at: string; // Added created_at for sorting and display
+  profiles_passenger: Array<{ full_name: string }> | null;
+  created_at: string;
 }
 
 interface RideRequest {
@@ -33,9 +32,15 @@ interface RideRequest {
   pickup_lng: number;
   destination: string;
   passengers_count: number;
-  time: string; // This will be derived from created_at or a specific time field
+  time: string;
   passenger_name?: string;
-  status: "pending" | "accepted" | "completed" | "cancelled"; // Include status for filtering
+  status: "pending" | "accepted" | "completed" | "cancelled";
+}
+
+interface RideSearchCriteria {
+  pickupLocation?: string;
+  destination?: string;
+  passengersCount?: number;
 }
 
 const FindRidesPage = () => {
@@ -43,6 +48,8 @@ const FindRidesPage = () => {
   const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
 
   const formatRideData = (ride: SupabaseJoinedRideData): RideRequest => ({
     id: ride.id,
@@ -56,7 +63,7 @@ const FindRidesPage = () => {
     status: ride.status,
   });
 
-  const fetchPendingRides = useCallback(async () => {
+  const fetchPendingRides = useCallback(async (criteria: RideSearchCriteria = {}) => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -67,7 +74,7 @@ const FindRidesPage = () => {
     }
     setDriverId(user.id);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('rides')
       .select(`
         id,
@@ -85,6 +92,18 @@ const FindRidesPage = () => {
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
 
+    if (criteria.pickupLocation) {
+      query = query.ilike('pickup_location', `%${criteria.pickupLocation}%`);
+    }
+    if (criteria.destination) {
+      query = query.ilike('destination', `%${criteria.destination}%`);
+    }
+    if (criteria.passengersCount) {
+      query = query.eq('passengers_count', criteria.passengersCount);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       toast.error(`فشل جلب الرحلات المتاحة: ${error.message}`);
       console.error("Error fetching pending rides:", error);
@@ -95,7 +114,7 @@ const FindRidesPage = () => {
   }, [navigate]);
 
   useEffect(() => {
-    fetchPendingRides();
+    fetchPendingRides(searchCriteria);
 
     const channel = supabase
       .channel('pending_rides_changes')
@@ -104,7 +123,6 @@ const FindRidesPage = () => {
         { event: '*', schema: 'public', table: 'rides' },
         (payload) => {
           if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
-            // Fetch the full ride data including passenger name
             supabase
               .from('rides')
               .select(`
@@ -128,7 +146,6 @@ const FindRidesPage = () => {
                 } else if (data) {
                   setRideRequests((prev) => {
                     const newRide = formatRideData(data as SupabaseJoinedRideData);
-                    // Ensure no duplicates and add new ride
                     if (!prev.some(ride => ride.id === newRide.id)) {
                       toast.info(`رحلة جديدة متاحة: من ${newRide.pickup_location} إلى ${newRide.destination}`);
                       return [...prev, newRide].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
@@ -150,7 +167,7 @@ const FindRidesPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchPendingRides, driverId]); // Include driverId in dependencies for the realtime filter
+  }, [fetchPendingRides, driverId, searchCriteria]);
 
   const handleAcceptRide = async (rideId: string) => {
     if (!driverId) {
@@ -162,7 +179,7 @@ const FindRidesPage = () => {
       .from('rides')
       .update({ driver_id: driverId, status: 'accepted' })
       .eq('id', rideId)
-      .eq('status', 'pending'); // Ensure only pending rides can be accepted
+      .eq('status', 'pending');
     setLoading(false);
 
     if (error) {
@@ -170,28 +187,14 @@ const FindRidesPage = () => {
       console.error("Error accepting ride:", error);
     } else {
       toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
-      // Realtime subscription will handle removing this ride from the list
-      navigate("/driver-dashboard/accepted-rides"); // Redirect to accepted rides page
+      navigate("/driver-dashboard/accepted-rides");
     }
   };
 
-  // const mapMarkers = rideRequests.map(ride => ({
-  //   id: ride.id,
-  //   lat: ride.pickup_lat,
-  //   lng: ride.pickup_lng,
-  //   title: `رحلة من: ${ride.pickup_location}`,
-  //   description: `إلى: ${ride.destination} (${ride.passengers_count} ركاب)`,
-  //   iconColor: "hsl(var(--primary))", // Green for pending rides
-  // }));
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="sr-only">جاري تحميل الرحلات المتاحة...</span>
-      </div>
-    );
-  }
+  const handleSearch = (criteria: RideSearchCriteria) => {
+    setSearchCriteria(criteria);
+    fetchPendingRides(criteria);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
@@ -204,12 +207,24 @@ const FindRidesPage = () => {
           />
         </div>
         <CardContent className="space-y-4">
-          {/* Removed InteractiveMap component */}
-          {/* <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right">الرحلات على الخريطة</h3>
-          <InteractiveMap markers={mapMarkers} onMarkerClick={(marker) => toast.info(marker.title)} /> */}
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsSearchDialogOpen(true)}
+              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              بحث متقدم
+            </Button>
+          </div>
 
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right mt-6">قائمة الرحلات</h3>
-          {rideRequests.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="sr-only">جاري تحميل الرحلات المتاحة...</span>
+            </div>
+          ) : rideRequests.length > 0 ? (
             rideRequests.map((ride) => (
               <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div className="text-right sm:text-left mb-2 sm:mb-0">
@@ -255,6 +270,12 @@ const FindRidesPage = () => {
           )}
         </CardContent>
       </Card>
+      <RideSearchDialog
+        open={isSearchDialogOpen}
+        onOpenChange={setIsSearchDialogOpen}
+        onSearch={handleSearch}
+        initialCriteria={searchCriteria}
+      />
     </div>
   );
 };
