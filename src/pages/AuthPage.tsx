@@ -107,7 +107,7 @@ const AuthPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري التحميل...</span>
       </div>
     );
@@ -177,7 +177,7 @@ const AuthPage = () => {
                     <Label htmlFor="admin-login">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={authActionLoading}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
                   {authActionLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
                 </Button>
               </form>
@@ -253,7 +253,7 @@ const AuthPage = () => {
                     <Label htmlFor="admin-register">مدير</Label>
                   </div>
                 </RadioGroup>
-                <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={authActionLoading}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6" disabled={authActionLoading}>
                   {authActionLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                 </Button>
               </form>

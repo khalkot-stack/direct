@@ -35,8 +35,8 @@ const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({ navItems }) =
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full text-gray-600 dark:text-gray-400",
                 location.pathname === item.href || (item.href === "/passenger-dashboard" && location.pathname === "/passenger-dashboard/") || (item.href === "/driver-dashboard" && location.pathname === "/driver-dashboard/")
-                  ? "text-green-500 dark:text-green-400"
-                  : "hover:text-green-500 dark:hover:text-green-400",
+                  ? "text-primary dark:text-primary" // Use new primary color
+                  : "hover:text-primary dark:hover:text-primary", // Use new primary color
               )}
             >
               <item.icon className="h-5 w-5 mb-1" />

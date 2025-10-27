@@ -31,12 +31,12 @@ const PassengerDashboard = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link to="/request-ride">
-              <Button className="bg-green-500 hover:bg-green-600 text-white text-lg px-6 py-3 rounded-lg shadow-md">
+              <Button className="bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md">
                 طلب رحلة جديدة
               </Button>
             </Link>
             <Link to="/passenger-requests">
-              <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white text-lg px-6 py-3 rounded-lg shadow-md">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md">
                 عرض طلباتي
               </Button>
             </Link>
