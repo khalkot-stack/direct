@@ -1,45 +1,56 @@
--- WARNING: This script will DELETE ALL DATA in your 'profiles' table.
--- Only run this if you are in a development environment and can afford to lose existing profile data.
-
--- 1. Drop any existing foreign key constraints from other tables that might be referencing public.profiles.id
---    (e.g., from the 'rides' table)
-ALTER TABLE public.rides DROP CONSTRAINT IF EXISTS rides_passenger_id_fkey;
-ALTER TABLE public.rides DROP CONSTRAINT IF EXISTS rides_driver_id_fkey;
-
--- 2. Drop the existing 'profiles' table
+-- Drop the existing profiles table if it exists
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- 3. Recreate the 'profiles' table with 'id' as UUID and linked to auth.users.id
+-- Create the profiles table
 CREATE TABLE public.profiles (
-    id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
     full_name text,
     email text UNIQUE,
-    user_type text DEFAULT 'passenger'::text,
-    status text DEFAULT 'active'::text,
     phone_number text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    user_type text CHECK (user_type IN ('passenger', 'driver', 'admin')) NOT NULL DEFAULT 'passenger',
+    status text CHECK (status IN ('active', 'suspended', 'banned')) NOT NULL DEFAULT 'active',
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 4. Enable Row Level Security for the 'profiles' table
+-- Set up Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 5. Add RLS policies for the 'profiles' table (as provided previously)
---    Users can view and update their own profile
-CREATE POLICY "Users can view and update their own profile"
-ON public.profiles
-FOR ALL
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+-- Create RLS policies
+-- Policy for authenticated users to view their own profile
+CREATE POLICY "Users can view their own profile" ON public.profiles
+FOR SELECT USING (auth.uid() = id);
 
---    Admins can view all profiles (assuming get_user_type() is defined)
-CREATE POLICY "Admins can view all profiles"
-ON public.profiles
-FOR SELECT
-USING (get_user_type() = 'admin');
+-- Policy for authenticated users to update their own profile
+CREATE POLICY "Users can update their own profile" ON public.profiles
+FOR UPDATE USING (auth.uid() = id);
 
---    Admins can manage all profiles (assuming get_user_type() is defined)
-CREATE POLICY "Admins can manage all profiles"
-ON public.profiles
-FOR ALL
-USING (get_user_type() = 'admin')
-WITH CHECK (get_user_type() = 'admin');
+-- Policy for admins to view all profiles
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
+);
+
+-- Policy for admins to insert new profiles (e.g., for new users or manual creation)
+CREATE POLICY "Admins can insert profiles" ON public.profiles
+FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
+);
+
+-- Policy for admins to update any profile
+CREATE POLICY "Admins can update any profile" ON public.profiles
+FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
+);
+
+-- Policy for admins to delete any profile
+CREATE POLICY "Admins can delete any profile" ON public.profiles
+FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin')
+);
+
+-- Create an index on user_type for faster lookups
+CREATE INDEX profiles_user_type_idx ON public.profiles (user_type);
+
+-- Create an index on email for faster lookups
+CREATE INDEX profiles_email_idx ON public.profiles (email);
