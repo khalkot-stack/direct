@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
-import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
+// import InteractiveMap from "@/components/InteractiveMap"; // Removed InteractiveMap import
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -175,14 +175,14 @@ const FindRidesPage = () => {
     }
   };
 
-  const mapMarkers = rideRequests.map(ride => ({
-    id: ride.id,
-    lat: ride.pickup_lat,
-    lng: ride.pickup_lng,
-    title: `رحلة من: ${ride.pickup_location}`,
-    description: `إلى: ${ride.destination} (${ride.passengers_count} ركاب)`,
-    iconColor: "hsl(var(--primary))", // Green for pending rides
-  }));
+  // const mapMarkers = rideRequests.map(ride => ({
+  //   id: ride.id,
+  //   lat: ride.pickup_lat,
+  //   lng: ride.pickup_lng,
+  //   title: `رحلة من: ${ride.pickup_location}`,
+  //   description: `إلى: ${ride.destination} (${ride.passengers_count} ركاب)`,
+  //   iconColor: "hsl(var(--primary))", // Green for pending rides
+  // }));
 
   if (loading) {
     return (
@@ -204,8 +204,9 @@ const FindRidesPage = () => {
           />
         </div>
         <CardContent className="space-y-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right">الرحلات على الخريطة</h3>
-          <InteractiveMap markers={mapMarkers} onMarkerClick={(marker) => toast.info(marker.title)} />
+          {/* Removed InteractiveMap component */}
+          {/* <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right">الرحلات على الخريطة</h3>
+          <InteractiveMap markers={mapMarkers} onMarkerClick={(marker) => toast.info(marker.title)} /> */}
 
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-right mt-6">قائمة الرحلات</h3>
           {rideRequests.length > 0 ? (
