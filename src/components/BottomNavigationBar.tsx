@@ -1,52 +1,108 @@
 "use client";
 
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Home, MapPin, Car, Bell, Settings, Search, CalendarDays } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, MapPin, Car, History, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-  isActive?: boolean; // Added isActive prop
-}
-
-interface BottomNavigationBarProps {
-  navItems: NavItem[];
-}
-
-const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({ navItems }) => {
+const BottomNavigationBar = () => {
   const location = useLocation();
-  const isMobile = useIsMobile();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!isMobile) {
-    return null; // Only render on mobile
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user role:", error);
+          toast.error("فشل جلب دور المستخدم.");
+          setUserRole(null);
+        } else if (profile) {
+          setUserRole(profile.role);
+        }
+      } else {
+        setUserRole(null);
+      }
+      setLoading(false);
+    };
+
+    fetchUserRole();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUserRole();
+      } else {
+        setUserRole(null);
+      }
+    });
+
+    return () => {
+      authListener?.unsubscribe();
+    };
+  }, []);
+
+  const getNavItems = () => {
+    if (loading) {
+      return []; // Don't show items while loading role
+    }
+    if (userRole === 'passenger') {
+      return [
+        { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
+        // { name: 'طلب رحلة', icon: MapPin, path: '/request-ride' }, // Removed
+        { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
+        { name: 'ملفي', icon: User, path: '/passenger-dashboard/profile' },
+      ];
+    } else if (userRole === 'driver') {
+      return [
+        { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
+        { name: 'البحث عن ركاب', icon: Car, path: '/driver-dashboard/find-rides' },
+        { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
+        { name: 'ملفي', icon: User, path: '/driver-dashboard/profile' },
+      ];
+    }
+    return [
+      { name: 'الرئيسية', icon: Home, path: '/' },
+      { name: 'تسجيل الدخول', icon: User, path: '/auth' },
+    ];
+  };
+
+  const navItems = getNavItems();
+
+  // Hide navigation bar on specific pages (e.g., auth page, or when RequestRidePage is embedded)
+  const hideOnPaths = ['/auth'];
+  if (hideOnPaths.includes(location.pathname)) {
+    return null;
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t dark:border-gray-700 shadow-lg md:hidden">
-      <nav className="flex justify-around h-16 items-center">
-        {navItems.map((item) => (
-          <Link key={item.href} to={item.href} className="flex-1">
-            <Button
-              variant="ghost"
-              className={cn(
-                "flex flex-col items-center justify-center w-full h-full",
-                item.isActive // Use item.isActive directly
-                  ? "text-primary dark:text-primary"
-                  : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary",
-              )}
-            >
-              <item.icon className="h-5 w-5 mb-1" />
-              <span className="text-xs">{item.name}</span>
-            </Button>
-          </Link>
-        ))}
-      </nav>
-    </div>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t dark:border-gray-700 shadow-lg z-50">
+      <div className="max-w-md mx-auto flex justify-around h-16">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link to={item.path} key={item.name} className="flex-1 flex items-center justify-center">
+              <Button
+                variant="ghost"
+                className={`flex flex-col items-center justify-center h-full w-full text-xs font-medium ${isActive ? 'text-primary dark:text-primary-foreground' : 'text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-foreground'}`}
+              >
+                <item.icon className="h-5 w-5 mb-1" />
+                <span>{item.name}</span>
+              </Button>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
 

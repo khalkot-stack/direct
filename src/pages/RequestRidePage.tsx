@@ -13,7 +13,13 @@ import PageHeader from "@/components/PageHeader";
 import { Loader2 } from "lucide-react";
 // import LocationPickerMap from "@/components/LocationPickerMap"; // Removed import
 
-const RequestRidePage = () => {
+interface RequestRidePageProps {
+  isEmbedded?: boolean;
+  onRideRequested?: () => void;
+  onCancel?: () => void;
+}
+
+const RequestRidePage: React.FC<RequestRidePageProps> = ({ isEmbedded = false, onRideRequested, onCancel }) => {
   const navigate = useNavigate();
   const [pickupLocation, setPickupLocation] = useState("");
   const [destination, setDestination] = useState("");
@@ -28,11 +34,13 @@ const RequestRidePage = () => {
         setUserId(user.id);
       } else {
         toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
-        navigate("/auth");
+        if (!isEmbedded) { // Only navigate if not embedded
+          navigate("/auth");
+        }
       }
     };
     getUserId();
-  }, [navigate]);
+  }, [navigate, isEmbedded]);
 
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,18 +84,23 @@ const RequestRidePage = () => {
       console.error("Error requesting ride:", error);
     } else {
       toast.success("تم طلب الرحلة بنجاح! جاري البحث عن سائق.");
-      navigate("/passenger-dashboard/my-rides");
+      if (onRideRequested) {
+        onRideRequested(); // Call the callback provided by the parent
+      } else {
+        navigate("/passenger-dashboard/my-rides"); // Fallback if not embedded or no callback
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+    <div className={isEmbedded ? "" : "min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4"}>
+      <div className={isEmbedded ? "" : "w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg"}>
         <div className="p-6">
           <PageHeader
-            title="البحث عن ركاب" // Changed title here
+            title="طلب رحلة جديدة" // Reverted title to "طلب رحلة جديدة" as it's a request form
             description="أدخل تفاصيل رحلتك وسنبحث لك عن سائق."
-            backPath="/passenger-dashboard"
+            backPath={isEmbedded ? undefined : "/passenger-dashboard"} // Remove backPath if embedded, parent handles back
+            onBackClick={isEmbedded && onCancel ? onCancel : undefined} // Use onCancel for back button when embedded
           />
         </div>
         <CardContent className="space-y-6">
@@ -102,10 +115,6 @@ const RequestRidePage = () => {
                 onChange={(e) => setPickupLocation(e.target.value)}
                 required
               />
-              {/* <LocationPickerMap
-                label="موقع الانطلاق"
-                onLocationSelect={(loc) => setPickupLocation(loc.address)}
-              /> */}
             </div>
 
             <div className="space-y-2">
@@ -118,10 +127,6 @@ const RequestRidePage = () => {
                 onChange={(e) => setDestination(e.target.value)}
                 required
               />
-              {/* <LocationPickerMap
-                label="الوجهة"
-                onLocationSelect={(loc) => setDestination(loc.address)}
-              /> */}
             </div>
 
             <div className="space-y-4">
@@ -137,23 +142,35 @@ const RequestRidePage = () => {
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin ml-2 rtl:mr-2" />
-                  جاري طلب الرحلة...
-                </>
-              ) : (
-                "طلب الرحلة"
+            <div className="flex gap-4">
+              {isEmbedded && onCancel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  className="flex-1 text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
+                >
+                  إلغاء
+                </Button>
               )}
-            </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin ml-2 rtl:mr-2" />
+                    جاري طلب الرحلة...
+                  </>
+                ) : (
+                  "طلب الرحلة"
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 };

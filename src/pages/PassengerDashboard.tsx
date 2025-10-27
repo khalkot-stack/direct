@@ -1,64 +1,109 @@
 "use client";
 
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Car } from "lucide-react"; // Removed unused icons
-import { useEffect, useState } from "react";
+import { MapPin, Car, History, User, Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import RequestRidePage from "./RequestRidePage"; // Import the RequestRidePage component
 
 const PassengerDashboard = () => {
-  const [userName, setUserName] = useState("أيها الراكب");
+  const navigate = useNavigate();
+  const [userName, setUserName] = useState("راكب");
+  const [loading, setLoading] = useState(true);
+  const [showRequestRideForm, setShowRequestRideForm] = useState(false); // New state for form visibility
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
+    const fetchUserProfile = async () => {
+      setLoading(true);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-        if (error) {
-          console.error("Error fetching passenger profile:", error);
-          toast.error("فشل جلب اسم المستخدم.");
-        } else if (profile) {
-          setUserName(profile.full_name || "أيها الراكب");
-        }
+      if (userError || !user) {
+        toast.error("الرجاء تسجيل الدخول للوصول إلى لوحة التحكم.");
+        navigate("/auth");
+        return;
       }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        toast.error("فشل جلب معلومات المستخدم.");
+      } else if (data) {
+        setUserName(data.full_name || "راكب");
+      }
+      setLoading(false);
     };
-    fetchUserName();
-  }, []);
+
+    fetchUserProfile();
+  }, [navigate]);
+
+  const handleRideRequested = () => {
+    setShowRequestRideForm(false); // Hide the form
+    navigate("/passenger-dashboard/my-rides"); // Navigate to my rides page
+  };
+
+  const handleCancelRequest = () => {
+    setShowRequestRideForm(false); // Hide the form
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">جاري تحميل لوحة تحكم الراكب...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-gray-900 p-4 pb-20 md:pb-4">
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-lg rounded-lg text-center mt-4 md:mt-8"> {/* Adjusted mt-8 md:mt-12 to mt-4 md:mt-8 */}
-        <CardHeader>
-          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            مرحباً بك يا {userName}!
-          </CardTitle>
-        </CardHeader>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+        <div className="p-6">
+          <PageHeader
+            title={`أهلاً بك، ${userName}`}
+            description="لوحة تحكم الراكب الخاصة بك"
+          />
+        </div>
         <CardContent className="space-y-6">
-          <p className="text-lg text-gray-700 dark:text-gray-300">
-            من هنا يمكنك طلب الرحلات وإدارة طلباتك.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link to="/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Added hover effect */}
-              <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                <MapPin className="h-5 w-5" />
-                طلب رحلة جديدة
-              </Button>
-            </Link>
-            <Link to="/passenger-requests" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"> {/* Added hover effect */}
-              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                <Car className="h-5 w-5" />
-                عرض طلباتي
-              </Button>
-            </Link>
-          </div>
+          {showRequestRideForm ? (
+            <RequestRidePage
+              isEmbedded={true}
+              onRideRequested={handleRideRequested}
+              onCancel={handleCancelRequest}
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-4">
+                <Button
+                  onClick={() => setShowRequestRideForm(true)} // Show the form on click
+                  className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                >
+                  <MapPin className="h-5 w-5" />
+                  طلب رحلة جديدة
+                </Button>
+                <Link to="/passenger-dashboard/my-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+                  <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                    <History className="h-5 w-5" />
+                    رحلاتي
+                  </Button>
+                </Link>
+                <Link to="/passenger-dashboard/profile" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+                  <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                    <User className="h-5 w-5" />
+                    ملفي الشخصي
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

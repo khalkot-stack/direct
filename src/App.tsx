@@ -1,88 +1,50 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import AuthPage from "./pages/AuthPage";
-import PassengerDashboard from "./pages/PassengerDashboard";
-import DriverDashboard from "./pages/DriverDashboard";
-import RequestRidePage from "./pages/RequestRidePage";
-import FindRidesPage from "./pages/FindRidesPage";
-import HelpPage from "./pages/HelpPage";
-import PassengerRequestsPage from "./pages/PassengerRequestsPage";
-import RideDetailsPage from "./pages/RideDetailsPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import OverviewPage from "./pages/admin/OverviewPage";
-import UserManagementPage from "./pages/admin/UserManagementPage";
-import RideManagementPage from "./pages/admin/RideManagementPage";
-import SettingsPage from "./pages/admin/SettingsPage";
-import DriverAcceptedRidesPage from "./pages/DriverAcceptedRidesPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import UserSettingsPage from "./pages/UserSettingsPage";
-import DriverProfileSettingsPage from "./pages/DriverProfileSettingsPage";
-import ReportsPage from "./pages/ReportsPage";
-import UserProfileEditPage from "./pages/UserProfileEditPage";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
-import UserLayout from "./components/UserLayout";
-import AboutUsPage from "./pages/AboutUsPage"; // New import
+"use client";
 
-const queryClient = new QueryClient();
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import IndexPage from './pages/Index';
+import AuthPage from './pages/AuthPage';
+import PassengerDashboard from './pages/PassengerDashboard';
+import DriverDashboard from './pages/DriverDashboard';
+import MyRidesPage from './pages/MyRidesPage';
+// import RequestRidePage from './pages/RequestRidePage'; // Removed import
+import FindRidesPage from './pages/FindRidesPage';
+import AcceptedRidesPage from './pages/AcceptedRidesPage';
+import RideDetailsPage from './pages/RideDetailsPage';
+import DriverProfilePage from './pages/DriverProfilePage';
+import PassengerProfilePage from './pages/PassengerProfilePage';
+import { Toaster } from "@/components/ui/sonner";
+import BottomNavigationBar from './components/BottomNavigationBar';
+import ProtectedRoute from './components/ProtectedRoute';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="/about-us" element={<AboutUsPage />} /> {/* New route */}
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          
-          {/* Protected Routes for Passenger and Driver (common layout) */}
-          <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
-              <Route path="/request-ride" element={<RequestRidePage />} />
-              <Route path="/passenger-requests" element={<PassengerRequestsPage />} />
-              
-              <Route path="/driver-dashboard" element={<DriverDashboard />} />
-              <Route path="/find-rides" element={<FindRidesPage />} />
-              <Route path="/driver-dashboard/accepted-rides" element={<DriverAcceptedRidesPage />} />
-              
-              {/* Common pages for both passenger and driver */}
-              <Route path="/ride-details/:rideId" element={<RideDetailsPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/user-settings" element={<UserSettingsPage />} />
-              <Route path="/driver-settings" element={<DriverProfileSettingsPage />} /> {/* Driver specific setting, but under common layout */}
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/user-profile-edit" element={<UserProfileEditPage />} />
-            </Route>
-          </Route>
+function App() {
+  return (
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<IndexPage />} />
+            <Route path="/auth" element={<AuthPage />} />
 
-          {/* Protected Routes for Admin (without UserLayout/BottomNavigationBar) */}
-          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="/admin-dashboard" element={<AdminDashboard />}>
-              <Route index element={<OverviewPage />} />
-              <Route path="users" element={<UserManagementPage />} />
-              <Route path="rides" element={<RideManagementPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-          </Route>
+            {/* Passenger Routes */}
+            <Route path="/passenger-dashboard" element={<ProtectedRoute><PassengerDashboard /></ProtectedRoute>} />
+            <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute><MyRidesPage /></ProtectedRoute>} />
+            {/* <Route path="/request-ride" element={<ProtectedRoute><RequestRidePage /></ProtectedRoute>} /> Removed route */}
+            <Route path="/passenger-dashboard/profile" element={<ProtectedRoute><PassengerProfilePage /></ProtectedRoute>} />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+            {/* Driver Routes */}
+            <Route path="/driver-dashboard" element={<ProtectedRoute><DriverDashboard /></ProtectedRoute>} />
+            <Route path="/driver-dashboard/find-rides" element={<ProtectedRoute><FindRidesPage /></ProtectedRoute>} />
+            <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute><AcceptedRidesPage /></ProtectedRoute>} />
+            <Route path="/ride-details/:rideId" element={<ProtectedRoute><RideDetailsPage /></ProtectedRoute>} />
+            <Route path="/driver-dashboard/profile" element={<ProtectedRoute><DriverProfilePage /></ProtectedRoute>} />
+          </Routes>
+        </main>
+        <BottomNavigationBar />
+        <Toaster richColors />
+      </div>
+    </Router>
+  );
+}
 
 export default App;
