@@ -30,20 +30,20 @@ const Index = () => {
               ابدأ الآن
             </Button>
           </Link>
+          <Link to="/about-us"> {/* Moved this button here and changed text */}
+            <Button
+              variant="outline"
+              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-8 py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
+            >
+              لماذا DIRECT؟
+            </Button>
+          </Link>
           <Link to="/help">
             <Button
               variant="outline"
               className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-8 py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
             >
               تعرف على المزيد
-            </Button>
-          </Link>
-          <Link to="/about-us"> {/* New button linking to AboutUsPage */}
-            <Button
-              variant="outline"
-              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-lg px-8 py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
-            >
-              المحتوى
             </Button>
           </Link>
         </div>
