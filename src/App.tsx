@@ -11,7 +11,7 @@ import PassengerRequestsPage from './pages/PassengerRequestsPage';
 import FindRidesPage from './pages/FindRidesPage';
 import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage'; // Corrected import
 import RideDetailsPage from './pages/RideDetailsPage';
-import DriverProfilePage from './pages/DriverProfilePage';
+import DriverProfileSettingsPage from './pages/DriverProfileSettingsPage'; // Corrected import
 import PassengerProfilePage from './pages/PassengerProfilePage';
 import { Toaster } from "@/components/ui/sonner";
 import BottomNavigationBar from './components/BottomNavigationBar';
@@ -37,7 +37,7 @@ function App() {
             <Route path="/driver-dashboard/find-rides" element={<ProtectedRoute><FindRidesPage /></ProtectedRoute>} />
             <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute><DriverAcceptedRidesPage /></ProtectedRoute>} /> {/* Corrected usage */}
             <Route path="/ride-details/:rideId" element={<ProtectedRoute><RideDetailsPage /></ProtectedRoute>} />
-            <Route path="/driver-dashboard/profile" element={<ProtectedRoute><DriverProfilePage /></ProtectedRoute>} />
+            <Route path="/driver-dashboard/profile" element={<ProtectedRoute><DriverProfileSettingsPage /></ProtectedRoute>} /> {/* Corrected usage */}
           </Routes>
         </main>
         <BottomNavigationBar />
