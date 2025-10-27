@@ -6,7 +6,7 @@ import IndexPage from './pages/Index';
 import AuthPage from './pages/AuthPage';
 import PassengerDashboard from './pages/PassengerDashboard';
 import DriverDashboard from './pages/DriverDashboard';
-import MyRidesPage from './pages/MyRidesPage';
+import PassengerRequestsPage from './pages/PassengerRequestsPage'; // Corrected import
 // import RequestRidePage from './pages/RequestRidePage'; // Removed import
 import FindRidesPage from './pages/FindRidesPage';
 import AcceptedRidesPage from './pages/AcceptedRidesPage';
@@ -28,7 +28,7 @@ function App() {
 
             {/* Passenger Routes */}
             <Route path="/passenger-dashboard" element={<ProtectedRoute><PassengerDashboard /></ProtectedRoute>} />
-            <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute><MyRidesPage /></ProtectedRoute>} />
+            <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute><PassengerRequestsPage /></ProtectedRoute>} /> {/* Corrected usage */}
             {/* <Route path="/request-ride" element={<ProtectedRoute><RequestRidePage /></ProtectedRoute>} /> Removed route */}
             <Route path="/passenger-dashboard/profile" element={<ProtectedRoute><PassengerProfilePage /></ProtectedRoute>} />
 
