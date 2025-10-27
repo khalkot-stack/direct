@@ -10,11 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import LocationPickerMap from "@/components/LocationPickerMap"; // Import the new map component
+
+interface LocationData {
+  lat: number;
+  lng: number;
+  address: string;
+}
 
 const RequestRidePage = () => {
   const navigate = useNavigate();
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [destination, setDestination] = useState("");
+  const [pickupLocation, setPickupLocation] = useState<LocationData | null>(null);
+  const [destination, setDestination] = useState<LocationData | null>(null);
   const [passengersCount, setPassengersCount] = useState("1");
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -39,7 +46,7 @@ const RequestRidePage = () => {
       return;
     }
     if (!pickupLocation || !destination) {
-      toast.error("الرجاء إدخال موقع الانطلاق والوجهة.");
+      toast.error("الرجاء تحديد موقع الانطلاق والوجهة على الخريطة.");
       return;
     }
 
@@ -47,8 +54,12 @@ const RequestRidePage = () => {
     const { data, error } = await supabase.from('rides').insert([
       {
         passenger_id: userId,
-        pickup_location: pickupLocation,
-        destination: destination,
+        pickup_location: pickupLocation.address,
+        pickup_lat: pickupLocation.lat,
+        pickup_lng: pickupLocation.lng,
+        destination: destination.address,
+        destination_lat: destination.lat,
+        destination_lng: destination.lng,
         passengers_count: parseInt(passengersCount),
         status: "pending",
       },
@@ -59,7 +70,7 @@ const RequestRidePage = () => {
       toast.error(`فشل طلب الرحلة: ${error.message}`);
       console.error("Error requesting ride:", error);
     } else {
-      toast.success(`تم طلب رحلة من ${pickupLocation} إلى ${destination} لـ ${passengersCount} ركاب.`);
+      toast.success(`تم طلب رحلة من ${pickupLocation.address} إلى ${destination.address} لـ ${passengersCount} ركاب.`);
       navigate("/passenger-requests"); // Redirect to passenger requests page
     }
   };
@@ -86,30 +97,16 @@ const RequestRidePage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="pickup-location">موقع الانطلاق</Label>
-              <Input
-                id="pickup-location"
-                type="text"
-                placeholder="أدخل موقع الانطلاق"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="destination">الوجهة</Label>
-              <Input
-                id="destination"
-                type="text"
-                placeholder="أدخل الوجهة"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
+            <LocationPickerMap
+              label="موقع الانطلاق"
+              onLocationSelect={setPickupLocation}
+              initialLocation={pickupLocation}
+            />
+            <LocationPickerMap
+              label="الوجهة"
+              onLocationSelect={setDestination}
+              initialLocation={destination}
+            />
             <div>
               <Label htmlFor="passengers">عدد الركاب</Label>
               <Select value={passengersCount} onValueChange={setPassengersCount}>
