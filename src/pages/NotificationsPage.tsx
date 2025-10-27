@@ -20,7 +20,7 @@ interface Notification {
   created_at: string;
 }
 
-const NotificationsPage = () => {
+const NotificationsPage: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -106,7 +106,7 @@ const NotificationsPage = () => {
           <PageHeader
             title="الإشعارات"
             description="جميع التنبيهات والتحديثات الخاصة بك"
-            backPath="/app-settings" {/* Updated back path */}
+            backPath="/app-settings"
           />
         </div>
         <CardContent className="space-y-4">
