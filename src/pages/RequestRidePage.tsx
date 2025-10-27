@@ -2,34 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
-import { MapPin, Users, Loader2 } from "lucide-react"; // Added Loader2
 import { supabase } from "@/lib/supabase";
-import LocationPickerMap from "@/components/LocationPickerMap";
-import PageHeader from "@/components/PageHeader"; // Import PageHeader
-
-interface LocationData {
-  lat: number;
-  lng: number;
-  address: string;
-}
+import PageHeader from "@/components/PageHeader";
+import { Loader2 } from "lucide-react";
+// import LocationPickerMap from "@/components/LocationPickerMap"; // Removed import
 
 const RequestRidePage = () => {
   const navigate = useNavigate();
-  const [pickupLocation, setPickupLocation] = useState<LocationData | null>(null);
-  const [destination, setDestination] = useState<LocationData | null>(null);
-  const [passengersCount, setPassengersCount] = useState("1");
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [destination, setDestination] = useState("");
+  const [passengers, setPassengers] = useState(1);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [step, setStep] = useState(1); // 1: Input details, 2: Confirm ride
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const getUserId = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
@@ -38,51 +31,53 @@ const RequestRidePage = () => {
         navigate("/auth");
       }
     };
-    fetchUser();
+    getUserId();
   }, [navigate]);
 
-  const handleRequestSubmit = async () => {
+  const handleRequestRide = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!userId) {
       toast.error("خطأ: لم يتم العثور على معرف المستخدم.");
       return;
     }
     if (!pickupLocation || !destination) {
-      toast.error("الرجاء تحديد موقع الانطلاق والوجهة على الخريطة.");
+      toast.error("الرجاء إدخال موقع الانطلاق والوجهة.");
       return;
     }
 
     setLoading(true);
-    const { data, error } = await supabase.from('rides').insert([
-      {
-        passenger_id: userId,
-        pickup_location: pickupLocation.address,
-        pickup_lat: pickupLocation.lat,
-        pickup_lng: pickupLocation.lng,
-        destination: destination.address,
-        destination_lat: destination.lat,
-        destination_lng: destination.lng,
-        passengers_count: parseInt(passengersCount),
-        status: "pending",
-      },
-    ]).select();
+
+    // For simplicity, we'll use dummy lat/lng for now.
+    // In a real app, you'd use a geocoding service to get these from the address.
+    const dummyLat = 31.9539; // Amman latitude
+    const dummyLng = 35.9106; // Amman longitude
+
+    const { data, error } = await supabase
+      .from('rides')
+      .insert([
+        {
+          passenger_id: userId,
+          pickup_location: pickupLocation,
+          pickup_lat: dummyLat,
+          pickup_lng: dummyLng,
+          destination: destination,
+          destination_lat: dummyLat + 0.01, // Slightly different for destination
+          destination_lng: dummyLng + 0.01,
+          passengers_count: passengers,
+          status: 'pending',
+        },
+      ])
+      .select();
+
     setLoading(false);
 
     if (error) {
       toast.error(`فشل طلب الرحلة: ${error.message}`);
       console.error("Error requesting ride:", error);
     } else {
-      toast.success(`تم طلب رحلة من ${pickupLocation.address} إلى ${destination.address} لـ ${passengersCount} ركاب.`);
-      navigate("/passenger-requests");
+      toast.success("تم طلب الرحلة بنجاح! جاري البحث عن سائق.");
+      navigate("/passenger-dashboard/my-rides");
     }
-  };
-
-  const handleNextStep = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pickupLocation || !destination || !pickupLocation.address || !destination.address) {
-      toast.error("الرجاء تحديد موقع الانطلاق والوجهة بشكل صحيح.");
-      return;
-    }
-    setStep(2);
   };
 
   return (
@@ -91,80 +86,72 @@ const RequestRidePage = () => {
         <div className="p-6">
           <PageHeader
             title="طلب رحلة جديدة"
-            description={step === 1 ? "املأ التفاصيل لطلب رحلتك" : "تأكيد تفاصيل رحلتك"}
-            backPath={step === 1 ? "/passenger-dashboard" : undefined}
+            description="أدخل تفاصيل رحلتك وسنبحث لك عن سائق."
+            backPath="/passenger-dashboard"
           />
         </div>
-        <CardContent>
-          {step === 1 && (
-            <form onSubmit={handleNextStep} className="space-y-6">
-              <LocationPickerMap
+        <CardContent className="space-y-6">
+          <form onSubmit={handleRequestRide} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="pickup-location">موقع الانطلاق</Label>
+              <Input
+                id="pickup-location"
+                type="text"
+                placeholder="أدخل موقع الانطلاق"
+                value={pickupLocation}
+                onChange={(e) => setPickupLocation(e.target.value)}
+                required
+              />
+              {/* <LocationPickerMap
                 label="موقع الانطلاق"
-                onLocationSelect={setPickupLocation}
-                initialLocation={pickupLocation || undefined}
-              />
-              <LocationPickerMap
-                label="الوجهة"
-                onLocationSelect={setDestination}
-                initialLocation={destination || undefined}
-              />
-              <div>
-                <Label htmlFor="passengers">عدد الركاب</Label>
-                <Select value={passengersCount} onValueChange={setPassengersCount}>
-                  <SelectTrigger id="passengers" className="w-full mt-1">
-                    <SelectValue placeholder="اختر عدد الركاب" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 راكب</SelectItem>
-                    <SelectItem value="2">2 ركاب</SelectItem>
-                    <SelectItem value="3">3 ركاب</SelectItem>
-                    <SelectItem value="4">4 ركاب</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-                التالي
-              </Button>
-            </form>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-6 text-right">
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
-                <p className="text-lg text-gray-800 dark:text-gray-200">
-                  <span className="font-semibold">من:</span> {pickupLocation?.address}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
-                <p className="text-lg text-gray-800 dark:text-gray-200">
-                  <span className="font-semibold">إلى:</span> {destination?.address}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <p className="text-lg text-gray-800 dark:text-gray-200">
-                  <span className="font-semibold">عدد الركاب:</span> {passengersCount}
-                </p>
-              </div>
-              <div className="flex justify-between gap-4 mt-6">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-                  تعديل
-                </Button>
-                <Button onClick={handleRequestSubmit} className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                      جاري طلب الرحلة...
-                    </>
-                  ) : (
-                    "تأكيد وطلب الرحلة"
-                  )}
-                </Button>
-              </div>
+                onLocationSelect={(loc) => setPickupLocation(loc.address)}
+              /> */}
             </div>
-          )}
+
+            <div className="space-y-2">
+              <Label htmlFor="destination">الوجهة</Label>
+              <Input
+                id="destination"
+                type="text"
+                placeholder="أدخل الوجهة"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                required
+              />
+              {/* <LocationPickerMap
+                label="الوجهة"
+                onLocationSelect={(loc) => setDestination(loc.address)}
+              /> */}
+            </div>
+
+            <div className="space-y-4">
+              <Label htmlFor="passengers">عدد الركاب: {passengers}</Label>
+              <Slider
+                id="passengers"
+                min={1}
+                max={5}
+                step={1}
+                value={[passengers]}
+                onValueChange={(val) => setPassengers(val[0])}
+                className="w-full"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin ml-2 rtl:mr-2" />
+                  جاري طلب الرحلة...
+                </>
+              ) : (
+                "طلب الرحلة"
+              )}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
