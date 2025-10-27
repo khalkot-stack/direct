@@ -6,9 +6,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white p-4 text-center">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-green-400">
-          DIRECT
-        </h1>
+        <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto mb-6 h-24" />
         <p className="text-2xl md:text-3xl mb-8 font-light">
           وسيلتك الذكية للتنقل داخل الأردن
         </p>
