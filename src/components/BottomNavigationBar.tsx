@@ -19,7 +19,7 @@ const BottomNavigationBar = () => {
       if (user) {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('role')
+          .select('user_type') // Corrected from 'role' to 'user_type'
           .eq('id', user.id)
           .single();
 
@@ -28,7 +28,7 @@ const BottomNavigationBar = () => {
           toast.error("فشل جلب دور المستخدم.");
           setUserRole(null);
         } else if (profile) {
-          setUserRole(profile.role);
+          setUserRole(profile.user_type); // Use profile.user_type
         }
       } else {
         setUserRole(null);
