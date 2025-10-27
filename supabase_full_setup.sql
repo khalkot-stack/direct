@@ -17,7 +17,7 @@ RETURNS boolean AS $$
 $$ LANGUAGE sql STABLE;
 
 -- Helper function to get current user's type
-CREATE OR OR REPLACE FUNCTION public.get_user_type()
+CREATE OR REPLACE FUNCTION public.get_user_type() -- Corrected: Removed duplicated 'OR'
 RETURNS text AS $$
   SELECT auth.jwt() -> 'app_metadata' ->> 'user_type';
 $$ LANGUAGE sql STABLE;
