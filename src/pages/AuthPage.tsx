@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 
 const AuthPage = () => {
-  const [userType, setUserType] = useState<"passenger" | "driver" | "admin">("passenger"); // Added 'admin' to userType state
+  const [userType, setUserType] = useState<"passenger" | "driver" | "admin">("passenger");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
@@ -119,7 +119,7 @@ const AuthPage = () => {
       <div className="flex-1 flex items-center justify-center w-full py-8">
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
           <CardHeader className="text-center pb-4">
-            <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-20 mb-4" /> {/* Increased logo size */}
+            <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-20 mb-4" />
             <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
               مرحباً بك في DIRECT
             </CardTitle>
@@ -143,7 +143,7 @@ const AuthPage = () => {
                       type="email"
                       placeholder="example@email.com"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                     />
@@ -155,7 +155,7 @@ const AuthPage = () => {
                       type="password"
                       placeholder="********"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                     />
@@ -207,7 +207,7 @@ const AuthPage = () => {
                       type="text"
                       placeholder="اسمك الكامل"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
                     />
@@ -219,7 +219,7 @@ const AuthPage = () => {
                       type="tel"
                       placeholder="07xxxxxxxxx"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
                     />
@@ -231,7 +231,7 @@ const AuthPage = () => {
                       type="email"
                       placeholder="example@email.com"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                     />
@@ -243,7 +243,7 @@ const AuthPage = () => {
                       type="password"
                       placeholder="********"
                       required
-                      className="mt-1 text-right"
+                      className="mt-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
                     />
