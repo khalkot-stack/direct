@@ -9,7 +9,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import InteractiveMap from "@/components/InteractiveMap";
-import CancellationReasonDialog from "@/components/CancellationReasonDialog"; // Import the new dialog
+import CancellationReasonDialog from "@/components/CancellationReasonDialog";
+import ChatDialog from "@/components/ChatDialog"; // Import ChatDialog
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +37,7 @@ interface SupabaseJoinedRideData {
   driver_id: string | null;
   profiles_passenger: Array<{ full_name: string; phone_number?: string }> | null;
   profiles_driver: Array<{ full_name: string; phone_number?: string; car_model?: string; car_color?: string; license_plate?: string; current_lat?: number; current_lng?: number }> | null;
-  cancellation_reason: string | null; // Added cancellation_reason
+  cancellation_reason: string | null;
 }
 
 interface Ride {
@@ -60,7 +61,7 @@ interface Ride {
   destination_lng: number;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
-  cancellation_reason?: string | null; // Added cancellation_reason
+  cancellation_reason?: string | null;
 }
 
 const PassengerTrackingPage: React.FC = () => {
@@ -71,7 +72,8 @@ const PassengerTrackingPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirmCancelOpen, setIsConfirmCancelOpen] = useState(false);
-  const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false); // New state
+  const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false);
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false); // New state for chat dialog
 
   const fetchRideDetails = useCallback(async () => {
     if (!rideId) {
@@ -348,7 +350,7 @@ const PassengerTrackingPage: React.FC = () => {
                     <Phone className="h-4 w-4" />
                     اتصال
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleMessage(ride.driver_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+                  <Button variant="outline" size="sm" onClick={() => setIsChatDialogOpen(true)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
                     <MessageSquare className="h-4 w-4" />
                     رسالة
                   </Button>
@@ -371,7 +373,7 @@ const PassengerTrackingPage: React.FC = () => {
           {ride.status === "accepted" && (
             <Button
               variant="destructive"
-              onClick={() => setIsCancellationReasonDialogOpen(true)} // Open reason dialog first
+              onClick={() => setIsCancellationReasonDialogOpen(true)}
               disabled={isCancelling}
               className="w-full mt-6 flex items-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             >
@@ -396,6 +398,17 @@ const PassengerTrackingPage: React.FC = () => {
         onConfirm={handleCancelRideWithReason}
         isSubmitting={isCancelling}
       />
+
+      {ride.driver_id && currentUserId && (
+        <ChatDialog
+          open={isChatDialogOpen}
+          onOpenChange={setIsChatDialogOpen}
+          rideId={ride.id}
+          otherUserId={ride.driver_id}
+          otherUserName={ride.driver_name || 'السائق'}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };
