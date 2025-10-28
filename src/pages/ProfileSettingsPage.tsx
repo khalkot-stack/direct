@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, User } from "lucide-react"; // Added User icon
 import { Switch } from "../components/ui/switch";
 import PageHeader from "@/components/PageHeader"; // Add PageHeader import
+import AvatarUpload from "@/components/AvatarUpload"; // Import AvatarUpload component
 
 // Define a local Profile interface based on the expected data structure
 interface Profile {
@@ -139,50 +140,9 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) {
-      toast.error("الرجاء اختيار صورة لرفعها.");
-      return;
-    }
-
-    const file = event.target.files[0];
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${currentUserId}/${Math.random()}.${fileExt}`;
-
-    try {
-      setLoading(true);
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      if (publicUrlData) {
-        setAvatarUrl(publicUrlData.publicUrl);
-        await updateProfile({
-          fullname,
-          username,
-          website,
-          avatar_url: publicUrlData.publicUrl,
-          user_type: userType,
-          car_model: carModel,
-          car_color: carColor,
-          license_plate: licensePlate,
-          phone_number: phoneNumber,
-        });
-      }
-    } catch (error) {
-      toast.error("فشل رفع الصورة: " + (error as Error).message);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  const handleAvatarUploadSuccess = (newUrl: string) => {
+    setAvatarUrl(newUrl);
+    // No need to call updateProfile here, AvatarUpload component already handles it
   };
 
   const handleSignOut = async () => {
@@ -220,24 +180,13 @@ export default function ProfileSettingsPage() {
           />
         </div>
         <div className="flex flex-col items-center space-y-4 p-6 pt-0">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={avatar_url || undefined} alt="Avatar" />
-            <AvatarFallback>
-              {fullname ? fullname.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
-            </AvatarFallback>
-          </Avatar>
-          <Input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="hidden"
-          />
-          <Label htmlFor="avatar-upload" className="cursor-pointer">
-            <Button asChild>
-              <span>تغيير الصورة الرمزية</span>
-            </Button>
-          </Label>
+          {currentUserId && (
+            <AvatarUpload
+              userId={currentUserId}
+              initialAvatarUrl={avatar_url}
+              onUploadSuccess={handleAvatarUploadSuccess}
+            />
+          )}
         </div>
         <div className="space-y-4 p-6 pt-0">
           <div className="grid w-full items-center gap-1.5">
