@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Car, MapPin, Trash2 } from "lucide-react"; // Added Trash2 icon
+import { Loader2, Star, Car, MapPin, Trash2, MoreHorizontal } from "lucide-react"; // Added MoreHorizontal icon
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import RatingDialog from "@/components/RatingDialog";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { Badge } from "@/components/ui/badge"; // Import Badge component
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -281,7 +282,7 @@ const PassengerRequestsPage = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2 mt-2 sm:mt-0"> {/* Added margin-top for small screens */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0"> {/* Changed to flex-col on small screens */}
                   <Button
                     variant="outline"
                     className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
@@ -297,30 +298,28 @@ const PassengerRequestsPage = () => {
                       تتبع الرحلة <MapPin className="h-4 w-4 mr-1 rtl:ml-1" />
                     </Button>
                   )}
-                  {request.status === "completed" && !request.has_rated && request.driver_id && (
-                    <Button
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                      onClick={() => handleRateDriver(request)}
-                    >
-                      تقييم السائق
-                    </Button>
-                  )}
                   {request.status === "completed" && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteClick(request.id)}
-                      disabled={loading}
-                      className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                    >
-                      {loading && rideToDeleteId === request.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                      ) : (
-                        <>
-                          حذف <Trash2 className="h-4 w-4 mr-1 rtl:ml-1" />
-                        </>
-                      )}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">المزيد من الإجراءات</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {!request.has_rated && request.driver_id && (
+                          <DropdownMenuItem onClick={() => handleRateDriver(request)}>
+                            تقييم السائق
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(request.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          حذف الرحلة
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               </div>

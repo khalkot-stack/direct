@@ -320,7 +320,7 @@ export default function DriverAcceptedRidesPage() {
                       ملاحظات الراكب: {ride.passenger_notes}
                     </div>
                   )}
-                  <div className="flex justify-end space-x-2 rtl:space-x-reverse mt-4">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4"> {/* Changed to flex-col on small screens */}
                     {ride.status === "accepted" && (
                       <>
                         <Button
