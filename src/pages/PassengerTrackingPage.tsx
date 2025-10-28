@@ -295,7 +295,7 @@ const PassengerTrackingPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6">
+        <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
             title={`تتبع الرحلة #${ride.id.substring(0, 8)}...`}
             description="تفاصيل رحلتك والسائق"

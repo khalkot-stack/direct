@@ -55,7 +55,7 @@ const PassengerDashboard = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-        <div className="p-6">
+        <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
             title={`أهلاً بك، ${userName}`}
             description="لوحة تحكم الراكب الخاصة بك"

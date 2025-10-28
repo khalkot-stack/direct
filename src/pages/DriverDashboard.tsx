@@ -135,7 +135,7 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20">
       <div className="max-w-4xl mx-auto">
-        <div className="p-6 pb-0"> {/* Added padding and removed bottom padding */}
+        <div className="px-6 pt-0 pb-0"> {/* Adjusted padding */}
           <PageHeader
             title={`مرحباً، ${driverName}!`}
             description="لوحة تحكم السائق"
@@ -200,8 +200,8 @@ const DriverDashboard = () => {
           </Card>
         </div>
 
-        <h2 className="text-xl font-semibold mb-4 p-6 pt-0">إجراءات سريعة</h2> {/* Adjusted padding */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-6 pt-0"> {/* Adjusted padding */}
+        <h2 className="text-xl font-semibold mb-4 px-6 pt-0">إجراءات سريعة</h2> {/* Adjusted padding */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 px-6 pt-0"> {/* Adjusted padding */}
           <Link to="/driver-dashboard/accepted-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
               <History className="h-8 w-8 mb-2 text-blue-500" />
