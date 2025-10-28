@@ -180,20 +180,69 @@ const FindRidesPage = () => {
     }
     setAcceptingRideId(rideId);
 
-    const { data, error } = await supabase
+    // First, get ride details to know passenger_id and locations for notification
+    const { data: rideToAccept, error: fetchError } = await supabase
       .from('rides')
-      .update({ driver_id: driverId, status: 'accepted' })
+      .select(`
+        id,
+        passenger_id,
+        pickup_location,
+        destination,
+        profiles_passenger:passenger_id (full_name)
+      `)
+      .eq('id', rideId)
+      .eq('status', 'pending')
+      .single();
+
+    if (fetchError || !rideToAccept) {
+      toast.error(`فشل جلب تفاصيل الرحلة: ${fetchError?.message || "الرحلة غير موجودة أو ليست قيد الانتظار."}`);
+      setAcceptingRideId(null);
+      return;
+    }
+
+    const passengerId = rideToAccept.passenger_id;
+    const pickupLocation = rideToAccept.pickup_location;
+    const destination = rideToAccept.destination;
+
+    // Now, update the ride status
+    const { data, error: updateError } = await supabase
+      .from('rides')
+      .update({ driver_id: driverId, status: 'accepted', accepted_at: new Date().toISOString() })
       .eq('id', rideId)
       .eq('status', 'pending')
       .select();
 
     setAcceptingRideId(null);
 
-    if (error) {
-      toast.error(`فشل قبول الرحلة: ${error.message}`);
-      console.error("Error accepting ride:", error);
+    if (updateError) {
+      toast.error(`فشل قبول الرحلة: ${updateError.message}`);
+      console.error("Error accepting ride:", updateError);
     } else if (data && data.length > 0) {
-      toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
+      // Ride accepted successfully, now send notification to passenger
+      const { data: driverProfile, error: driverProfileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', driverId)
+        .single();
+
+      const driverFullName = driverProfile?.full_name || 'سائق';
+
+      const notificationTitle = "تم قبول رحلتك!";
+      const notificationMessage = `لقد قبل السائق ${driverFullName} رحلتك من ${pickupLocation} إلى ${destination}. يمكنك الآن تتبع الرحلة والتواصل مع السائق.`;
+
+      const { error: notificationError } = await supabase.from('notifications').insert({
+        user_id: passengerId,
+        title: notificationTitle,
+        message: notificationMessage,
+        created_at: new Date().toISOString(),
+      });
+
+      if (notificationError) {
+        console.error("Error sending notification to passenger:", notificationError);
+        // Don't block the user, just log the error
+      }
+
+      toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}... بواسطة ${driverFullName}.`);
       navigate("/driver-dashboard/accepted-rides");
     } else {
       toast.error("فشل قبول الرحلة. قد تكون الرحلة قد تم قبولها أو إلغاؤها بالفعل.");
