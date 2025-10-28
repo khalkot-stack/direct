@@ -219,7 +219,7 @@ const FindRidesPage = () => {
             <Button
               variant="outline"
               onClick={() => setIsSearchDialogOpen(true)}
-              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground flex items-center gap-2"
+              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground flex items-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             >
               <Search className="h-4 w-4" />
               بحث متقدم
@@ -234,7 +234,7 @@ const FindRidesPage = () => {
             </div>
           ) : rideRequests.length > 0 ? (
             rideRequests.map((ride) => (
-              <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div key={ride.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800 transition-shadow duration-200 hover:shadow-md">
                 <div className="text-right sm:text-left mb-2 sm:mb-0">
                   <p className="text-lg font-medium text-gray-900 dark:text-white">
                     من: {ride.pickup_location} إلى: {ride.destination}
