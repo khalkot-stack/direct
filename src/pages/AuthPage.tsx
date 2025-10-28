@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 
 const AuthPage = () => {
-  const [userType, setUserType] = useState<"passenger" | "driver">("passenger");
+  const [userType, setUserType] = useState<"passenger" | "driver" | "admin">("passenger"); // Added 'admin' to userType state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
@@ -119,11 +119,11 @@ const AuthPage = () => {
       <div className="flex-1 flex items-center justify-center w-full py-8">
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
           <CardHeader className="text-center pb-4">
-            <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
+            <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-20 mb-4" /> {/* Increased logo size */}
             <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
               مرحباً بك في DIRECT
             </CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
+            <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
               سجل الدخول أو أنشئ حسابًا جديدًا
             </CardDescription>
           </CardHeader>
