@@ -123,6 +123,7 @@ const FindRidesPage = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rides' },
         (payload) => {
+          console.log("Realtime payload received:", payload); // Added console log for debugging
           if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
             supabase
               .from('rides')
@@ -148,7 +149,9 @@ const FindRidesPage = () => {
                   setRideRequests((prev) => {
                     const newRide = formatRideData(data as SupabaseJoinedRideData);
                     if (!prev.some(ride => ride.id === newRide.id)) {
-                      toast.info(`رحلة جديدة متاحة: من ${newRide.pickup_location} إلى ${newRide.destination}`);
+                      toast.info(`رحلة جديدة متاحة!`, { // Improved toast notification
+                        description: `من ${newRide.pickup_location} إلى ${newRide.destination}`,
+                      });
                       return [...prev, newRide].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                     }
                     return prev;
