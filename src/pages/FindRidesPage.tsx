@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
-import RideSearchDialog from "@/components/RideSearchDialog"; // Import the new dialog
+import RideSearchDialog from "@/components/RideSearchDialog";
 
 interface SupabaseJoinedRideData {
   id: string;
@@ -50,7 +50,7 @@ const FindRidesPage = () => {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
-  const [acceptingRideId, setAcceptingRideId] = useState<string | null>(null); // New state to track which ride is being accepted
+  const [acceptingRideId, setAcceptingRideId] = useState<string | null>(null);
 
   const formatRideData = (ride: SupabaseJoinedRideData): RideRequest => ({
     id: ride.id,
@@ -175,16 +175,16 @@ const FindRidesPage = () => {
       toast.error("خطأ: لم يتم العثور على معرف السائق.");
       return;
     }
-    setAcceptingRideId(rideId); // Set the ID of the ride being accepted
+    setAcceptingRideId(rideId);
 
     const { data, error } = await supabase
       .from('rides')
       .update({ driver_id: driverId, status: 'accepted' })
       .eq('id', rideId)
-      .eq('status', 'pending') // Ensure we only update pending rides
-      .select(); // Select the updated row to confirm success
+      .eq('status', 'pending')
+      .select();
 
-    setAcceptingRideId(null); // Clear the accepting state
+    setAcceptingRideId(null);
 
     if (error) {
       toast.error(`فشل قبول الرحلة: ${error.message}`);
@@ -193,9 +193,8 @@ const FindRidesPage = () => {
       toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
       navigate("/driver-dashboard/accepted-rides");
     } else {
-      // This case means no rows were updated, likely because the ride was already accepted or cancelled
       toast.error("فشل قبول الرحلة. قد تكون الرحلة قد تم قبولها أو إلغاؤها بالفعل.");
-      fetchPendingRides(searchCriteria); // Refresh the list to show updated status
+      fetchPendingRides(searchCriteria);
     }
   };
 
@@ -217,9 +216,9 @@ const FindRidesPage = () => {
         <CardContent className="space-y-4">
           <div className="flex justify-end mb-4">
             <Button
-              variant="outline"
+              variant="secondary" // Changed to secondary for a distinct but consistent look
               onClick={() => setIsSearchDialogOpen(true)}
-              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground flex items-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+              className="text-secondary-foreground border-secondary hover:bg-secondary/80 flex items-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             >
               <Search className="h-4 w-4" />
               بحث متقدم
@@ -255,7 +254,7 @@ const FindRidesPage = () => {
                   <Button
                     onClick={() => handleAcceptRide(ride.id)}
                     className="bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                    disabled={acceptingRideId === ride.id} // Disable button for the specific ride being accepted
+                    disabled={acceptingRideId === ride.id}
                   >
                     {acceptingRideId === ride.id ? (
                       <>
