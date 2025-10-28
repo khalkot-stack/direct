@@ -13,3 +13,7 @@ BEGIN
   RETURN user_role;
 END;
 $function$;
+
+-- التأكد من أن المستخدمين المصادق عليهم لديهم إذن تنفيذ الدالة
+REVOKE ALL ON FUNCTION public.get_user_role() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_user_role() TO authenticated;
