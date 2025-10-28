@@ -42,16 +42,10 @@ const DriverAcceptedRidesPage = () => {
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false); // New state for chat dialog
   const [chatTarget, setChatTarget] = useState<{ rideId: string; otherUserId: string; otherUserName: string } | null>(null);
 
+  // useCallback for fetchAcceptedRides to ensure it's stable and doesn't cause infinite loops
   const fetchAcceptedRides = useCallback(async (currentDriverId: string) => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
-      navigate("/auth");
-      setLoading(false);
-      return;
-    }
-    setDriverId(user.id);
+    console.log("fetchAcceptedRides: Attempting to fetch rides for driver:", currentDriverId);
 
     const { data, error } = await supabase
       .from('rides')
@@ -71,68 +65,79 @@ const DriverAcceptedRidesPage = () => {
 
     if (error) {
       toast.error(`فشل جلب الرحلات المقبولة: ${error.message}`);
-      console.error("Error fetching accepted rides:", error);
+      console.error("fetchAcceptedRides: Error fetching accepted rides:", error);
     } else {
+      console.log("fetchAcceptedRides: Fetched raw data:", data);
       const formattedRides: AcceptedRide[] = data.map((ride: SupabaseJoinedRideData) => ({
         id: ride.id,
         pickup_location: ride.pickup_location,
         destination: ride.destination,
         passengers_count: ride.passengers_count,
         status: ride.status,
-        passenger_id: ride.passenger_id, // Include passenger_id
+        passenger_id: ride.passenger_id,
         passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف',
         passenger_phone: ride.profiles_passenger?.[0]?.phone_number || 'غير متاح',
       }));
       setAcceptedRides(formattedRides);
+      console.log("fetchAcceptedRides: Updated acceptedRides state:", formattedRides);
     }
     setLoading(false);
-  }, [navigate]);
+  }, [navigate]); // navigate is a dependency because it's used inside fetchAcceptedRides
 
+  // Effect 1: Get driverId once on component mount
   useEffect(() => {
-    let channel: any; // Declare channel outside to be accessible in cleanup
-
-    const setupDriverAndRealtime = async () => {
+    const getDriver = async () => {
+      console.log("useEffect 1: Getting user session...");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (user) {
+        console.log("useEffect 1: User found, setting driverId:", user.id);
+        setDriverId(user.id);
+      } else {
+        console.log("useEffect 1: No user found, navigating to auth.");
         toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
         navigate("/auth");
-        setLoading(false);
-        return;
+        setLoading(false); // If not logged in, stop loading here
       }
-      const currentDriverId = user.id;
-      setDriverId(currentDriverId);
-      fetchAcceptedRides(currentDriverId); // Initial fetch
-
-      // Setup Realtime listener for any changes to rides associated with this driver
-      channel = supabase
-        .channel(`driver_rides_${currentDriverId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE', // Listen for any updates
-            schema: 'public',
-            table: 'rides',
-            filter: `driver_id=eq.${currentDriverId}` // Filter by driver_id
-          },
-          (payload) => {
-            // If the updated ride's status is 'accepted' or 'completed', re-fetch all accepted rides
-            if (payload.new.status === 'accepted' || payload.new.status === 'completed' || payload.new.status === 'cancelled') {
-              toast.info(`تم تحديث حالة الرحلة: ${payload.new.pickup_location} إلى ${payload.new.destination} إلى ${payload.new.status}`);
-              fetchAcceptedRides(currentDriverId);
-            }
-          }
-        )
-        .subscribe();
     };
+    getDriver();
+  }, [navigate]);
 
-    setupDriverAndRealtime();
+  // Effect 2: Fetch rides and subscribe to Realtime changes once driverId is available
+  useEffect(() => {
+    if (!driverId) {
+      console.log("useEffect 2: driverId is null, skipping fetch and subscription.");
+      return; // Skip if driverId is not yet set
+    }
+
+    console.log("useEffect 2: driverId is available, performing initial fetch and subscribing to Realtime.");
+    fetchAcceptedRides(driverId); // Initial fetch when driverId is set
+
+    const channel = supabase
+      .channel(`driver_rides_${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE', // Listen for any updates
+          schema: 'public',
+          table: 'rides',
+          filter: `driver_id=eq.${driverId}` // Filter by driver_id
+        },
+        (payload) => {
+          console.log("Realtime update received for driver rides:", payload); // Debugging log
+          // Re-fetch all accepted rides if any relevant update occurs
+          if (payload.new.status === 'accepted' || payload.new.status === 'completed' || payload.new.status === 'cancelled') {
+            toast.info(`تم تحديث حالة الرحلة: ${payload.new.pickup_location} إلى ${payload.new.destination} إلى ${payload.new.status}`);
+            fetchAcceptedRides(driverId); // Re-fetch with the stable driverId
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      console.log("useEffect 2 cleanup: Unsubscribing from Realtime channel.");
+      supabase.removeChannel(channel);
     };
-  }, [navigate, fetchAcceptedRides]);
+  }, [driverId, fetchAcceptedRides]); // Dependencies: driverId and the stable fetch function
 
   const handleCompleteRide = async (rideId: string) => {
     setLoading(true);
@@ -148,7 +153,7 @@ const DriverAcceptedRidesPage = () => {
       console.error("Error completing ride:", error);
     } else {
       toast.success(`تم إكمال الرحلة رقم ${rideId.substring(0, 8)}... بنجاح.`);
-      if (driverId) fetchAcceptedRides(driverId);
+      // The Realtime listener should pick this up and trigger a re-fetch
     }
   };
 
