@@ -15,7 +15,7 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950">
       <AppHeader /> {/* Global App Header */}
-      <div className="flex-1 flex items-center justify-center w-full"> {/* Removed pt-16 */}
+      <div className="flex-1 flex flex-col w-full"> {/* Removed items-center justify-center */}
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">404</h1>
           <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
