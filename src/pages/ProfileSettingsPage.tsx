@@ -2,15 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase"; // Import supabase client
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Updated import path
+import { Button } from "@/components/ui/button"; // Updated import path
+import { Input } from "@/components/ui/input"; // Updated import path
+import { Label } from "@/components/ui/label"; // Updated import path
 import { toast } from "sonner";
-import { Loader2, User } from "lucide-react"; // Added User icon
-import { Switch } from "../components/ui/switch";
-import PageHeader from "@/components/PageHeader"; // Add PageHeader import
-import AvatarUpload from "@/components/AvatarUpload"; // Import AvatarUpload component
+import { Loader2, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch"; // Updated import path
+import PageHeader from "@/components/PageHeader";
+import AvatarUpload from "@/components/AvatarUpload";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Updated import path
 
 // Define a local Profile interface based on the expected data structure
 interface Profile {
