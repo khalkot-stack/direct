@@ -28,6 +28,7 @@ import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
 import MainLayout from './components/MainLayout';
+import PassengerTrackingPage from './pages/PassengerTrackingPage'; // Import the new page
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
               <Route path="passenger-dashboard" element={<PassengerDashboard />} />
               <Route path="passenger-dashboard/request-ride" element={<RequestRidePage />} />
               <Route path="passenger-dashboard/my-rides" element={<PassengerRequestsPage />} />
+              <Route path="passenger-dashboard/track-ride/:rideId" element={<PassengerTrackingPage />} /> {/* New route */}
               
               <Route path="driver-dashboard" element={<DriverDashboard />} />
               <Route path="driver-dashboard/find-rides" element={<FindRidesPage />} />

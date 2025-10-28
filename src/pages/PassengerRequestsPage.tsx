@@ -4,12 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Car } from "lucide-react";
+import { Loader2, Star, Car, MapPin } from "lucide-react"; // Added MapPin icon
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import RatingDialog from "@/components/RatingDialog";
-import PageHeader from "@/components/PageHeader"; // Import PageHeader
-import EmptyState from "@/components/EmptyState"; // Import EmptyState
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -174,6 +174,14 @@ const PassengerRequestsPage = () => {
                   >
                     عرض التفاصيل
                   </Button>
+                  {request.status === "accepted" && (
+                    <Button
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                      onClick={() => navigate(`/passenger-dashboard/track-ride/${request.id}`)}
+                    >
+                      تتبع الرحلة <MapPin className="h-4 w-4 mr-1 rtl:ml-1" />
+                    </Button>
+                  )}
                   {request.status === "completed" && !request.has_rated && request.driver_id && (
                     <Button
                       className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
