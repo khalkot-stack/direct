@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Added CardHeader, CardTitle
 import { Button } from "@/components/ui/button";
 import { Loader2, Star, Car, MapPin, Trash2, MoreHorizontal } from "lucide-react"; // Added MoreHorizontal icon
 import { supabase } from "@/lib/supabase";
@@ -262,67 +262,73 @@ const PassengerRequestsPage = () => {
         <CardContent className="space-y-4">
           {passengerRequests.length > 0 ? (
             passengerRequests.map((request) => (
-              <div key={request.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <div className="text-right sm:text-left mb-2 sm:mb-0">
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">
-                    من: {request.pickup_location} إلى: {request.destination}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                    عدد الركاب: {request.passengers_count} | الحالة: {getStatusBadge(request.status)}
+              <Card key={request.id} className={`border-l-4 ${request.status === 'pending' ? 'border-yellow-500' : request.status === 'accepted' ? 'border-primary' : request.status === 'completed' ? 'border-green-500' : 'border-red-500'} shadow-sm hover:shadow-md transition-shadow duration-200`}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center">
+                      <MapPin className="h-5 w-5 text-primary ml-2 rtl:mr-2" />
+                      <span>{request.pickup_location} <span className="mx-1">إلى</span> {request.destination}</span>
+                    </div>
+                    {getStatusBadge(request.status)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    عدد الركاب: {request.passengers_count}
                   </p>
                   {request.driver_name !== "لا يوجد" && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-gray-600 dark:text-gray-400">
                       السائق: {request.driver_name}
                     </p>
                   )}
                   {request.has_rated && request.current_rating !== undefined && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                    <p className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
                       تقييمك: {request.current_rating} <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                       {request.current_comment && ` ("${request.current_comment}")`}
                     </p>
                   )}
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0"> {/* Changed to flex-col on small screens */}
-                  <Button
-                    variant="outline"
-                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                    onClick={() => navigate(`/ride-details/${request.id}`)}
-                  >
-                    عرض التفاصيل
-                  </Button>
-                  {request.status === "accepted" && (
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                     <Button
-                      className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                      onClick={() => navigate(`/passenger-dashboard/track-ride/${request.id}`)}
+                      variant="outline"
+                      className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                      onClick={() => navigate(`/ride-details/${request.id}`)}
                     >
-                      تتبع الرحلة <MapPin className="h-4 w-4 mr-1 rtl:ml-1" />
+                      عرض التفاصيل
                     </Button>
-                  )}
-                  {request.status === "completed" && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 w-9 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">المزيد من الإجراءات</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {!request.has_rated && request.driver_id && (
-                          <DropdownMenuItem onClick={() => handleRateDriver(request)}>
-                            تقييم السائق
+                    {request.status === "accepted" && (
+                      <Button
+                        className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                        onClick={() => navigate(`/passenger-dashboard/track-ride/${request.id}`)}
+                      >
+                        تتبع الرحلة <MapPin className="h-4 w-4 mr-1 rtl:ml-1" />
+                      </Button>
+                    )}
+                    {request.status === "completed" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">المزيد من الإجراءات</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!request.has_rated && request.driver_id && (
+                            <DropdownMenuItem onClick={() => handleRateDriver(request)}>
+                              تقييم السائق
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(request.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            حذف الرحلة
                           </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(request.id)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          حذف الرحلة
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))
           ) : (
             <EmptyState
