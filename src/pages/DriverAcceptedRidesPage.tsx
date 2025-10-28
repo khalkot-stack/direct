@@ -60,7 +60,10 @@ const DriverAcceptedRidesPage = () => {
         passenger_id,
         driver_id,
         profiles_passenger:passenger_id (full_name, phone_number)
-      `);
+      `)
+      .eq('driver_id', currentDriverId)
+      .in('status', ['accepted', 'completed']) // Show accepted and completed rides
+      .order('created_at', { ascending: false });
 
     if (error) {
       toast.error(`فشل جلب الرحلات المقبولة: ${error.message}`);
@@ -122,7 +125,7 @@ const DriverAcceptedRidesPage = () => {
 
   const handleMessage = (phoneNumber: string | undefined) => {
     if (phoneNumber && phoneNumber !== 'غير متاح') {
-      window.location.href = `sms:${phoneNumber`;
+      window.location.href = `sms:${phoneNumber}`; // Corrected: added closing backtick
     } else {
       toast.info("رقم الهاتف غير متاح.");
     }
