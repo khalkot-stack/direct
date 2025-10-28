@@ -41,12 +41,11 @@ const DriverAcceptedRidesPage = () => {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false); // New state for chat dialog
   const [chatTarget, setChatTarget] = useState<{ rideId: string; otherUserId: string; otherUserName: string } | null>(null);
+  const [completingRideId, setCompletingRideId] = useState<string | null>(null); // New state for completing ride
 
   // useCallback for fetchAcceptedRides to ensure it's stable and doesn't cause infinite loops
   const fetchAcceptedRides = useCallback(async (currentDriverId: string) => {
     setLoading(true);
-    console.log("fetchAcceptedRides: Attempting to fetch rides for driver:", currentDriverId);
-
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -65,9 +64,8 @@ const DriverAcceptedRidesPage = () => {
 
     if (error) {
       toast.error(`فشل جلب الرحلات المقبولة: ${error.message}`);
-      console.error("fetchAcceptedRides: Error fetching accepted rides:", error);
+      console.error("Error fetching accepted rides:", error);
     } else {
-      console.log("fetchAcceptedRides: Fetched raw data:", data);
       const formattedRides: AcceptedRide[] = data.map((ride: SupabaseJoinedRideData) => ({
         id: ride.id,
         pickup_location: ride.pickup_location,
@@ -79,21 +77,17 @@ const DriverAcceptedRidesPage = () => {
         passenger_phone: ride.profiles_passenger?.[0]?.phone_number || 'غير متاح',
       }));
       setAcceptedRides(formattedRides);
-      console.log("fetchAcceptedRides: Updated acceptedRides state:", formattedRides);
     }
     setLoading(false);
-  }, [navigate]); // navigate is a dependency because it's used inside fetchAcceptedRides
+  }, []);
 
   // Effect 1: Get driverId once on component mount
   useEffect(() => {
     const getDriver = async () => {
-      console.log("useEffect 1: Getting user session...");
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log("useEffect 1: User found, setting driverId:", user.id);
         setDriverId(user.id);
       } else {
-        console.log("useEffect 1: No user found, navigating to auth.");
         toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
         navigate("/auth");
         setLoading(false); // If not logged in, stop loading here
@@ -105,11 +99,9 @@ const DriverAcceptedRidesPage = () => {
   // Effect 2: Fetch rides and subscribe to Realtime changes once driverId is available
   useEffect(() => {
     if (!driverId) {
-      console.log("useEffect 2: driverId is null, skipping fetch and subscription.");
       return; // Skip if driverId is not yet set
     }
 
-    console.log("useEffect 2: driverId is available, performing initial fetch and subscribing to Realtime.");
     fetchAcceptedRides(driverId); // Initial fetch when driverId is set
 
     const channel = supabase
@@ -123,7 +115,6 @@ const DriverAcceptedRidesPage = () => {
           filter: `driver_id=eq.${driverId}` // Filter by driver_id
         },
         (payload) => {
-          console.log("Realtime update received for driver rides:", payload); // Debugging log
           // Re-fetch all accepted rides if any relevant update occurs
           if (payload.new.status === 'accepted' || payload.new.status === 'completed' || payload.new.status === 'cancelled') {
             toast.info(`تم تحديث حالة الرحلة: ${payload.new.pickup_location} إلى ${payload.new.destination} إلى ${payload.new.status}`);
@@ -134,20 +125,19 @@ const DriverAcceptedRidesPage = () => {
       .subscribe();
 
     return () => {
-      console.log("useEffect 2 cleanup: Unsubscribing from Realtime channel.");
       supabase.removeChannel(channel);
     };
   }, [driverId, fetchAcceptedRides]); // Dependencies: driverId and the stable fetch function
 
   const handleCompleteRide = async (rideId: string) => {
-    setLoading(true);
+    setCompletingRideId(rideId); // Set the ID of the ride being completed
     const { error } = await supabase
       .from('rides')
       .update({ status: 'completed' })
       .eq('id', rideId)
       .eq('driver_id', driverId);
 
-    setLoading(false);
+    setCompletingRideId(null); // Clear the completing state
     if (error) {
       toast.error(`فشل إكمال الرحلة: ${error.message}`);
       console.error("Error completing ride:", error);
@@ -237,9 +227,9 @@ const DriverAcceptedRidesPage = () => {
                     <Button
                       onClick={() => handleCompleteRide(ride.id)}
                       className="bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                      disabled={loading}
+                      disabled={completingRideId === ride.id} // Disable button for the specific ride being completed
                     >
-                      {loading ? (
+                      {completingRideId === ride.id ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
                           جاري الإكمال...
