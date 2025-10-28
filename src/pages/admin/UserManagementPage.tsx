@@ -34,6 +34,7 @@ const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
+  const [isNewUser, setIsNewUser] = useState(false); // State to track if we are adding a new user
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,32 +62,45 @@ const UserManagementPage = () => {
     profile.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (profile: Profile) => {
-    setEditingProfile(profile);
+  const handleAddUser = () => {
+    setEditingProfile(undefined); // Clear any previous editing state
+    setIsNewUser(true);
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveProfile = async (updatedProfile: Profile) => {
-    // This function now only handles updating existing profiles.
-    // New users must register via the AuthPage, and then their profiles can be managed here.
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: updatedProfile.full_name,
-        email: updatedProfile.email,
-        user_type: updatedProfile.user_type,
-        status: updatedProfile.status,
-        phone_number: updatedProfile.phone_number,
-      })
-      .eq('id', updatedProfile.id);
+  const handleEdit = (profile: Profile) => {
+    setEditingProfile(profile);
+    setIsNewUser(false);
+    setIsFormDialogOpen(true);
+  };
 
-    if (error) {
-      toast.error(`فشل تحديث المستخدم: ${error.message}`);
-      console.error("Error updating profile:", error);
-    } else {
-      toast.success(`تم تحديث المستخدم ${updatedProfile.full_name} بنجاح.`);
+  const handleSaveProfile = async (profileData: Profile) => {
+    if (isNewUser) {
+      // This logic is now handled inside UserFormDialog using supabase.auth.signUp
+      // The dialog will close itself and toast messages will be handled there.
+      // We just need to refetch profiles after the dialog closes.
       fetchProfiles();
-      setIsFormDialogOpen(false);
+    } else {
+      // Update existing profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileData.full_name,
+          email: profileData.email, // Email is disabled in form, but included for consistency
+          user_type: profileData.user_type,
+          status: profileData.status,
+          phone_number: profileData.phone_number,
+        })
+        .eq('id', profileData.id);
+
+      if (error) {
+        toast.error(`فشل تحديث المستخدم: ${error.message}`);
+        console.error("Error updating profile:", error);
+      } else {
+        toast.success(`تم تحديث المستخدم ${profileData.full_name} بنجاح.`);
+        fetchProfiles();
+        setIsFormDialogOpen(false);
+      }
     }
   };
 
@@ -97,6 +111,8 @@ const UserManagementPage = () => {
 
   const handleConfirmDelete = async () => {
     if (profileToDelete) {
+      // Note: Deleting from 'profiles' table does NOT delete from 'auth.users'.
+      // For full user deletion, you'd need a server-side function using Supabase Admin API.
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -106,7 +122,7 @@ const UserManagementPage = () => {
         toast.error(`فشل حذف المستخدم: ${error.message}`);
         console.error("Error deleting profile:", error);
       } else {
-        toast.warning(`تم حذف المستخدم بنجاح.`);
+        toast.warning(`تم حذف الملف الشخصي للمستخدم بنجاح. (ملاحظة: لم يتم حذف حساب المصادقة).`);
         fetchProfiles();
       }
       setProfileToDelete(null);
@@ -129,10 +145,9 @@ const UserManagementPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>قائمة المستخدمين</CardTitle>
-          {/* Removed "Add new user" button as direct profile creation is not supported */}
-          {/* <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
+          <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
             إضافة مستخدم جديد
-          </Button> */}
+          </Button>
         </CardHeader>
         <CardContent>
           <Input
@@ -185,14 +200,16 @@ const UserManagementPage = () => {
         onOpenChange={setIsFormDialogOpen}
         profile={editingProfile}
         onSave={handleSaveProfile}
-        // isNewUser prop is removed as this dialog is now only for editing
+        isNewUser={isNewUser}
       />
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
             <AlertDialogDescription>
-              لا يمكن التراجع عن هذا الإجراء. سيتم حذف هذا المستخدم بشكل دائم من سجلاتنا.
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف الملف الشخصي لهذا المستخدم من سجلاتنا.
+              <br />
+              **ملاحظة هامة:** لن يتم حذف حساب المصادقة الخاص بالمستخدم.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

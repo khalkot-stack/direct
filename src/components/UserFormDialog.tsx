@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -28,60 +30,105 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile?: Profile; // Optional profile object for editing
-  onSave: (profile: Profile) => void;
-  // isNewUser prop is removed
+  onSave: (profile: Profile) => void; // Callback for saving (update or new user creation)
+  isNewUser: boolean; // New prop to distinguish between adding and editing
 }
 
-const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave }) => {
+const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave, isNewUser }) => {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [email, setEmail] = useState(profile?.email || "");
+  const [password, setPassword] = useState(""); // Only for new users
   const [userType, setUserType] = useState<"passenger" | "driver" | "admin">(profile?.user_type || "passenger");
   const [status, setStatus] = useState<"active" | "suspended" | "banned">(profile?.status || "active");
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || "");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name);
-      setEmail(profile.email);
-      setUserType(profile.user_type);
-      setStatus(profile.status);
-      setPhoneNumber(profile.phone_number || "");
-    } else {
-      // Reset form if no profile is passed (e.g., dialog opened without an existing profile)
-      setFullName("");
-      setEmail("");
-      setUserType("passenger");
-      setStatus("active");
-      setPhoneNumber("");
+    if (open) { // Reset form when dialog opens
+      if (isNewUser) {
+        setFullName("");
+        setEmail("");
+        setPassword("");
+        setUserType("passenger");
+        setStatus("active"); // Default status for new users
+        setPhoneNumber("");
+      } else if (profile) {
+        setFullName(profile.full_name);
+        setEmail(profile.email);
+        setUserType(profile.user_type);
+        setStatus(profile.status);
+        setPhoneNumber(profile.phone_number || "");
+        setPassword(""); // Ensure password field is empty for existing users
+      }
     }
-  }, [profile, open]);
+  }, [profile, open, isNewUser]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.id || !fullName || !email || !userType || !status) {
-      toast.error("الرجاء ملء جميع الحقول المطلوبة.");
-      return;
-    }
+    setIsSaving(true);
 
-    const updatedProfile: Profile = {
-      id: profile.id, // Always use the existing profile ID for updates
-      full_name: fullName,
-      email,
-      user_type: userType,
-      status,
-      phone_number: phoneNumber,
-    };
-    onSave(updatedProfile);
-    // Dialog will be closed by parent component after successful save
+    if (isNewUser) {
+      if (!fullName || !email || !password || !userType) {
+        toast.error("الرجاء ملء جميع الحقول المطلوبة لإنشاء مستخدم جديد.");
+        setIsSaving(false);
+        return;
+      }
+      if (password.length < 6) {
+        toast.error("يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.");
+        setIsSaving(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone_number: phoneNumber,
+            user_type: userType,
+            status: status, // Pass status to metadata for trigger to pick up
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(`فشل إنشاء المستخدم: ${error.message}`);
+        console.error("Error creating new user:", error);
+      } else if (data.user) {
+        toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
+        onOpenChange(false); // Close dialog
+        onSave(data.user as unknown as Profile); // Trigger parent to refetch profiles
+      }
+    } else {
+      // Editing existing user
+      if (!profile?.id || !fullName || !email || !userType || !status) {
+        toast.error("الرجاء ملء جميع الحقول المطلوبة لتعديل المستخدم.");
+        setIsSaving(false);
+        return;
+      }
+
+      const updatedProfile: Profile = {
+        id: profile.id,
+        full_name: fullName,
+        email, // Email is disabled, so it won't change, but we pass it
+        user_type: userType,
+        status,
+        phone_number: phoneNumber,
+      };
+      onSave(updatedProfile); // Parent component will handle the actual update to Supabase
+      onOpenChange(false); // Close dialog
+    }
+    setIsSaving(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>تعديل المستخدم</DialogTitle>
+          <DialogTitle>{isNewUser ? "إضافة مستخدم جديد" : "تعديل المستخدم"}</DialogTitle>
           <DialogDescription>
-            قم بتعديل تفاصيل المستخدم.
+            {isNewUser ? "أدخل تفاصيل المستخدم الجديد." : "قم بتعديل تفاصيل المستخدم."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -95,9 +142,16 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             <Label htmlFor="email" className="text-right">
               البريد الإلكتروني
             </Label>
-            {/* Email is disabled as it's the primary identifier and should not be changed via profile edit */}
-            <Input id="email" type="email" value={email} className="col-span-3" required disabled />
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" required disabled={!isNewUser} />
           </div>
+          {isNewUser && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                كلمة المرور
+              </Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" required />
+            </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="phone_number" className="text-right">
               رقم الهاتف
@@ -135,7 +189,16 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             </Select>
           </div>
           <DialogFooter>
-            <Button type="submit" className="bg-primary hover:bg-primary-dark text-primary-foreground">حفظ التغييرات</Button>
+            <Button type="submit" className="bg-primary hover:bg-primary-dark text-primary-foreground" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "حفظ التغييرات"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
