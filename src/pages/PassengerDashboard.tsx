@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, History, User, Loader2, Settings } from "lucide-react"; // Added Settings icon
+import { MapPin, History, User, Loader2, Settings } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -61,7 +61,7 @@ const PassengerDashboard = () => {
             description="لوحة تحكم الراكب الخاصة بك"
           />
         </div>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6 pt-0"> {/* Adjusted padding */}
           <div className="grid grid-cols-1 gap-4">
             <Link to="/passenger-dashboard/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button

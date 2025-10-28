@@ -8,6 +8,7 @@ import { Search, Car, History, User, Bell, Settings, BarChart, Loader2, MapPin }
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import PageHeader from '@/components/PageHeader'; // Import PageHeader for consistency
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -134,24 +135,14 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <Avatar className="h-12 w-12 border-2 border-primary">
-              <AvatarImage src={driverAvatar} alt={driverName} />
-              <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold">مرحباً، {driverName}!</h1>
-              <p className="text-gray-600 dark:text-gray-400">لوحة تحكم السائق</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
-            <Bell className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            <span className="sr-only">الإشعارات</span>
-          </Button>
+        <div className="p-6 pb-0"> {/* Added padding and removed bottom padding */}
+          <PageHeader
+            title={`مرحباً، ${driverName}!`}
+            description="لوحة تحكم السائق"
+          />
         </div>
 
-        <div className="mb-8 flex flex-col sm:flex-row gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row gap-4 p-6 pt-0"> {/* Adjusted padding */}
             <Link to="/driver-dashboard/find-rides" className="flex-1 transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <Search className="h-5 w-5" />
@@ -176,7 +167,7 @@ const DriverDashboard = () => {
             </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-6 pt-0"> {/* Adjusted padding */}
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">الرحلات المتاحة</CardTitle>
@@ -209,8 +200,8 @@ const DriverDashboard = () => {
           </Card>
         </div>
 
-        <h2 className="text-xl font-semibold mb-4">إجراءات سريعة</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <h2 className="text-xl font-semibold mb-4 p-6 pt-0">إجراءات سريعة</h2> {/* Adjusted padding */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-6 pt-0"> {/* Adjusted padding */}
           <Link to="/driver-dashboard/accepted-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
               <History className="h-8 w-8 mb-2 text-blue-500" />
