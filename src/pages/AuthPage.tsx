@@ -116,7 +116,7 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <AppHeader />
-      <div className="flex-1 flex items-center justify-center w-full py-8">
+      <div className="flex-1 flex items-center justify-center w-full"> {/* Removed py-8 */}
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
           <CardHeader className="text-center pb-4">
             <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-20 mb-4" />

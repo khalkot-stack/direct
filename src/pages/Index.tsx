@@ -12,7 +12,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-gray-900 to-primary-dark text-white p-4 text-center overflow-hidden">
       <AppHeader />
       
-      <div className="max-w-4xl mx-auto flex-1 flex flex-col justify-center pt-16 pb-8">
+      <div className="max-w-4xl mx-auto flex-1 flex flex-col justify-center pb-8"> {/* Removed pt-16 */}
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
           DIRECT: وسيلتك الذكية للتنقل
         </h1>
