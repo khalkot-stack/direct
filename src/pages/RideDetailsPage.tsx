@@ -179,7 +179,7 @@ const RideDetailsPage = () => {
               <span className="font-semibold">الراكب:</span> {ride.passenger_name}
             </p>
           </div>
-          {isDriver && ride.status === "accepted" && (
+          {isDriver && ride.status === "accepted" && ( // Only show passenger phone if current user is driver and ride is accepted
             <div className="flex items-center gap-3">
               <Phone className="h-5 w-5 text-muted-foreground" />
               <p className="text-lg text-gray-800 dark:text-gray-200">

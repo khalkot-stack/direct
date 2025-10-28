@@ -1,53 +1,50 @@
--- Enable RLS on the profiles table if not already enabled
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Drop existing SELECT policies for profiles to replace them with more granular ones
+DROP POLICY IF EXISTS "Allow all authenticated users to read their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow admins to read all profiles" ON public.profiles;
 
--- Create a policy to allow authenticated users to view their own profile
-DROP POLICY IF EXISTS "Allow authenticated users to view their own profile" ON profiles;
-CREATE POLICY "Allow authenticated users to view their own profile"
-ON profiles FOR SELECT
+-- Policy 1: Admins can read all profiles (including sensitive data like phone numbers)
+CREATE POLICY "Admins can read all profiles"
+ON public.profiles FOR SELECT
 TO authenticated
-USING (auth.uid() = id);
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin'));
 
--- Create a policy to allow authenticated users to update their own profile
-DROP POLICY IF EXISTS "Allow authenticated users to update their own profile" ON profiles;
+-- Policy 2: Authenticated users can read their own profile AND the profile (including phone number)
+-- of a linked party in an 'accepted' ride.
+CREATE POLICY "Users can read their own profile and linked accepted ride profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (
+    auth.uid() = id OR -- User can always see their own profile
+    EXISTS (
+        SELECT 1 FROM public.rides
+        WHERE
+            status = 'accepted' AND
+            (
+                (passenger_id = id AND driver_id = auth.uid()) OR -- Current user is driver, 'id' is passenger of an accepted ride
+                (driver_id = id AND passenger_id = auth.uid())    -- Current user is passenger, 'id' is driver of an accepted ride
+            )
+    )
+);
+
+-- Keep existing UPDATE and INSERT policies as they are not affected by this change
+-- Policy: Allow authenticated users to update their own profile
+DROP POLICY IF EXISTS "Allow authenticated users to update their own profile" ON public.profiles;
 CREATE POLICY "Allow authenticated users to update their own profile"
-ON profiles FOR UPDATE
+ON public.profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- Enable RLS on the 'avatars' storage bucket if not already enabled
--- This assumes you have a storage bucket named 'avatars'
--- You might need to adjust the bucket name if it's different
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('avatars', 'avatars', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Policy for 'avatars' bucket: Allow authenticated users to upload files to their own folder
-DROP POLICY IF EXISTS "Allow authenticated users to upload their own avatars" ON storage.objects;
-CREATE POLICY "Allow authenticated users to upload their own avatars"
-ON storage.objects FOR INSERT
+-- Policy: Allow new users to create a profile
+DROP POLICY IF EXISTS "Allow new users to create a profile" ON public.profiles;
+CREATE POLICY "Allow new users to create a profile"
+ON public.profiles FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+WITH CHECK (auth.uid() = id);
 
--- Policy for 'avatars' bucket: Allow authenticated users to view their own avatars
-DROP POLICY IF EXISTS "Allow authenticated users to view their own avatars" ON storage.objects;
-CREATE POLICY "Allow authenticated users to view their own avatars"
-ON storage.objects FOR SELECT
+-- Policy: Allow admins to update all profiles
+DROP POLICY IF EXISTS "Allow admins to update all profiles" ON public.profiles;
+CREATE POLICY "Allow admins to update all profiles"
+ON public.profiles FOR UPDATE
 TO authenticated
-USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
-
--- Policy for 'avatars' bucket: Allow authenticated users to update their own avatars
-DROP POLICY IF EXISTS "Allow authenticated users to update their own avatars" ON storage.objects;
-CREATE POLICY "Allow authenticated users to update their own avatars"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1])
-WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
-
--- Policy for 'avatars' bucket: Allow authenticated users to delete their own avatars
-DROP POLICY IF EXISTS "Allow authenticated users to delete their own avatars" ON storage.objects;
-CREATE POLICY "Allow authenticated users to delete their own avatars"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND user_type = 'admin'));

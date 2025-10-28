@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car } from "lucide-react";
+import { Loader2, Car, Phone, MessageSquare } from "lucide-react"; // Import Phone and MessageSquare
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader"; // Import PageHeader
@@ -19,7 +19,7 @@ interface SupabaseJoinedRideData {
   status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_id: string;
   driver_id: string | null;
-  profiles_passenger: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
+  profiles_passenger: Array<{ full_name: string; phone_number?: string }> | null; // Added phone_number
 }
 
 interface AcceptedRide {
@@ -29,6 +29,7 @@ interface AcceptedRide {
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
   passenger_name?: string;
+  passenger_phone?: string; // Added passenger_phone
 }
 
 const DriverAcceptedRidesPage = () => {
@@ -56,7 +57,7 @@ const DriverAcceptedRidesPage = () => {
         destination,
         passengers_count,
         status,
-        profiles_passenger:passenger_id (full_name)
+        profiles_passenger:passenger_id (full_name, phone_number)
       `)
       .eq('driver_id', currentDriverId)
       .in('status', ['accepted', 'completed']) // Show accepted and completed rides
@@ -73,6 +74,7 @@ const DriverAcceptedRidesPage = () => {
         passengers_count: ride.passengers_count,
         status: ride.status,
         passenger_name: ride.profiles_passenger?.[0]?.full_name || 'غير معروف', // Access first element
+        passenger_phone: ride.profiles_passenger?.[0]?.phone_number || 'غير متاح', // Access passenger phone
       }));
       setAcceptedRides(formattedRides);
     }
@@ -111,6 +113,22 @@ const DriverAcceptedRidesPage = () => {
     }
   };
 
+  const handleCall = (phoneNumber: string | undefined) => {
+    if (phoneNumber && phoneNumber !== 'غير متاح') {
+      window.location.href = `tel:${phoneNumber}`;
+    } else {
+      toast.info("رقم الهاتف غير متاح.");
+    }
+  };
+
+  const handleMessage = (phoneNumber: string | undefined) => {
+    if (phoneNumber && phoneNumber !== 'غير متاح') {
+      window.location.href = `sms:${phoneNumber}`;
+    } else {
+      toast.info("رقم الهاتف غير متاح.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -141,6 +159,21 @@ const DriverAcceptedRidesPage = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     عدد الركاب: {ride.passengers_count} | الحالة: {ride.status === 'accepted' ? 'مقبولة' : 'مكتملة'} | الراكب: {ride.passenger_name}
                   </p>
+                  {ride.status === 'accepted' && ride.passenger_phone && ride.passenger_phone !== 'غير متاح' && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        هاتف الراكب: {ride.passenger_phone}
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => handleCall(ride.passenger_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+                        <Phone className="h-4 w-4" />
+                        اتصال
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleMessage(ride.passenger_phone)} className="flex items-center gap-1 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+                        <MessageSquare className="h-4 w-4" />
+                        رسالة
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button
