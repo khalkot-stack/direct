@@ -94,7 +94,26 @@ const PassengerRequestsPage = () => {
       }
     };
     getUserAndFetchRides();
-  }, [navigate, fetchPassengerRides]);
+
+    // Realtime subscription for ride status changes
+    const channel = supabase
+      .channel('passenger_rides_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rides', filter: `passenger_id=eq.${userId}` },
+        (payload) => {
+          if (payload.new.status !== payload.old.status) {
+            toast.info(`تم تحديث حالة رحلتك إلى: ${payload.new.status}`);
+            if (userId) fetchPassengerRides(userId); // Re-fetch to update the list
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, fetchPassengerRides, userId]); // Added userId to dependencies
 
   const handleRateDriver = (ride: RideRequest) => {
     setRideToRate(ride);
