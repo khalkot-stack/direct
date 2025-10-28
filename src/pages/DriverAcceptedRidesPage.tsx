@@ -86,20 +86,49 @@ const DriverAcceptedRidesPage = () => {
       setAcceptedRides(formattedRides);
     }
     setLoading(false);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
-    const getDriverAndFetchRides = async () => {
+    let channel: any; // Declare channel outside to be accessible in cleanup
+
+    const setupDriverAndRealtime = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setDriverId(user.id);
-        fetchAcceptedRides(user.id);
-      } else {
+      if (!user) {
         toast.error("الرجاء تسجيل الدخول كسائق لعرض رحلاتك المقبولة.");
         navigate("/auth");
+        setLoading(false);
+        return;
+      }
+      setDriverId(user.id);
+      fetchAcceptedRides(user.id); // Initial fetch
+
+      // Setup Realtime listener for accepted rides
+      channel = supabase
+        .channel(`driver_accepted_rides_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+            filter: `driver_id=eq.${user.id}&status=eq.accepted`
+          },
+          (payload) => {
+            // When a ride is updated to 'accepted' for this driver, re-fetch all accepted rides
+            toast.info(`تم قبول رحلة جديدة: ${payload.new.pickup_location} إلى ${payload.new.destination}`);
+            fetchAcceptedRides(user.id);
+          }
+        )
+        .subscribe();
+    };
+
+    setupDriverAndRealtime();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
       }
     };
-    getDriverAndFetchRides();
   }, [navigate, fetchAcceptedRides]);
 
   const handleCompleteRide = async (rideId: string) => {
