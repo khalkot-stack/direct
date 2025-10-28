@@ -25,7 +25,7 @@ WITH CHECK (
         SELECT 1
         FROM public.rides
         WHERE
-            rides.id = ride_id AND
+            rides.id = NEW.ride_id AND -- تم التعديل هنا: الإشارة الصريحة إلى NEW.ride_id
             rides.status = 'completed' AND
             (rides.passenger_id = auth.uid() OR rides.driver_id = auth.uid())
     ) AND
