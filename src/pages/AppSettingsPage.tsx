@@ -6,8 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Settings, Bell, FileText, Globe, LogOut, Loader2 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { supabase } from "@/lib/supabase";
-import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button"; // التأكد من وجود الاستيراد الصحيح
 
 const AppSettingsPage = () => {
