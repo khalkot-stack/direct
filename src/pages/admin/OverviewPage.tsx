@@ -8,7 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const data = [
+// Static data for chart for now, as dynamic aggregation is more complex
+const chartData = [
   { name: 'يناير', users: 400, rides: 240 },
   { name: 'فبراير', users: 300, rides: 139 },
   { name: 'مارس', users: 200, rides: 980 },
@@ -18,13 +19,34 @@ const data = [
   { name: 'يوليو', users: 349, rides: 430 },
 ];
 
+interface Activity {
+  id: string;
+  type: 'user_registered' | 'ride_requested' | 'ride_accepted' | 'ride_completed' | 'ride_cancelled';
+  description: string;
+  created_at: string;
+}
+
+// Define an interface for the raw data returned by Supabase select with joins for rides
+interface SupabaseJoinedRideData {
+  id: string;
+  pickup_location: string;
+  destination: string;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  created_at: string;
+  profiles_passenger: Array<{ full_name: string }> | null;
+  profiles_driver: Array<{ full_name: string }> | null;
+}
+
 const OverviewPage = () => {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [totalRides, setTotalRides] = useState<number | null>(null);
+  const [latestActivities, setLatestActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchOverviewData = useCallback(async () => {
     setLoading(true);
+    let hasError = false;
+
     // Fetch total users
     const { count: usersCount, error: usersError } = await supabase
       .from('profiles')
@@ -33,6 +55,7 @@ const OverviewPage = () => {
     if (usersError) {
       toast.error(`فشل جلب عدد المستخدمين: ${usersError.message}`);
       console.error("Error fetching user count:", usersError);
+      hasError = true;
     } else {
       setTotalUsers(usersCount);
     }
@@ -45,9 +68,91 @@ const OverviewPage = () => {
     if (ridesError) {
       toast.error(`فشل جلب عدد الرحلات: ${ridesError.message}`);
       console.error("Error fetching ride count:", ridesError);
+      hasError = true;
     } else {
       setTotalRides(ridesCount);
     }
+
+    // Fetch recent user registrations
+    const { data: newUsers, error: newUsersError } = await supabase
+      .from('profiles')
+      .select('id, full_name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (newUsersError) {
+      toast.error(`فشل جلب المستخدمين الجدد: ${newUsersError.message}`);
+      console.error("Error fetching new users:", newUsersError);
+      hasError = true;
+    }
+
+    // Fetch recent ride activities
+    const { data: recentRides, error: recentRidesError } = await supabase
+      .from('rides')
+      .select(`
+        id,
+        pickup_location,
+        destination,
+        status,
+        created_at,
+        profiles_passenger:passenger_id (full_name),
+        profiles_driver:driver_id (full_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (recentRidesError) {
+      toast.error(`فشل جلب أنشطة الرحلات الأخيرة: ${recentRidesError.message}`);
+      console.error("Error fetching recent rides:", recentRidesError);
+      hasError = true;
+    }
+
+    let activities: Activity[] = [];
+
+    if (newUsers) {
+      activities = activities.concat(newUsers.map(user => ({
+        id: user.id,
+        type: 'user_registered',
+        description: `مستخدم جديد "${user.full_name}" سجل.`,
+        created_at: user.created_at,
+      })));
+    }
+
+    if (recentRides) {
+      activities = activities.concat(recentRides.map((ride: SupabaseJoinedRideData) => {
+        let description = '';
+        const passengerName = ride.profiles_passenger?.[0]?.full_name || 'راكب';
+        const driverName = ride.profiles_driver?.[0]?.full_name || 'سائق';
+
+        switch (ride.status) {
+          case 'pending':
+            description = `تم طلب رحلة جديدة من "${ride.pickup_location}" إلى "${ride.destination}" بواسطة "${passengerName}".`;
+            break;
+          case 'accepted':
+            description = `تم قبول رحلة من "${ride.pickup_location}" إلى "${ride.destination}" بواسطة "${driverName}".`;
+            break;
+          case 'completed':
+            description = `تم إكمال رحلة من "${ride.pickup_location}" إلى "${ride.destination}" بواسطة "${driverName}".`;
+            break;
+          case 'cancelled':
+            description = `تم إلغاء رحلة من "${ride.pickup_location}" إلى "${ride.destination}".`;
+            break;
+          default:
+            description = `نشاط رحلة: ${ride.status} من "${ride.pickup_location}" إلى "${ride.destination}".`;
+        }
+        return {
+          id: ride.id,
+          type: `ride_${ride.status}` as Activity['type'],
+          description,
+          created_at: ride.created_at,
+        };
+      }));
+    }
+
+    // Sort all activities by created_at descending and take top 5
+    activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setLatestActivities(activities.slice(0, 5));
+
     setLoading(false);
   }, []);
 
@@ -94,7 +199,7 @@ const OverviewPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5,200 دينار</div> {/* Static for now */}
+            <div className="text-2xl font-bold">5,200 دينار</div> {/* Static for now, requires 'price' column in 'rides' table */}
             <p className="text-xs text-muted-foreground">+10% عن الشهر الماضي</p> {/* Static for now */}
           </CardContent>
         </Card>
@@ -108,7 +213,7 @@ const OverviewPage = () => {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data}
+                data={chartData} // Static data for now, requires complex aggregation queries for dynamic data
                 margin={{
                   top: 5,
                   right: 10,
@@ -133,11 +238,26 @@ const OverviewPage = () => {
           <CardTitle>أحدث الأنشطة</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-            <li>- مستخدم جديد "علياء" سجلت كراكب.</li>
-            <li>- سائق "محمد" أكمل رحلة إلى العقبة.</li>
-            <li>- تم تحديث إعدادات النظام.</li>
-          </ul>
+          {latestActivities.length > 0 ? (
+            <ul className="space-y-2 text-gray-700 dark:text-gray-300 text-right">
+              {latestActivities.map((activity) => (
+                <li key={activity.id} className="border-b last:border-b-0 pb-2 last:pb-0">
+                  <p className="text-sm font-medium">{activity.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(activity.created_at).toLocaleString('ar-SA', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-gray-500 dark:text-gray-400">لا توجد أنشطة حديثة.</p>
+          )}
         </CardContent>
       </Card>
     </div>
