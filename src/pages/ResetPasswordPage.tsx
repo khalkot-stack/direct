@@ -63,7 +63,7 @@ const ResetPasswordPage: React.FC = () => {
       <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950">
         <AppHeader /> {/* Global App Header */}
         <div className="flex-1 flex items-center justify-center w-full pt-16"> {/* Added pt-16 for fixed header */}
-          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="sr-only">جاري التحقق من الجلسة...</span>
         </div>
       </div>
@@ -108,7 +108,7 @@ const ResetPasswordPage: React.FC = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white mt-6" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
