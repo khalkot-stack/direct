@@ -3,14 +3,14 @@
 import React from 'react';
 import { CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react"; // Changed to ArrowRight for RTL back button
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PageHeaderProps {
   title: string;
   description?: string;
   backPath?: string;
-  onBackClick?: () => void; // New prop for custom back action
+  onBackClick?: () => void;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, onBackClick }) => {
@@ -25,7 +25,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, o
   };
 
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center justify-between mb-6"> {/* Increased bottom margin */}
       {(backPath || onBackClick) && (
         <Button
           variant="ghost"
@@ -33,7 +33,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, o
           onClick={handleBack}
           className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          <ArrowRight className="h-5 w-5" /> {/* Arrow pointing right for RTL back */}
+          <ArrowRight className="h-5 w-5" />
           <span className="sr-only">العودة</span>
         </Button>
       )}
@@ -42,13 +42,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, o
           {title}
         </CardTitle>
         {description && (
-          <CardDescription className="text-gray-600 dark:text-gray-400 mt-1">
+          <CardDescription className="text-gray-600 dark:text-gray-400 mt-2"> {/* Increased top margin */}
             {description}
           </CardDescription>
         )}
       </div>
-      {/* Placeholder to balance the flex layout if no back button */}
-      {!(backPath || onBackClick) && <div className="w-10"></div>}
+      {!(backPath || onBackClick) && <div className="w-10"></div>} {/* Placeholder to balance the flex layout */}
     </div>
   );
 };

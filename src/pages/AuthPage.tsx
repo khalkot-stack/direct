@@ -9,20 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase"; // Import supabase client
+import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
-import AppHeader from "@/components/AppHeader"; // Import AppHeader
+import AppHeader from "@/components/AppHeader";
 
 const AuthPage = () => {
-  const [userType, setUserType] = useState<"passenger" | "driver">("passenger"); // Removed 'admin' from initial state
+  const [userType, setUserType] = useState<"passenger" | "driver">("passenger");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [loading, setLoading] = useState(true); // State for initial auth check
-  const [authActionLoading, setAuthActionLoading] = useState(false); // State for login/register buttons
+  const [loading, setLoading] = useState(true);
+  const [authActionLoading, setAuthActionLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const AuthPage = () => {
         } else if (userRole === "admin") {
           navigate("/admin-dashboard");
         } else {
-          navigate("/"); // Fallback if user_type is not defined
+          navigate("/");
         }
       }
       setLoading(false);
@@ -45,7 +45,6 @@ const AuthPage = () => {
 
     checkUserSession();
 
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         const userRole = session.user?.user_metadata?.user_type;
@@ -79,7 +78,6 @@ const AuthPage = () => {
       toast.error(`فشل تسجيل الدخول: ${error.message}`);
     } else if (data.user) {
       toast.success("تم تسجيل الدخول بنجاح!");
-      // Redirection is handled by the useEffect auth state listener
     }
   };
 
@@ -93,7 +91,7 @@ const AuthPage = () => {
         data: {
           full_name: registerName,
           phone_number: registerPhone,
-          user_type: userType, // Store user type in metadata
+          user_type: userType,
         },
       },
     });
@@ -103,7 +101,6 @@ const AuthPage = () => {
       toast.error(`فشل التسجيل: ${error.message}`);
     } else if (data.user) {
       toast.success("تم التسجيل بنجاح! يرجى تفعيل حسابك عبر البريد الإلكتروني.");
-      // Redirection is handled by the useEffect auth state listener
     }
   };
 
@@ -118,10 +115,10 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
-      <AppHeader /> {/* Global App Header */}
-      <div className="flex-1 flex items-center justify-center w-full"> {/* Centering the card */}
+      <AppHeader />
+      <div className="flex-1 flex items-center justify-center w-full py-8">
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
-          <CardHeader className="text-center">
+          <CardHeader className="text-center pb-4">
             <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
             <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
               مرحباً بك في DIRECT
@@ -130,35 +127,35 @@ const AuthPage = () => {
               سجل الدخول أو أنشئ حسابًا جديدًا
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
-                <TabsTrigger value="register">إنشاء حساب</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-11">
+                <TabsTrigger value="login" className="text-base">تسجيل الدخول</TabsTrigger>
+                <TabsTrigger value="register" className="text-base">إنشاء حساب</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-5">
                   <div>
-                    <Label htmlFor="login-email">البريد الإلكتروني</Label>
+                    <Label htmlFor="login-email" className="mb-1 block text-right">البريد الإلكتروني</Label>
                     <Input
                       id="login-email"
                       type="email"
                       placeholder="example@email.com"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="login-password">كلمة المرور</Label>
+                    <Label htmlFor="login-password" className="mb-1 block text-right">كلمة المرور</Label>
                     <Input
                       id="login-password"
                       type="password"
                       placeholder="********"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                     />
@@ -183,7 +180,7 @@ const AuthPage = () => {
                       <Label htmlFor="admin-login">مدير</Label>
                     </div>
                   </RadioGroup>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 h-11 text-base transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
                     {authActionLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
@@ -202,58 +199,58 @@ const AuthPage = () => {
               </TabsContent>
 
               <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-5">
                   <div>
-                    <Label htmlFor="register-name">الاسم</Label>
+                    <Label htmlFor="register-name" className="mb-1 block text-right">الاسم</Label>
                     <Input
                       id="register-name"
                       type="text"
                       placeholder="اسمك الكامل"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="register-phone">رقم الهاتف</Label>
+                    <Label htmlFor="register-phone" className="mb-1 block text-right">رقم الهاتف</Label>
                     <Input
                       id="register-phone"
                       type="tel"
                       placeholder="07xxxxxxxxx"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="register-email">البريد الإلكتروني</Label>
+                    <Label htmlFor="register-email" className="mb-1 block text-right">البريد الإلكتروني</Label>
                     <Input
                       id="register-email"
                       type="email"
                       placeholder="example@email.com"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="register-password">كلمة المرور</Label>
+                    <Label htmlFor="register-password" className="mb-1 block text-right">كلمة المرور</Label>
                     <Input
                       id="register-password"
                       type="password"
                       placeholder="********"
                       required
-                      className="mt-1"
+                      className="mt-1 text-right"
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
                     />
                   </div>
                   <RadioGroup
                     defaultValue="passenger"
-                    onValueChange={(value: "passenger" | "driver") => // Removed 'admin' option
+                    onValueChange={(value: "passenger" | "driver") =>
                       setUserType(value)
                     }
                     className="flex justify-center space-x-4 rtl:space-x-reverse mt-4"
@@ -267,7 +264,7 @@ const AuthPage = () => {
                       <Label htmlFor="driver-register">سائق</Label>
                     </div>
                   </RadioGroup>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-6 h-11 text-base transition-transform duration-200 ease-in-out hover:scale-[1.01]" disabled={authActionLoading}>
                     {authActionLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
