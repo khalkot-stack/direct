@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, User, Car, Phone, MessageSquare, XCircle, Info } from "lucide-react";
+import { Loader2, MapPin, User, Car, Phone, MessageSquare, XCircle, Info, Users } from "lucide-react"; // Added Users import
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";

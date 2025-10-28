@@ -17,8 +17,8 @@ interface SupabaseJoinedRideData {
   destination: string;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
-  passenger_id: string;
-  driver_id: string | null;
+  passenger_id: string; // Ensure passenger_id is included in the raw data
+  driver_id: string | null; // Ensure driver_id is included in the raw data
   profiles_passenger: Array<{ full_name: string; phone_number?: string }> | null; // Added phone_number
 }
 
@@ -57,6 +57,8 @@ const DriverAcceptedRidesPage = () => {
         destination,
         passengers_count,
         status,
+        passenger_id,  -- Explicitly select passenger_id
+        driver_id,     -- Explicitly select driver_id
         profiles_passenger:passenger_id (full_name, phone_number)
       `)
       .eq('driver_id', currentDriverId)
