@@ -29,10 +29,10 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void;
   profile?: Profile; // Optional profile object for editing
   onSave: (profile: Profile) => void;
-  isNewUser: boolean; // To differentiate between adding and editing
+  // isNewUser prop is removed
 }
 
-const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave, isNewUser }) => {
+const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave }) => {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [email, setEmail] = useState(profile?.email || "");
   const [userType, setUserType] = useState<"passenger" | "driver" | "admin">(profile?.user_type || "passenger");
@@ -47,6 +47,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
       setStatus(profile.status);
       setPhoneNumber(profile.phone_number || "");
     } else {
+      // Reset form if no profile is passed (e.g., dialog opened without an existing profile)
       setFullName("");
       setEmail("");
       setUserType("passenger");
@@ -57,20 +58,20 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !userType || !status) {
+    if (!profile?.id || !fullName || !email || !userType || !status) {
       toast.error("الرجاء ملء جميع الحقول المطلوبة.");
       return;
     }
 
-    const newProfile: Profile = {
-      id: profile?.id || `new-${Date.now()}`, // ID will be set by Supabase for new users, or kept for existing
+    const updatedProfile: Profile = {
+      id: profile.id, // Always use the existing profile ID for updates
       full_name: fullName,
       email,
       user_type: userType,
       status,
       phone_number: phoneNumber,
     };
-    onSave(newProfile);
+    onSave(updatedProfile);
     // Dialog will be closed by parent component after successful save
   };
 
@@ -78,9 +79,9 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isNewUser ? "إضافة مستخدم جديد" : "تعديل المستخدم"}</DialogTitle>
+          <DialogTitle>تعديل المستخدم</DialogTitle>
           <DialogDescription>
-            {isNewUser ? "أدخل تفاصيل المستخدم الجديد هنا." : "قم بتعديل تفاصيل المستخدم."}
+            قم بتعديل تفاصيل المستخدم.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -94,7 +95,8 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             <Label htmlFor="email" className="text-right">
               البريد الإلكتروني
             </Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" required disabled={!isNewUser} />
+            {/* Email is disabled as it's the primary identifier and should not be changed via profile edit */}
+            <Input id="email" type="email" value={email} className="col-span-3" required disabled />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="phone_number" className="text-right">

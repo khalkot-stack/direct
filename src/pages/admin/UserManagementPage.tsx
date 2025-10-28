@@ -34,7 +34,6 @@ const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
-  const [isNewUser, setIsNewUser] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,64 +61,32 @@ const UserManagementPage = () => {
     profile.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddUser = () => {
-    setEditingProfile(undefined);
-    setIsNewUser(true);
-    setIsFormDialogOpen(true);
-  };
-
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile);
-    setIsNewUser(false);
     setIsFormDialogOpen(true);
   };
 
   const handleSaveProfile = async (updatedProfile: Profile) => {
-    if (isNewUser) {
-      // For new users, we only create a profile entry.
-      // The actual auth.users entry is created via AuthPage registration.
-      // This scenario assumes admin is adding a profile for an already existing auth.user,
-      // or that the admin will manually create the auth.user.
-      // A more robust solution would involve creating the auth.user via admin API.
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: updatedProfile.id, // This ID should ideally come from an existing auth.user
-          full_name: updatedProfile.full_name,
-          email: updatedProfile.email,
-          user_type: updatedProfile.user_type,
-          status: updatedProfile.status,
-          phone_number: updatedProfile.phone_number,
-        });
+    // This function now only handles updating existing profiles.
+    // New users must register via the AuthPage, and then their profiles can be managed here.
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: updatedProfile.full_name,
+        email: updatedProfile.email,
+        user_type: updatedProfile.user_type,
+        status: updatedProfile.status,
+        phone_number: updatedProfile.phone_number,
+      })
+      .eq('id', updatedProfile.id);
 
-      if (error) {
-        toast.error(`فشل إضافة المستخدم: ${error.message}`);
-        console.error("Error adding profile:", error);
-      } else {
-        toast.success(`تم إضافة المستخدم ${updatedProfile.full_name} بنجاح.`);
-        fetchProfiles();
-        setIsFormDialogOpen(false);
-      }
+    if (error) {
+      toast.error(`فشل تحديث المستخدم: ${error.message}`);
+      console.error("Error updating profile:", error);
     } else {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: updatedProfile.full_name,
-          email: updatedProfile.email,
-          user_type: updatedProfile.user_type,
-          status: updatedProfile.status,
-          phone_number: updatedProfile.phone_number,
-        })
-        .eq('id', updatedProfile.id);
-
-      if (error) {
-        toast.error(`فشل تحديث المستخدم: ${error.message}`);
-        console.error("Error updating profile:", error);
-      } else {
-        toast.success(`تم تحديث المستخدم ${updatedProfile.full_name} بنجاح.`);
-        fetchProfiles();
-        setIsFormDialogOpen(false);
-      }
+      toast.success(`تم تحديث المستخدم ${updatedProfile.full_name} بنجاح.`);
+      fetchProfiles();
+      setIsFormDialogOpen(false);
     }
   };
 
@@ -162,9 +129,10 @@ const UserManagementPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>قائمة المستخدمين</CardTitle>
-          <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
+          {/* Removed "Add new user" button as direct profile creation is not supported */}
+          {/* <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
             إضافة مستخدم جديد
-          </Button>
+          </Button> */}
         </CardHeader>
         <CardContent>
           <Input
@@ -217,7 +185,7 @@ const UserManagementPage = () => {
         onOpenChange={setIsFormDialogOpen}
         profile={editingProfile}
         onSave={handleSaveProfile}
-        isNewUser={isNewUser}
+        // isNewUser prop is removed as this dialog is now only for editing
       />
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
