@@ -11,8 +11,8 @@ CREATE POLICY "Drivers can accept pending rides" ON public.rides FOR UPDATE TO a
 CREATE POLICY "Drivers can complete accepted rides" ON public.rides FOR UPDATE TO authenticated USING (public.get_user_role() = 'driver' AND driver_id = auth.uid() AND status = 'accepted');
 CREATE POLICY "Drivers can view relevant rides" ON public.rides FOR SELECT TO authenticated USING (public.get_user_role() = 'driver' AND driver_id = auth.uid());
 
--- سياسات الركاب (Passengers)
-CREATE POLICY "Passengers can insert rides" ON public.rides FOR INSERT TO authenticated WITH CHECK (public.get_user_role() = 'passenger' AND passenger_id = auth.uid());
+-- سياسات الركاب (Passengers) - تم تعديلها للسماح لأي مستخدم مصادق عليه بطلب رحلة كراكب
+CREATE POLICY "Authenticated users can request rides as passengers" ON public.rides FOR INSERT TO authenticated WITH CHECK (passenger_id = auth.uid());
 CREATE POLICY "Passengers can update their pending rides" ON public.rides FOR UPDATE TO authenticated USING (public.get_user_role() = 'passenger' AND passenger_id = auth.uid() AND status = 'pending');
 CREATE POLICY "Passengers can view their own rides" ON public.rides FOR SELECT TO authenticated USING (public.get_user_role() = 'passenger' AND passenger_id = auth.uid());
 

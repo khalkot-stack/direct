@@ -6,7 +6,8 @@ DROP POLICY IF EXISTS "Admins can view all rides" ON public.rides;
 DROP POLICY IF EXISTS "Drivers can accept pending rides" ON public.rides;
 DROP POLICY IF EXISTS "Drivers can complete accepted rides" ON public.rides;
 DROP POLICY IF EXISTS "Drivers can view relevant rides" ON public.rides;
-DROP POLICY IF EXISTS "Passengers can insert rides" ON public.rides;
+DROP POLICY IF EXISTS "Passengers can insert rides" ON public.rides; -- السياسة القديمة
+DROP POLICY IF EXISTS "Authenticated users can request rides as passengers" ON public.rides; -- السياسة الجديدة المحتملة
 DROP POLICY IF EXISTS "Passengers can update their pending rides" ON public.rides;
 DROP POLICY IF EXISTS "Passengers can view their own rides" ON public.rides;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.rides;
@@ -33,9 +34,9 @@ DROP POLICY IF EXISTS "Allow users to update their ratings" ON public.ratings;
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Admins can read all profiles" ON public.profiles; -- إذا كان هناك سياسة سابقة
-DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles; -- إذا كان هناك سياسة سابقة
-DROP POLICY IF EXISTS "Admins can delete any profile" ON public.profiles; -- إذا كان هناك سياسة سابقة
-DROP POLICY IF EXISTS "Allow all authenticated users to read profiles" ON public.profiles; -- إذا كان هناك سياسة سابقة
-DROP POLICY IF EXISTS "Allow authenticated users to update their own profile" ON public.profiles; -- إذا كان هناك سياسة سابقة
-DROP POLICY IF EXISTS "Allow authenticated users to insert their own profile" ON public.profiles; -- إذا كان هناك سياسة سابقة
+DROP POLICY IF EXISTS "Admins can read all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can delete any profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow all authenticated users to read profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own profile" ON public.profiles;
