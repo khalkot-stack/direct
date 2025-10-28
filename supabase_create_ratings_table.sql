@@ -21,21 +21,18 @@ ON public.ratings FOR INSERT
 TO authenticated
 WITH CHECK (
     auth.uid() = rater_id AND
-    EXISTS (
-        SELECT 1
-        FROM public.rides
-        WHERE
-            rides.id = NEW.ride_id AND -- تم التعديل هنا: الإشارة الصريحة إلى NEW.ride_id
-            rides.status = 'completed' AND
-            (rides.passenger_id = auth.uid() OR rides.driver_id = auth.uid())
-    ) AND
-    NOT EXISTS (
-        SELECT 1
-        FROM public.ratings
-        WHERE
-            ratings.ride_id = NEW.ride_id AND
-            ratings.rater_id = auth.uid()
-    )
+    (SELECT COUNT(*) FROM public.rides
+     WHERE
+        rides.id = NEW.ride_id AND
+        rides.status = 'completed' AND
+        (rides.passenger_id = auth.uid() OR rides.driver_id = auth.uid())
+    ) > 0
+    AND
+    (SELECT COUNT(*) FROM public.ratings
+     WHERE
+        ratings.ride_id = NEW.ride_id AND
+        ratings.rater_id = auth.uid()
+    ) = 0
 );
 
 CREATE POLICY "Allow authenticated users to update their own ratings"
