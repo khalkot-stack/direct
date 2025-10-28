@@ -43,3 +43,6 @@ DROP POLICY IF EXISTS "Allow authenticated users to insert their own profile" ON
 DROP POLICY IF EXISTS "Allow authenticated users to read their own profile or if admin" ON public.profiles;
 DROP POLICY IF EXISTS "Allow authenticated users to insert their own profile or if admin" ON public.profiles;
 DROP POLICY IF EXISTS "Allow authenticated users to update their own profile or if admin" ON public.profiles;
+
+-- حذف دالة get_user_role
+DROP FUNCTION IF EXISTS public.get_user_role();

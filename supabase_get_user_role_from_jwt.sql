@@ -1,13 +1,15 @@
--- إنشاء دالة لاستخراج نوع المستخدم من JWT
 CREATE OR REPLACE FUNCTION public.get_user_role()
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER -- مهم لتنفيذ الدالة بصلاحيات مرتفعة داخل RLS
-AS $$
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER -- هذا يسمح للدالة بتجاوز RLS عند قراءة جدول profiles
+AS $function$
+DECLARE
+  user_role text;
 BEGIN
-  RETURN (current_setting('request.jwt.claims', true)::jsonb -> 'user_metadata' ->> 'user_type');
-END;
-$$;
+  SELECT user_type INTO user_role
+  FROM public.profiles
+  WHERE id = auth.uid();
 
--- منح صلاحيات التنفيذ للمستخدمين المصادق عليهم
-GRANT EXECUTE ON FUNCTION public.get_user_role() TO authenticated;
+  RETURN user_role;
+END;
+$function$;
