@@ -171,7 +171,7 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
         <div className="p-6">
           <PageHeader
             title="إعدادات الملف الشخصي"
@@ -301,7 +301,7 @@ export default function ProfileSettingsPage() {
             تسجيل الخروج
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
