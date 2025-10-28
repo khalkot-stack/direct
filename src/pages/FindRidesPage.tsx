@@ -50,6 +50,7 @@ const FindRidesPage = () => {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
+  const [acceptingRideId, setAcceptingRideId] = useState<string | null>(null); // New state to track which ride is being accepted
 
   const formatRideData = (ride: SupabaseJoinedRideData): RideRequest => ({
     id: ride.id,
@@ -174,20 +175,27 @@ const FindRidesPage = () => {
       toast.error("خطأ: لم يتم العثور على معرف السائق.");
       return;
     }
-    setLoading(true);
-    const { error } = await supabase
+    setAcceptingRideId(rideId); // Set the ID of the ride being accepted
+
+    const { data, error } = await supabase
       .from('rides')
       .update({ driver_id: driverId, status: 'accepted' })
       .eq('id', rideId)
-      .eq('status', 'pending');
-    setLoading(false);
+      .eq('status', 'pending') // Ensure we only update pending rides
+      .select(); // Select the updated row to confirm success
+
+    setAcceptingRideId(null); // Clear the accepting state
 
     if (error) {
       toast.error(`فشل قبول الرحلة: ${error.message}`);
       console.error("Error accepting ride:", error);
-    } else {
+    } else if (data && data.length > 0) {
       toast.success(`تم قبول الرحلة رقم ${rideId.substring(0, 8)}...`);
       navigate("/driver-dashboard/accepted-rides");
+    } else {
+      // This case means no rows were updated, likely because the ride was already accepted or cancelled
+      toast.error("فشل قبول الرحلة. قد تكون الرحلة قد تم قبولها أو إلغاؤها بالفعل.");
+      fetchPendingRides(searchCriteria); // Refresh the list to show updated status
     }
   };
 
@@ -247,9 +255,9 @@ const FindRidesPage = () => {
                   <Button
                     onClick={() => handleAcceptRide(ride.id)}
                     className="bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
-                    disabled={loading}
+                    disabled={acceptingRideId === ride.id} // Disable button for the specific ride being accepted
                   >
-                    {loading ? (
+                    {acceptingRideId === ride.id ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
                         جاري القبول...
