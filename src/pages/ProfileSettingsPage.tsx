@@ -1,48 +1,61 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Session,
-  createClientComponentClient,
-} from "@supabase/auth-helpers-nextjs";
-import { Database } from "../lib/database.types";
+import { supabase } from "@/lib/supabase"; // Import supabase client
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User } from "lucide-react"; // Added User icon
 import { Switch } from "../components/ui/switch";
+import PageHeader from "@/components/PageHeader"; // Add PageHeader import
 
-type Profiles = Database["public"]["Tables"]["profiles"]["Row"];
+// Define a local Profile interface based on the expected data structure
+interface Profile {
+  id: string;
+  full_name: string | null;
+  username: string | null;
+  website: string | null;
+  avatar_url: string | null;
+  user_type: "passenger" | "driver" | "admin" | null; // Use user_type
+  car_model: string | null;
+  car_color: string | null;
+  license_plate: string | null;
+  updated_at: string | null;
+  phone_number: string | null;
+}
 
-export default function ProfileSettingsPage({
-  session,
-}: {
-  session: Session | null;
-}) {
-  const supabase = createClientComponentClient<Database>();
+export default function ProfileSettingsPage() {
   const [loading, setLoading] = useState(true);
-  const [fullname, setFullname] = useState<Profiles["full_name"]>(null);
-  const [username, setUsername] = useState<Profiles["username"]>(null);
-  const [website, setWebsite] = useState<Profiles["website"]>(null);
-  const [avatar_url, setAvatarUrl] = useState<Profiles["avatar_url"]>(null);
-  const [isDriver, setIsDriver] = useState<Profiles["is_driver"]>(false);
-  const [carModel, setCarModel] = useState<Profiles["car_model"]>(null);
-  const [carColor, setCarColor] = useState<Profiles["car_color"]>(null);
-  const [licensePlate, setLicensePlate] =
-    useState<Profiles["license_plate"]>(null);
+  const [fullname, setFullname] = useState<Profile["full_name"]>(null);
+  const [username, setUsername] = useState<Profile["username"]>(null);
+  const [website, setWebsite] = useState<Profile["website"]>(null);
+  const [avatar_url, setAvatarUrl] = useState<Profile["avatar_url"]>(null);
+  const [userType, setUserType] = useState<Profile["user_type"]>(null); // Use userType
+  const [carModel, setCarModel] = useState<Profile["car_model"]>(null);
+  const [carColor, setCarColor] = useState<Profile["car_color"]>(null);
+  const [licensePlate, setLicensePlate] = useState<Profile["license_plate"]>(null);
+  const [phoneNumber, setPhoneNumber] = useState<Profile["phone_number"]>(null);
 
-  const user = session?.user;
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const getProfile = useCallback(async () => {
     try {
       setLoading(true);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        toast.error("الرجاء تسجيل الدخول لعرض ملفك الشخصي.");
+        // Navigation is handled by ProtectedRoute, so no need to navigate here
+        return;
+      }
+      setCurrentUserId(user.id);
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`full_name, username, website, avatar_url, is_driver, car_model, car_color, license_plate`)
-        .eq("id", user?.id)
+        .select(`full_name, username, website, avatar_url, user_type, car_model, car_color, license_plate, phone_number`) // Select user_type and phone_number
+        .eq("id", user.id)
         .single();
 
       if (error && status !== 406) {
@@ -54,59 +67,70 @@ export default function ProfileSettingsPage({
         setUsername(data.username);
         setWebsite(data.website);
         setAvatarUrl(data.avatar_url);
-        setIsDriver(data.is_driver);
+        setUserType(data.user_type); // Set userType
         setCarModel(data.car_model);
         setCarColor(data.car_color);
         setLicensePlate(data.license_plate);
+        setPhoneNumber(data.phone_number); // Set phone_number
       }
     } catch (error) {
-      toast.error("Error loading user profile!");
+      toast.error("فشل تحميل ملف تعريف المستخدم!");
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [user, supabase]);
+  }, []);
 
   useEffect(() => {
     getProfile();
   }, [getProfile]);
 
   async function updateProfile({
+    fullname,
     username,
     website,
     avatar_url,
-    is_driver,
+    user_type,
     car_model,
     car_color,
     license_plate,
+    phone_number,
   }: {
-    username: Profiles["username"];
-    website: Profiles["website"];
-    avatar_url: Profiles["avatar_url"];
-    is_driver: Profiles["is_driver"];
-    car_model: Profiles["car_model"];
-    car_color: Profiles["car_color"];
-    license_plate: Profiles["license_plate"];
+    fullname: Profile["full_name"];
+    username: Profile["username"];
+    website: Profile["website"];
+    avatar_url: Profile["avatar_url"];
+    user_type: Profile["user_type"];
+    car_model: Profile["car_model"];
+    car_color: Profile["car_color"];
+    license_plate: Profile["license_plate"];
+    phone_number: Profile["phone_number"];
   }) {
     try {
       setLoading(true);
 
+      if (!currentUserId) {
+        toast.error("خطأ: معرف المستخدم غير موجود.");
+        return;
+      }
+
       const { error } = await supabase.from("profiles").upsert({
-        id: user?.id as string,
+        id: currentUserId,
         full_name: fullname,
         username,
         website,
         avatar_url,
-        is_driver,
-        car_model,
-        car_color,
-        license_plate,
+        user_type, // Update user_type
+        car_model: user_type === "driver" ? car_model : null, // Clear car details if not a driver
+        car_color: user_type === "driver" ? car_color : null,
+        license_plate: user_type === "driver" ? license_plate : null,
+        phone_number, // Update phone_number
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
-      toast.success("Profile updated!");
+      toast.success("تم تحديث الملف الشخصي بنجاح!");
     } catch (error) {
-      toast.error("Error updating the profile!");
+      toast.error("فشل تحديث الملف الشخصي!");
       console.error(error);
     } finally {
       setLoading(false);
@@ -115,13 +139,13 @@ export default function ProfileSettingsPage({
 
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
-      toast.error("You must select an image to upload.");
+      toast.error("الرجاء اختيار صورة لرفعها.");
       return;
     }
 
     const file = event.target.files[0];
     const fileExt = file.name.split(".").pop();
-    const filePath = `${user?.id}/${Math.random()}.${fileExt}`;
+    const filePath = `${currentUserId}/${Math.random()}.${fileExt}`;
 
     try {
       setLoading(true);
@@ -140,35 +164,65 @@ export default function ProfileSettingsPage({
       if (publicUrlData) {
         setAvatarUrl(publicUrlData.publicUrl);
         await updateProfile({
+          fullname,
           username,
           website,
           avatar_url: publicUrlData.publicUrl,
-          is_driver: isDriver,
+          user_type: userType,
           car_model: carModel,
           car_color: carColor,
           license_plate: licensePlate,
+          phone_number: phoneNumber,
         });
       }
     } catch (error) {
-      toast.error("Error uploading avatar: " + (error as Error).message);
+      toast.error("فشل رفع الصورة: " + (error as Error).message);
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignOut = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signOut();
+    setLoading(false);
+    if (error) {
+      toast.error(`فشل تسجيل الخروج: ${error.message}`);
+    } else {
+      toast.success("تم تسجيل الخروج بنجاح.");
+      // Redirection is handled by the ProtectedRoute or App.tsx listener
+    }
+  };
+
+  // Determine the correct back path based on user role
+  const backPath = userType === "passenger" ? "/passenger-dashboard" : userType === "driver" ? "/driver-dashboard" : "/";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">جاري تحميل الملف الشخصي...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            إعدادات الملف الشخصي
-          </h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+        <div className="p-6">
+          <PageHeader
+            title="إعدادات الملف الشخصي"
+            description="تحديث معلومات ملفك الشخصي"
+            backPath={backPath}
+          />
         </div>
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-4 p-6 pt-0">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={avatar_url || "https://github.com/shadcn.png"} />
-            <AvatarFallback>CN</AvatarFallback>
+            <AvatarImage src={avatar_url || undefined} alt="Avatar" />
+            <AvatarFallback>
+              {fullname ? fullname.charAt(0).toUpperCase() : <User className="h-12 w-12" />}
+            </AvatarFallback>
           </Avatar>
           <Input
             id="avatar-upload"
@@ -183,10 +237,10 @@ export default function ProfileSettingsPage({
             </Button>
           </Label>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 p-6 pt-0">
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="email">البريد الإلكتروني</Label>
-            <Input id="email" type="text" value={user?.email} disabled />
+            <Input id="email" type="text" value={supabase.auth.currentUser?.email || ""} disabled />
           </div>
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="fullName">الاسم الكامل</Label>
@@ -195,6 +249,15 @@ export default function ProfileSettingsPage({
               type="text"
               value={fullname || ""}
               onChange={(e) => setFullname(e.target.value)}
+            />
+          </div>
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="phoneNumber">رقم الهاتف</Label>
+            <Input
+              id="phoneNumber"
+              type="tel"
+              value={phoneNumber || ""}
+              onChange={(e) => setPhoneNumber(e.target.value)}
             />
           </div>
           <div className="grid w-full items-center gap-1.5">
@@ -215,16 +278,16 @@ export default function ProfileSettingsPage({
               onChange={(e) => setWebsite(e.target.value)}
             />
           </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="is-driver">هل أنت سائق؟</Label>
+          <div className="flex items-center justify-between space-x-2 rtl:space-x-reverse">
+            <Label htmlFor="user-type-switch">هل أنت سائق؟</Label>
             <Switch
-              id="is-driver"
-              checked={isDriver}
-              onCheckedChange={setIsDriver}
+              id="user-type-switch"
+              checked={userType === "driver"}
+              onCheckedChange={(checked) => setUserType(checked ? "driver" : "passenger")}
             />
           </div>
 
-          {isDriver && (
+          {userType === "driver" && (
             <>
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="car-model">موديل السيارة</Label>
@@ -257,30 +320,32 @@ export default function ProfileSettingsPage({
           )}
 
           <Button
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             onClick={() =>
               updateProfile({
+                fullname,
                 username,
                 website,
                 avatar_url,
-                is_driver: isDriver,
+                user_type: userType,
                 car_model: carModel,
                 car_color: carColor,
                 license_plate: licensePlate,
+                phone_number: phoneNumber,
               })
             }
             disabled={loading}
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="ml-2 h-4 w-4 animate-spin rtl:mr-2" />
             ) : (
               "تحديث الملف الشخصي"
             )}
           </Button>
           <Button
-            className="w-full"
+            className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             variant="outline"
-            onClick={() => supabase.auth.signOut()}
+            onClick={handleSignOut}
           >
             تسجيل الخروج
           </Button>

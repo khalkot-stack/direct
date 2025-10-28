@@ -27,7 +27,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
-import MainLayout from './components/MainLayout'; // Import the new MainLayout
+import MainLayout from './components/MainLayout';
 
 function App() {
   return (
@@ -73,7 +73,6 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
-        {/* BottomNavigationBar is now inside MainLayout, so remove it from here */}
         <Toaster richColors />
       </div>
     </Router>
