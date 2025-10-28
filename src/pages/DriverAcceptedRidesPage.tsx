@@ -203,8 +203,8 @@ export default function DriverAcceptedRidesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto"> {/* Removed mt-8 */}
-        <div className="p-6">
+      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
+        <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
             title="رحلاتي المقبولة"
             description="عرض وإدارة الرحلات التي قبلتها"
