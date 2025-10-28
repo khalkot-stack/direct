@@ -34,7 +34,7 @@ interface SupabaseJoinedRideData {
   passenger_id: string;
   driver_id: string | null;
   profiles_passenger: Array<{ full_name: string; phone_number?: string }> | null;
-  profiles_driver: Array<{ full_name: string; phone_number?: string; car_model?: string; car_color?: string; license_plate?: string }> | null;
+  profiles_driver: Array<{ full_name: string; phone_number?: string; car_model?: string; car_color?: string; license_plate?: string; current_lat?: number; current_lng?: number }> | null; // Added current_lat, current_lng
 }
 
 interface Ride {
@@ -48,6 +48,8 @@ interface Ride {
   driver_car_model?: string;
   driver_car_color?: string;
   driver_license_plate?: string;
+  driver_current_lat?: number; // New field for driver's current latitude
+  driver_current_lng?: number; // New field for driver's current longitude
   pickup_location: string;
   pickup_lat: number;
   pickup_lng: number;
@@ -92,7 +94,7 @@ const PassengerTrackingPage: React.FC = () => {
         passenger_id,
         driver_id,
         profiles_passenger:passenger_id (full_name, phone_number),
-        profiles_driver:driver_id (full_name, phone_number, car_model, car_color, license_plate)
+        profiles_driver:driver_id (full_name, phone_number, car_model, car_color, license_plate, current_lat, current_lng)
       `)
       .eq('id', rideId)
       .single()
@@ -114,6 +116,8 @@ const PassengerTrackingPage: React.FC = () => {
         driver_car_model: data.profiles_driver?.[0]?.car_model || 'غير متاح',
         driver_car_color: data.profiles_driver?.[0]?.car_color || 'غير متاح',
         driver_license_plate: data.profiles_driver?.[0]?.license_plate || 'غير متاح',
+        driver_current_lat: data.profiles_driver?.[0]?.current_lat, // Set driver's current lat
+        driver_current_lng: data.profiles_driver?.[0]?.current_lng, // Set driver's current lng
         pickup_location: data.pickup_location,
         pickup_lat: data.pickup_lat,
         pickup_lng: data.pickup_lng,
@@ -134,8 +138,8 @@ const PassengerTrackingPage: React.FC = () => {
   useEffect(() => {
     fetchRideDetails();
 
-    // Optional: Realtime listener for ride status changes
-    const channel = supabase
+    // Realtime listener for ride status changes
+    const rideChannel = supabase
       .channel(`ride_${rideId}_status_changes`)
       .on(
         'postgres_changes',
@@ -149,10 +153,38 @@ const PassengerTrackingPage: React.FC = () => {
       )
       .subscribe();
 
+    // Realtime listener for driver location changes
+    let driverLocationChannel: any;
+    if (ride?.driver_id) {
+      driverLocationChannel = supabase
+        .channel(`driver_${ride.driver_id}_location_changes`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${ride.driver_id}` },
+          (payload) => {
+            setRide(prevRide => {
+              if (prevRide) {
+                return {
+                  ...prevRide,
+                  driver_current_lat: payload.new.current_lat,
+                  driver_current_lng: payload.new.current_lng,
+                };
+              }
+              return prevRide;
+            });
+          }
+        )
+        .subscribe();
+    }
+
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(rideChannel);
+      if (driverLocationChannel) {
+        supabase.removeChannel(driverLocationChannel);
+      }
     };
-  }, [fetchRideDetails, rideId, ride?.status]);
+  }, [fetchRideDetails, rideId, ride?.status, ride?.driver_id]); // Added ride.driver_id to dependencies
 
   const handleCall = (phoneNumber: string | undefined) => {
     if (phoneNumber && phoneNumber !== 'غير متاح') {
@@ -241,8 +273,19 @@ const PassengerTrackingPage: React.FC = () => {
       description: ride.destination,
       iconColor: "#EF4444", // Red for destination
     },
-    // In a real-time scenario, a third marker for the driver's current location would be added here
   ];
+
+  // Add driver's current location if available and ride is accepted
+  if (ride.status === "accepted" && ride.driver_current_lat && ride.driver_current_lng) {
+    mapMarkers.push({
+      id: "driver_current",
+      lat: ride.driver_current_lat,
+      lng: ride.driver_current_lng,
+      title: "موقع السائق الحالي",
+      description: `السائق: ${ride.driver_name}`,
+      iconColor: "#3B82F6", // Blue for driver
+    });
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">

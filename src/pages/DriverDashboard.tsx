@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Car, History, User, Bell, Settings, BarChart, Loader2 } from 'lucide-react';
+import { Search, Car, History, User, Bell, Settings, BarChart, Loader2, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,8 @@ const DriverDashboard = () => {
   const [driverName, setDriverName] = useState('السائق');
   const [driverAvatar, setDriverAvatar] = useState('');
   const [loading, setLoading] = useState(true);
+  const [driverId, setDriverId] = useState<string | null>(null);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
   useEffect(() => {
     const fetchDriverProfile = async () => {
@@ -26,11 +28,12 @@ const DriverDashboard = () => {
         setLoading(false);
         return;
       }
+      setDriverId(user.id);
 
       let currentProfile;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, user_type')
+        .select('full_name, avatar_url, user_type, current_lat, current_lng') // Include new location columns
         .eq('id', user.id)
         .single();
 
@@ -46,7 +49,7 @@ const DriverDashboard = () => {
             phone_number: user.user_metadata.phone_number || null,
             status: 'active', // Default status
           })
-          .select('full_name, avatar_url, user_type')
+          .select('full_name, avatar_url, user_type, current_lat, current_lng') // Include new location columns
           .single();
 
         if (insertError) {
@@ -94,6 +97,31 @@ const DriverDashboard = () => {
     fetchDriverProfile();
   }, [navigate]);
 
+  const handleUpdateLocation = async () => {
+    if (!driverId) {
+      toast.error("خطأ: معرف السائق غير موجود.");
+      return;
+    }
+    setIsUpdatingLocation(true);
+
+    // Simulate a random location update near Amman
+    const newLat = 31.9539 + (Math.random() - 0.5) * 0.05; // +/- 0.025 degrees
+    const newLng = 35.9106 + (Math.random() - 0.5) * 0.05;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ current_lat: newLat, current_lng: newLng })
+      .eq('id', driverId);
+
+    if (error) {
+      toast.error(`فشل تحديث الموقع: ${error.message}`);
+      console.error("Error updating driver location:", error);
+    } else {
+      toast.success("تم تحديث موقعك بنجاح!");
+    }
+    setIsUpdatingLocation(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -123,13 +151,29 @@ const DriverDashboard = () => {
           </Button>
         </div>
 
-        <div className="mb-8">
-            <Link to="/driver-dashboard/find-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
+        <div className="mb-8 flex flex-col sm:flex-row gap-4">
+            <Link to="/driver-dashboard/find-rides" className="flex-1 transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <Search className="h-5 w-5" />
                 البحث عن ركاب
               </Button>
             </Link>
+            <Button
+              onClick={handleUpdateLocation}
+              disabled={isUpdatingLocation}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+            >
+              {isUpdatingLocation ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin ml-2 rtl:mr-2" />
+                  جاري تحديث الموقع...
+                </>
+              ) : (
+                <>
+                  تحديث موقعي <MapPin className="h-5 w-5" />
+                </>
+              )}
+            </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
