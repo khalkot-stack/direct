@@ -1,7 +1,8 @@
 -- Drop table and dependent objects if they exist to ensure a clean recreation
-DROP TRIGGER IF EXISTS check_rating_constraints_trigger ON public.ratings;
-DROP FUNCTION IF EXISTS check_rating_constraints() CASCADE;
+-- Dropping the table with CASCADE should also drop its policies and triggers.
 DROP TABLE IF EXISTS public.ratings CASCADE;
+-- Explicitly drop the function in case it wasn't cascaded from the table drop
+DROP FUNCTION IF EXISTS check_rating_constraints() CASCADE;
 
 -- Create the ratings table
 CREATE TABLE public.ratings (
