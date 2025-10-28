@@ -3,18 +3,14 @@ import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
 import { ShieldCheck, DollarSign, TrafficCone, Zap } from "lucide-react"; // Import new icons
+import AppHeader from "@/components/AppHeader"; // Import AppHeader
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-gray-900 to-primary-dark text-white p-4 text-center overflow-hidden"> {/* Added overflow-hidden */}
-      {/* Logo Container at the top */}
-      <div className="w-full flex justify-center pt-8 pb-4">
-        <div className="bg-white p-4 rounded-lg shadow-lg">
-          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="mx-auto h-16 mb-4" />
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto flex-1 flex flex-col justify-center">
+      <AppHeader /> {/* Global App Header */}
+      
+      <div className="max-w-3xl mx-auto flex-1 flex flex-col justify-center pt-16"> {/* Added pt-16 to account for fixed header */}
         <p className="text-2xl md:text-3xl mb-8 font-light">
           وسيلتك الذكية للتنقل داخل الأردن
         </p>
