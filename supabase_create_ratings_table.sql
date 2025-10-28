@@ -88,13 +88,12 @@ CREATE TRIGGER check_rating_constraints_trigger
 BEFORE INSERT ON public.ratings
 FOR EACH ROW EXECUTE FUNCTION check_rating_constraints();
 
--- Policy: Allow authenticated users to create ratings (simplified, as trigger handles complex checks)
+-- Policy: Allow authenticated users to create ratings (maximally simplified, as trigger handles complex checks)
 CREATE POLICY "Allow authenticated users to create ratings"
 ON public.ratings FOR INSERT
 TO authenticated
 WITH CHECK (
-    auth.uid() = rater_id AND
-    NEW.rated_user_id IS NOT NULL -- Ensure a rated user is provided
+    auth.uid() = rater_id
 );
 
 -- Policy: Allow authenticated users to update their own ratings
