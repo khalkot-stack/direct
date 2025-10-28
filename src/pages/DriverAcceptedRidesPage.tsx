@@ -99,24 +99,27 @@ const DriverAcceptedRidesPage = () => {
         setLoading(false);
         return;
       }
-      setDriverId(user.id);
-      fetchAcceptedRides(user.id); // Initial fetch
+      const currentDriverId = user.id;
+      setDriverId(currentDriverId);
+      fetchAcceptedRides(currentDriverId); // Initial fetch
 
-      // Setup Realtime listener for accepted rides
+      // Setup Realtime listener for any changes to rides associated with this driver
       channel = supabase
-        .channel(`driver_accepted_rides_${user.id}`)
+        .channel(`driver_rides_${currentDriverId}`)
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: 'UPDATE', // Listen for any updates
             schema: 'public',
             table: 'rides',
-            filter: `driver_id=eq.${user.id}&status=eq.accepted`
+            filter: `driver_id=eq.${currentDriverId}` // Filter by driver_id
           },
           (payload) => {
-            // When a ride is updated to 'accepted' for this driver, re-fetch all accepted rides
-            toast.info(`تم قبول رحلة جديدة: ${payload.new.pickup_location} إلى ${payload.new.destination}`);
-            fetchAcceptedRides(user.id);
+            // If the updated ride's status is 'accepted' or 'completed', re-fetch all accepted rides
+            if (payload.new.status === 'accepted' || payload.new.status === 'completed' || payload.new.status === 'cancelled') {
+              toast.info(`تم تحديث حالة الرحلة: ${payload.new.pickup_location} إلى ${payload.new.destination} إلى ${payload.new.status}`);
+              fetchAcceptedRides(currentDriverId);
+            }
           }
         )
         .subscribe();
