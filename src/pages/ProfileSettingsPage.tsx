@@ -37,6 +37,7 @@ export default function ProfileSettingsPage() {
   const [carColor, setCarColor] = useState<Profile["car_color"]>(null);
   const [licensePlate, setLicensePlate] = useState<Profile["license_plate"]>(null);
   const [phoneNumber, setPhoneNumber] = useState<Profile["phone_number"]>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null); // New state for user email
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export default function ProfileSettingsPage() {
         return;
       }
       setCurrentUserId(user.id);
+      setUserEmail(user.email); // Set the user's email
 
       const { data, error, status } = await supabase
         .from("profiles")
@@ -240,7 +242,7 @@ export default function ProfileSettingsPage() {
         <div className="space-y-4 p-6 pt-0">
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="email">البريد الإلكتروني</Label>
-            <Input id="email" type="text" value={supabase.auth.currentUser?.email || ""} disabled />
+            <Input id="email" type="text" value={userEmail || ""} disabled />
           </div>
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="fullName">الاسم الكامل</Label>
