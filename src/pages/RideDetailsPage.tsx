@@ -152,8 +152,8 @@ const RideDetailsPage = () => {
   const isPassenger = currentUserRole === "passenger" && currentUserId === ride.passenger_id;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Changed flex items-center justify-center to flex-col */}
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
         <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
             title={`تفاصيل الرحلة #${ride.id.substring(0, 8)}...`}

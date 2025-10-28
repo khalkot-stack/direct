@@ -204,8 +204,8 @@ const FindRidesPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Changed flex items-center justify-center to flex-col */}
+      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
         <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
             title="البحث عن ركاب"
