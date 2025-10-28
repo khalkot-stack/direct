@@ -185,7 +185,7 @@ const PassengerRequestsPage = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-2 sm:mt-0"> {/* Added margin-top for small screens */}
                   <Button
                     variant="outline"
                     className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"

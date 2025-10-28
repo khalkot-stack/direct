@@ -199,7 +199,7 @@ const DriverAcceptedRidesPage = () => {
                     عدد الركاب: {ride.passengers_count} | الحالة: {ride.status === 'accepted' ? 'مقبولة' : 'مكتملة'} | الراكب: {ride.passenger_name}
                   </p>
                   {ride.status === 'accepted' && ride.passenger_phone && ride.passenger_phone !== 'غير متاح' && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2"> {/* Added flex-wrap for small screens */}
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         هاتف الراكب: {ride.passenger_phone}
                       </p>
@@ -214,7 +214,7 @@ const DriverAcceptedRidesPage = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-2 sm:mt-0"> {/* Added margin-top for small screens */}
                   <Button
                     variant="outline"
                     size="sm"
