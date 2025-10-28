@@ -4,12 +4,24 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Car, MapPin } from "lucide-react"; // Added MapPin icon
+import { Loader2, Star, Car, MapPin, Trash2 } from "lucide-react"; // Added Trash2 icon
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import RatingDialog from "@/components/RatingDialog";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import CancellationReasonDialog from "@/components/CancellationReasonDialog";
+import { Badge } from "@/components/ui/badge"; // Import Badge component
 
 // Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
@@ -43,6 +55,11 @@ const PassengerRequestsPage = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const [rideToRate, setRideToRate] = useState<RideRequest | null>(null);
+  const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false);
+  const [selectedRideToCancel, setSelectedRideToCancel] = useState<RideRequest | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // New state for delete dialog
+  const [rideToDeleteId, setRideToDeleteId] = useState<string | null>(null); // New state for ride to delete
 
   const fetchPassengerRides = useCallback(async (currentUserId: string) => {
     setLoading(true);
@@ -143,6 +160,85 @@ const PassengerRequestsPage = () => {
     }
   };
 
+  const openCancellationReasonDialog = (ride: RideRequest) => {
+    setSelectedRideToCancel(ride);
+    setIsCancellationReasonDialogOpen(true);
+  };
+
+  const handleCancelRideWithReason = async (reason: string) => {
+    if (!selectedRideToCancel || !userId) return;
+
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from("rides")
+        .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancellation_reason: reason })
+        .eq("id", selectedRideToCancel.id)
+        .eq("passenger_id", userId);
+
+      if (error) throw error;
+
+      toast.success("تم إلغاء الرحلة بنجاح!");
+      setIsCancellationReasonDialogOpen(false);
+      setSelectedRideToCancel(null);
+      if (userId) {
+        fetchPassengerRides(userId); // Refresh the list
+      }
+    } catch (error) {
+      toast.error("فشل إلغاء الرحلة.");
+      console.error("Error cancelling ride:", error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleDeleteClick = (rideId: string) => {
+    setRideToDeleteId(rideId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!rideToDeleteId || !userId) return;
+
+    setLoading(true); // Use general loading for deletion process
+    try {
+      const { error } = await supabase
+        .from("rides")
+        .delete()
+        .eq("id", rideToDeleteId)
+        .eq("passenger_id", userId); // Ensure only passenger can delete their own ride
+
+      if (error) throw error;
+
+      toast.success("تم حذف الرحلة بنجاح!");
+      if (userId) {
+        fetchPassengerRides(userId); // Refresh the list
+      }
+    } catch (error) {
+      toast.error("فشل حذف الرحلة.");
+      console.error("Error deleting ride:", error);
+    } finally {
+      setLoading(false);
+      setIsDeleteDialogOpen(false);
+      setRideToDeleteId(null);
+    }
+  };
+
+  const getStatusBadge = (status: RideRequest['status']) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">قيد الانتظار</Badge>;
+      case 'accepted':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">مقبولة</Badge>;
+      case 'completed':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">مكتملة</Badge>;
+      case 'cancelled':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">ملغاة</Badge>;
+      default:
+        return <Badge variant="secondary">غير معروف</Badge>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -170,8 +266,8 @@ const PassengerRequestsPage = () => {
                   <p className="text-lg font-medium text-gray-900 dark:text-white">
                     من: {request.pickup_location} إلى: {request.destination}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    عدد الركاب: {request.passengers_count} | الحالة: {request.status === 'pending' ? 'قيد الانتظار' : request.status === 'accepted' ? 'مقبولة' : request.status === 'completed' ? 'مكتملة' : 'ملغاة'}
+                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    عدد الركاب: {request.passengers_count} | الحالة: {getStatusBadge(request.status)}
                   </p>
                   {request.driver_name !== "لا يوجد" && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -209,6 +305,23 @@ const PassengerRequestsPage = () => {
                       تقييم السائق
                     </Button>
                   )}
+                  {request.status === "completed" && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClick(request.id)}
+                      disabled={loading}
+                      className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                    >
+                      {loading && rideToDeleteId === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      ) : (
+                        <>
+                          حذف <Trash2 className="h-4 w-4 mr-1 rtl:ml-1" />
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))
@@ -231,6 +344,28 @@ const PassengerRequestsPage = () => {
           initialComment={rideToRate.current_comment}
         />
       )}
+      <CancellationReasonDialog
+        open={isCancellationReasonDialogOpen}
+        onOpenChange={setIsCancellationReasonDialogOpen}
+        onConfirm={handleCancelRideWithReason}
+        isSubmitting={isCancelling}
+      />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف هذه الرحلة بشكل دائم.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
