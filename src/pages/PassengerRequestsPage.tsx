@@ -153,8 +153,8 @@ const PassengerRequestsPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
         <div className="p-6">
           <PageHeader
             title="طلبات رحلاتي"
