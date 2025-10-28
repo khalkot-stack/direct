@@ -3,14 +3,13 @@ ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 
 -- Policy for passengers to delete their own rides
 -- This policy allows passengers to delete rides they requested,
--- typically when the ride is still pending or has been cancelled by them.
--- It's generally not advisable for passengers to delete accepted/completed rides directly.
-DROP POLICY IF EXISTS "Passengers can delete their own pending or cancelled rides." ON public.rides;
-CREATE POLICY "Passengers can delete their own pending or cancelled rides."
+-- including pending, cancelled, and completed rides from their history.
+DROP POLICY IF EXISTS "Passengers can delete their own pending, cancelled, or completed rides." ON public.rides;
+CREATE POLICY "Passengers can delete their own pending, cancelled, or completed rides."
 ON public.rides FOR DELETE
 TO authenticated
 USING (
-  auth.uid() = passenger_id AND (status = 'pending' OR status = 'cancelled')
+  auth.uid() = passenger_id AND (status = 'pending' OR status = 'cancelled' OR status = 'completed')
 );
 
 -- Policy for drivers to delete their own rides
