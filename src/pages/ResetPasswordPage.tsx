@@ -62,7 +62,7 @@ const ResetPasswordPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950">
         <AppHeader /> {/* Global App Header */}
-        <div className="flex-1 flex items-center justify-center w-full pt-16"> {/* Added pt-16 for fixed header */}
+        <div className="flex-1 flex items-center justify-center w-full"> {/* Removed pt-16 */}
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="sr-only">جاري التحقق من الجلسة...</span>
         </div>
@@ -73,7 +73,7 @@ const ResetPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <AppHeader /> {/* Global App Header */}
-      <div className="flex-1 flex items-center justify-center w-full pt-16"> {/* Added pt-16 for fixed header */}
+      <div className="flex-1 flex items-center justify-center w-full"> {/* Removed pt-16 */}
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg">
           <div className="p-6"> {/* Added padding to the div containing PageHeader */}
             <PageHeader

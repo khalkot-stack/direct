@@ -32,7 +32,7 @@ const AdminDashboard = () => {
           </Sheet>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">لوحة تحكم المدير</h1>
         </div>
-        <div className="flex-1 p-4 overflow-auto">
+        <div className="flex-1 p-4 overflow-auto"> {/* Removed pt-16 */}
           <Outlet /> {/* This is where nested routes will render */}
         </div>
       </div>

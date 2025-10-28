@@ -10,7 +10,7 @@ const HelpPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <AppHeader /> {/* Global App Header */}
-      <div className="flex-1 flex items-center justify-center w-full pt-16"> {/* Added pt-16 for fixed header */}
+      <div className="flex-1 flex items-center justify-center w-full"> {/* Removed pt-16 */}
         <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg">
           <div className="p-6">
             <PageHeader

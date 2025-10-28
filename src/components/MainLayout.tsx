@@ -9,7 +9,7 @@ const MainLayout: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader /> {/* Global App Header */}
-      <div className="flex-1 pb-16 pt-4"> {/* Add padding-bottom for bottom nav and padding-top for AppHeader */}
+      <div className="flex-1 pb-16"> {/* Removed pt-4, keeping padding-bottom for bottom nav */}
         <Outlet />
       </div>
       <BottomNavigationBar />
