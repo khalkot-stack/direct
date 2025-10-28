@@ -12,11 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale"; // Import Arabic locale
 
-interface Ride {
+// Define an interface for the raw data returned by Supabase select with joins
+interface SupabaseJoinedRideData {
   id: string;
   driver_id: string;
   passenger_id: string;
-  origin: string;
+  pickup_location: string; // Changed from 'origin'
   destination: string;
   status: "pending" | "accepted" | "completed" | "cancelled";
   price: number;
@@ -29,7 +30,31 @@ interface Ride {
   passengers_count: number;
   driver_notes: string | null;
   passenger_notes: string | null;
-  profiles: {
+  profiles_passenger: Array<{ // Explicitly named for passenger
+    full_name: string;
+    phone_number: string;
+    avatar_url: string | null;
+  }> | null;
+}
+
+interface Ride {
+  id: string;
+  driver_id: string;
+  passenger_id: string;
+  pickup_location: string; // Changed from 'origin'
+  destination: string;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  price: number;
+  requested_at: string;
+  accepted_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  ride_date: string;
+  ride_time: string;
+  passengers_count: number;
+  driver_notes: string | null;
+  passenger_notes: string | null;
+  profiles: { // This will hold the passenger's profile
     full_name: string;
     phone_number: string;
     avatar_url: string | null;
@@ -70,12 +95,23 @@ export default function DriverAcceptedRidesPage() {
       const { data, error } = await supabase
         .from("rides")
         .select(`
-          *,
-          profiles (
-            full_name,
-            phone_number,
-            avatar_url
-          )
+          id,
+          driver_id,
+          passenger_id,
+          pickup_location,
+          destination,
+          status,
+          price,
+          requested_at,
+          accepted_at,
+          completed_at,
+          cancelled_at,
+          ride_date,
+          ride_time,
+          passengers_count,
+          driver_notes,
+          passenger_notes,
+          profiles_passenger:passenger_id (full_name, phone_number, avatar_url)
         `)
         .eq("driver_id", driverId)
         .eq("status", "accepted")
@@ -84,7 +120,12 @@ export default function DriverAcceptedRidesPage() {
 
       if (error) throw error;
 
-      setAcceptedRides(data as Ride[]);
+      const formattedRides: Ride[] = data.map((ride: SupabaseJoinedRideData) => ({
+        ...ride,
+        profiles: ride.profiles_passenger?.[0] || null, // Map the first passenger profile to 'profiles'
+      }));
+
+      setAcceptedRides(formattedRides);
     } catch (error) {
       toast.error("فشل تحميل الرحلات المقبولة.");
       console.error("Error fetching accepted rides:", error);
@@ -161,8 +202,8 @@ export default function DriverAcceptedRidesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Removed items-center justify-center */}
-      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto mt-8"> {/* Added mx-auto mt-8 for centering and top margin */}
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto mt-8">
         <div className="p-6">
           <PageHeader
             title="رحلاتي المقبولة"
@@ -180,7 +221,7 @@ export default function DriverAcceptedRidesPage() {
                   <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 text-primary ml-2 rtl:mr-2" />
-                      <span>{ride.origin} <span className="mx-1">إلى</span> {ride.destination}</span>
+                      <span>{ride.pickup_location} <span className="mx-1">إلى</span> {ride.destination}</span>
                     </div>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                       مقبولة
