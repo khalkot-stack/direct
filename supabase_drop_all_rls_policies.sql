@@ -46,3 +46,7 @@ DROP POLICY IF EXISTS "Allow authenticated users to update their own profile or 
 
 -- حذف دالة get_user_role
 DROP FUNCTION IF EXISTS public.get_user_role();
+
+-- حذف الـ trigger والدالة المرتبطة بإنشاء ملفات التعريف
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
