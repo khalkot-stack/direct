@@ -32,6 +32,7 @@ interface SupabaseJoinedRideData {
   // For multi-row queries, these are arrays of objects or null
   profiles_passenger: Array<{ full_name: string }> | null;
   profiles_driver: Array<{ full_name: string }> | null;
+  cancellation_reason: string | null; // Added cancellation_reason
 }
 
 interface Ride {
@@ -44,6 +45,7 @@ interface Ride {
   destination: string;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
+  cancellation_reason?: string | null; // Added cancellation_reason
 }
 
 const RideManagementPage = () => {
@@ -68,7 +70,8 @@ const RideManagementPage = () => {
         passenger_id,
         driver_id,
         profiles_passenger:passenger_id (full_name),
-        profiles_driver:driver_id (full_name)
+        profiles_driver:driver_id (full_name),
+        cancellation_reason
       `);
 
     if (error) {
@@ -86,6 +89,7 @@ const RideManagementPage = () => {
         destination: ride.destination,
         passengers_count: ride.passengers_count,
         status: ride.status,
+        cancellation_reason: ride.cancellation_reason, // Include cancellation_reason
       }));
       setRides(formattedRides);
     }
@@ -102,7 +106,8 @@ const RideManagementPage = () => {
     (ride.driver_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ride.status.toLowerCase().includes(searchTerm.toLowerCase())
+    ride.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (ride.cancellation_reason?.toLowerCase().includes(searchTerm.toLowerCase())) // Search by cancellation reason
   );
 
   const handleAddRide = () => {
@@ -126,6 +131,7 @@ const RideManagementPage = () => {
           destination: updatedRide.destination,
           passengers_count: updatedRide.passengers_count,
           status: updatedRide.status,
+          // cancellation_reason is not updated via this form, only via cancellation flow
         })
         .eq('id', updatedRide.id);
 
@@ -169,7 +175,7 @@ const RideManagementPage = () => {
     if (rideToCancel) {
       const { error } = await supabase
         .from('rides')
-        .update({ status: "cancelled" })
+        .update({ status: "cancelled", cancellation_reason: "تم الإلغاء بواسطة المدير" }) // Admin cancellation reason
         .eq('id', rideToCancel);
 
       if (error) {
@@ -219,6 +225,7 @@ const RideManagementPage = () => {
                 <TableHead>الانطلاق</TableHead>
                 <TableHead>الوجهة</TableHead>
                 <TableHead>الحالة</TableHead>
+                <TableHead>سبب الإلغاء</TableHead> {/* New column */}
                 <TableHead className="text-right">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -226,12 +233,13 @@ const RideManagementPage = () => {
               {filteredRides.length > 0 ? (
                 filteredRides.map((ride) => (
                   <TableRow key={ride.id}>
-                    <TableCell>{ride.id}</TableCell>
+                    <TableCell>{ride.id.substring(0, 8)}...</TableCell>
                     <TableCell>{ride.passenger_name}</TableCell>
                     <TableCell>{ride.driver_name}</TableCell>
                     <TableCell>{ride.pickup_location}</TableCell>
                     <TableCell>{ride.destination}</TableCell>
                     <TableCell>{ride.status}</TableCell>
+                    <TableCell>{ride.cancellation_reason || 'لا يوجد'}</TableCell> {/* Display cancellation reason */}
                     <TableCell className="text-right space-x-2 rtl:space-x-reverse">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(ride)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">
                         تعديل
@@ -246,7 +254,7 @@ const RideManagementPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center"> {/* Updated colspan */}
                     لا توجد نتائج.
                   </TableCell>
                 </TableRow>

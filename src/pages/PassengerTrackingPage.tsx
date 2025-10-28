@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, User, Car, Phone, MessageSquare, XCircle, Info, Users } from "lucide-react"; // Added Users import
+import { Loader2, MapPin, User, Car, Phone, MessageSquare, XCircle, Info, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
-import InteractiveMap from "@/components/InteractiveMap"; // Import the InteractiveMap component
+import InteractiveMap from "@/components/InteractiveMap";
+import CancellationReasonDialog from "@/components/CancellationReasonDialog"; // Import the new dialog
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,8 @@ interface SupabaseJoinedRideData {
   passenger_id: string;
   driver_id: string | null;
   profiles_passenger: Array<{ full_name: string; phone_number?: string }> | null;
-  profiles_driver: Array<{ full_name: string; phone_number?: string; car_model?: string; car_color?: string; license_plate?: string; current_lat?: number; current_lng?: number }> | null; // Added current_lat, current_lng
+  profiles_driver: Array<{ full_name: string; phone_number?: string; car_model?: string; car_color?: string; license_plate?: string; current_lat?: number; current_lng?: number }> | null;
+  cancellation_reason: string | null; // Added cancellation_reason
 }
 
 interface Ride {
@@ -48,8 +50,8 @@ interface Ride {
   driver_car_model?: string;
   driver_car_color?: string;
   driver_license_plate?: string;
-  driver_current_lat?: number; // New field for driver's current latitude
-  driver_current_lng?: number; // New field for driver's current longitude
+  driver_current_lat?: number;
+  driver_current_lng?: number;
   pickup_location: string;
   pickup_lat: number;
   pickup_lng: number;
@@ -58,6 +60,7 @@ interface Ride {
   destination_lng: number;
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
+  cancellation_reason?: string | null; // Added cancellation_reason
 }
 
 const PassengerTrackingPage: React.FC = () => {
@@ -68,6 +71,7 @@ const PassengerTrackingPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isConfirmCancelOpen, setIsConfirmCancelOpen] = useState(false);
+  const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false); // New state
 
   const fetchRideDetails = useCallback(async () => {
     if (!rideId) {
@@ -94,7 +98,8 @@ const PassengerTrackingPage: React.FC = () => {
         passenger_id,
         driver_id,
         profiles_passenger:passenger_id (full_name, phone_number),
-        profiles_driver:driver_id (full_name, phone_number, car_model, car_color, license_plate, current_lat, current_lng)
+        profiles_driver:driver_id (full_name, phone_number, car_model, car_color, license_plate, current_lat, current_lng),
+        cancellation_reason
       `)
       .eq('id', rideId)
       .single()
@@ -116,8 +121,8 @@ const PassengerTrackingPage: React.FC = () => {
         driver_car_model: data.profiles_driver?.[0]?.car_model || 'غير متاح',
         driver_car_color: data.profiles_driver?.[0]?.car_color || 'غير متاح',
         driver_license_plate: data.profiles_driver?.[0]?.license_plate || 'غير متاح',
-        driver_current_lat: data.profiles_driver?.[0]?.current_lat, // Set driver's current lat
-        driver_current_lng: data.profiles_driver?.[0]?.current_lng, // Set driver's current lng
+        driver_current_lat: data.profiles_driver?.[0]?.current_lat,
+        driver_current_lng: data.profiles_driver?.[0]?.current_lng,
         pickup_location: data.pickup_location,
         pickup_lat: data.pickup_lat,
         pickup_lng: data.pickup_lng,
@@ -126,6 +131,7 @@ const PassengerTrackingPage: React.FC = () => {
         destination_lng: data.destination_lng,
         passengers_count: data.passengers_count,
         status: data.status,
+        cancellation_reason: data.cancellation_reason,
       });
     } else {
       toast.error("الرحلة المطلوبة غير موجودة.");
@@ -138,7 +144,6 @@ const PassengerTrackingPage: React.FC = () => {
   useEffect(() => {
     fetchRideDetails();
 
-    // Realtime listener for ride status changes
     const rideChannel = supabase
       .channel(`ride_${rideId}_status_changes`)
       .on(
@@ -147,13 +152,12 @@ const PassengerTrackingPage: React.FC = () => {
         (payload) => {
           if (payload.new.status !== ride?.status) {
             toast.info(`تم تحديث حالة الرحلة إلى: ${payload.new.status}`);
-            fetchRideDetails(); // Re-fetch details to update UI
+            fetchRideDetails();
           }
         }
       )
       .subscribe();
 
-    // Realtime listener for driver location changes
     let driverLocationChannel: any;
     if (ride?.driver_id) {
       driverLocationChannel = supabase
@@ -177,14 +181,13 @@ const PassengerTrackingPage: React.FC = () => {
         .subscribe();
     }
 
-
     return () => {
       supabase.removeChannel(rideChannel);
       if (driverLocationChannel) {
         supabase.removeChannel(driverLocationChannel);
       }
     };
-  }, [fetchRideDetails, rideId, ride?.status, ride?.driver_id]); // Added ride.driver_id to dependencies
+  }, [fetchRideDetails, rideId, ride?.status, ride?.driver_id]);
 
   const handleCall = (phoneNumber: string | undefined) => {
     if (phoneNumber && phoneNumber !== 'غير متاح') {
@@ -202,7 +205,7 @@ const PassengerTrackingPage: React.FC = () => {
     }
   };
 
-  const handleCancelRide = async () => {
+  const handleCancelRideWithReason = async (reason: string) => {
     if (!rideId || !currentUserId) {
       toast.error("خطأ: لا يمكن إلغاء الرحلة.");
       return;
@@ -211,19 +214,20 @@ const PassengerTrackingPage: React.FC = () => {
     setIsCancelling(true);
     const { error } = await supabase
       .from('rides')
-      .update({ status: 'cancelled' })
+      .update({ status: 'cancelled', cancellation_reason: reason })
       .eq('id', rideId)
-      .eq('passenger_id', currentUserId); // Ensure only the requesting passenger can cancel
+      .eq('passenger_id', currentUserId);
 
     setIsCancelling(false);
-    setIsConfirmCancelOpen(false);
+    setIsCancellationReasonDialogOpen(false); // Close reason dialog
+    setIsConfirmCancelOpen(false); // Close initial confirm dialog
 
     if (error) {
       toast.error(`فشل إلغاء الرحلة: ${error.message}`);
       console.error("Error cancelling ride:", error);
     } else {
       toast.warning(`تم إلغاء الرحلة رقم ${rideId.substring(0, 8)}...`);
-      navigate("/passenger-dashboard/my-rides"); // Navigate back to my rides
+      navigate("/passenger-dashboard/my-rides");
     }
   };
 
@@ -263,7 +267,7 @@ const PassengerTrackingPage: React.FC = () => {
       lng: ride.pickup_lng,
       title: "نقطة الانطلاق",
       description: ride.pickup_location,
-      iconColor: "hsl(var(--primary))", // Green for pickup
+      iconColor: "hsl(var(--primary))",
     },
     {
       id: "destination",
@@ -271,11 +275,10 @@ const PassengerTrackingPage: React.FC = () => {
       lng: ride.destination_lng,
       title: "الوجهة",
       description: ride.destination,
-      iconColor: "#EF4444", // Red for destination
+      iconColor: "#EF4444",
     },
   ];
 
-  // Add driver's current location if available and ride is accepted
   if (ride.status === "accepted" && ride.driver_current_lat && ride.driver_current_lng) {
     mapMarkers.push({
       id: "driver_current",
@@ -283,7 +286,7 @@ const PassengerTrackingPage: React.FC = () => {
       lng: ride.driver_current_lng,
       title: "موقع السائق الحالي",
       description: `السائق: ${ride.driver_name}`,
-      iconColor: "#3B82F6", // Blue for driver
+      iconColor: "#3B82F6",
     });
   }
 
@@ -368,7 +371,7 @@ const PassengerTrackingPage: React.FC = () => {
           {ride.status === "accepted" && (
             <Button
               variant="destructive"
-              onClick={() => setIsConfirmCancelOpen(true)}
+              onClick={() => setIsCancellationReasonDialogOpen(true)} // Open reason dialog first
               disabled={isCancelling}
               className="w-full mt-6 flex items-center gap-2 transition-transform duration-200 ease-in-out hover:scale-[1.01]"
             >
@@ -387,22 +390,12 @@ const PassengerTrackingPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <AlertDialog open={isConfirmCancelOpen} onOpenChange={setIsConfirmCancelOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              لا يمكن التراجع عن هذا الإجراء. سيتم إلغاء رحلتك.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>العودة</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelRide} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              تأكيد الإلغاء
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CancellationReasonDialog
+        open={isCancellationReasonDialogOpen}
+        onOpenChange={setIsCancellationReasonDialogOpen}
+        onConfirm={handleCancelRideWithReason}
+        isSubmitting={isCancelling}
+      />
     </div>
   );
 };
