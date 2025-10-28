@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, Star, Car, MapPin, Trash2 } from "lucide-react"; // Added Trash2 icon
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, MapPin, Calendar, Clock, Car, Info, DollarSign, XCircle, CheckCircle2 } from "lucide-react";
+import RatingDialog from "@/components/RatingDialog";
 import PageHeader from "@/components/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
 import EmptyState from "@/components/EmptyState";
 import {
   AlertDialog,
@@ -22,142 +21,151 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import { useNavigate } from "react-router-dom";
 
-// Define an interface for the raw data returned by Supabase select with joins
+// Define an interface for the raw data returned by Supabase select with joins for MULTIPLE rows
 interface SupabaseJoinedRideData {
   id: string;
-  driver_id: string | null;
-  passenger_id: string;
   pickup_location: string;
   destination: string;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  price: number | null;
-  requested_at: string;
-  accepted_at: string | null;
-  completed_at: string | null;
-  cancelled_at: string | null;
-  ride_date: string | null;
-  ride_time: string | null;
   passengers_count: number;
-  driver_notes: string | null;
-  passenger_notes: string | null;
-  cancellation_reason: string | null;
-  profiles_driver: Array<{
-    full_name: string;
-    phone_number: string;
-    car_model: string;
-    car_color: string;
-    license_plate: string;
-  }> | null;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  driver_id: string | null;
+  profiles_driver: Array<{ full_name: string }> | null; // For multi-row queries, these are arrays of objects or null
+  ratings: Array<{ rating: number; comment: string }> | null; // Assuming a 'ratings' table with a foreign key to 'rides'
 }
 
-interface Ride {
+interface RideRequest {
   id: string;
-  driver_id: string | null;
-  passenger_id: string;
   pickup_location: string;
   destination: string;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  price: number | null;
-  requested_at: string;
-  accepted_at: string | null;
-  completed_at: string | null;
-  cancelled_at: string | null;
-  ride_date: string | null;
-  ride_time: string | null;
   passengers_count: number;
-  driver_notes: string | null;
-  passenger_notes: string | null;
-  cancellation_reason: string | null;
-  driver_profile: {
-    full_name: string;
-    phone_number: string;
-    car_model: string;
-    car_color: string;
-    license_plate: string;
-  } | null;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  driver_id: string | null;
+  driver_name?: string;
+  has_rated?: boolean; // To track if the passenger has already rated this ride
+  current_rating?: number;
+  current_comment?: string;
 }
 
 export default function PassengerMyRidesPage() {
   const navigate = useNavigate();
-  const [myRides, setMyRides] = useState<Ride[]>([]);
+  const [passengerRequests, setPassengerRequests] = useState<RideRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPassengerId, setCurrentPassengerId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [rideToRate, setRideToRate] = useState<RideRequest | null>(null);
   const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false);
-  const [selectedRideToCancel, setSelectedRideToCancel] = useState<Ride | null>(null);
+  const [selectedRideToCancel, setSelectedRideToCancel] = useState<RideRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // New state for delete dialog
+  const [rideToDeleteId, setRideToDeleteId] = useState<string | null>(null); // New state for ride to delete
 
-  useEffect(() => {
-    const fetchPassengerId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentPassengerId(user.id);
-      } else {
-        toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
-        setLoading(false);
-      }
-    };
-    fetchPassengerId();
+  const fetchPassengerRides = useCallback(async (currentUserId: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rides')
+      .select(`
+        id,
+        pickup_location,
+        destination,
+        passengers_count,
+        status,
+        driver_id,
+        profiles_driver:driver_id (full_name),
+        ratings!left(rating, comment)
+      `)
+      .eq('passenger_id', currentUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error(`فشل جلب طلبات الرحلات: ${error.message}`);
+      console.error("Error fetching passenger rides:", error);
+    } else {
+      const formattedRequests: RideRequest[] = data.map((ride: SupabaseJoinedRideData) => ({
+        id: ride.id,
+        pickup_location: ride.pickup_location,
+        destination: ride.destination,
+        passengers_count: ride.passengers_count,
+        status: ride.status,
+        driver_id: ride.driver_id,
+        driver_name: ride.profiles_driver?.[0]?.full_name || 'لا يوجد',
+        has_rated: ride.ratings && ride.ratings.length > 0,
+        current_rating: ride.ratings?.[0]?.rating,
+        current_comment: ride.ratings?.[0]?.comment,
+      }));
+      setPassengerRequests(formattedRequests);
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (currentPassengerId) {
-      fetchMyRides(currentPassengerId);
+    const getUserAndFetchRides = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        fetchPassengerRides(user.id);
+      } else {
+        toast.error("الرجاء تسجيل الدخول لعرض طلباتك.");
+        navigate("/auth");
+      }
+    };
+    getUserAndFetchRides();
+
+    // Realtime subscription for ride status changes
+    const channel = supabase
+      .channel('passenger_rides_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rides', filter: `passenger_id=eq.${userId}` },
+        (payload) => {
+          if (payload.new.status !== payload.old.status) {
+            toast.info(`تم تحديث حالة رحلتك إلى: ${payload.new.status}`);
+            if (userId) fetchPassengerRides(userId); // Re-fetch to update the list
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, fetchPassengerRides, userId]); // Added userId to dependencies
+
+  const handleRateDriver = (ride: RideRequest) => {
+    setRideToRate(ride);
+    setIsRatingDialogOpen(true);
+  };
+
+  const handleSaveRating = async (rating: number, comment: string) => {
+    if (!rideToRate || !userId || !rideToRate.driver_id) {
+      toast.error("خطأ: لا يمكن حفظ التقييم.");
+      return;
     }
-  }, [currentPassengerId]);
 
-  const fetchMyRides = async (passengerId: string) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("rides")
-        .select(`
-          id,
-          driver_id,
-          passenger_id,
-          pickup_location,
-          destination,
-          status,
-          price,
-          requested_at,
-          accepted_at,
-          completed_at,
-          cancelled_at,
-          ride_date,
-          ride_time,
-          passengers_count,
-          driver_notes,
-          passenger_notes,
-          cancellation_reason,
-          profiles_driver:driver_id (full_name, phone_number, car_model, car_color, license_plate)
-        `)
-        .eq("passenger_id", passengerId)
-        .order("requested_at", { ascending: false });
+    const { error } = await supabase.from('ratings').insert({
+      ride_id: rideToRate.id,
+      rater_id: userId,
+      rated_user_id: rideToRate.driver_id,
+      rating: rating,
+      comment: comment,
+    });
 
-      if (error) throw error;
-
-      const formattedRides: Ride[] = data.map((ride: SupabaseJoinedRideData) => ({
-        ...ride,
-        driver_profile: ride.profiles_driver?.[0] || null,
-      }));
-
-      setMyRides(formattedRides);
-    } catch (error) {
-      toast.error("فشل تحميل الرحلات.");
-      console.error("Error fetching my rides:", error);
-    } finally {
-      setLoading(false);
+    if (error) {
+      toast.error(`فشل حفظ التقييم: ${error.message}`);
+      console.error("Error saving rating:", error);
+    } else {
+      toast.success("تم حفظ تقييمك بنجاح!");
+      if (userId) fetchPassengerRides(userId);
     }
   };
 
-  const openCancellationReasonDialog = (ride: Ride) => {
+  const openCancellationReasonDialog = (ride: RideRequest) => {
     setSelectedRideToCancel(ride);
     setIsCancellationReasonDialogOpen(true);
   };
 
   const handleCancelRideWithReason = async (reason: string) => {
-    if (!selectedRideToCancel || !currentPassengerId) return;
+    if (!selectedRideToCancel || !userId) return;
 
     setIsCancelling(true);
     try {
@@ -165,15 +173,15 @@ export default function PassengerMyRidesPage() {
         .from("rides")
         .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancellation_reason: reason })
         .eq("id", selectedRideToCancel.id)
-        .eq("passenger_id", currentPassengerId);
+        .eq("passenger_id", userId);
 
       if (error) throw error;
 
       toast.success("تم إلغاء الرحلة بنجاح!");
       setIsCancellationReasonDialogOpen(false);
       setSelectedRideToCancel(null);
-      if (currentPassengerId) {
-        fetchMyRides(currentPassengerId); // Refresh the list
+      if (userId) {
+        fetchPassengerRides(userId); // Refresh the list
       }
     } catch (error) {
       toast.error("فشل إلغاء الرحلة.");
@@ -183,7 +191,39 @@ export default function PassengerMyRidesPage() {
     }
   };
 
-  const getStatusBadge = (status: Ride['status']) => {
+  const handleDeleteClick = (rideId: string) => {
+    setRideToDeleteId(rideId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!rideToDeleteId || !userId) return;
+
+    setLoading(true); // Use general loading for deletion process
+    try {
+      const { error } = await supabase
+        .from("rides")
+        .delete()
+        .eq("id", rideToDeleteId)
+        .eq("passenger_id", userId); // Ensure only passenger can delete their own ride
+
+      if (error) throw error;
+
+      toast.success("تم حذف الرحلة بنجاح!");
+      if (userId) {
+        fetchPassengerRides(userId); // Refresh the list
+      }
+    } catch (error) {
+      toast.error("فشل حذف الرحلة.");
+      console.error("Error deleting ride:", error);
+    } finally {
+      setLoading(false);
+      setIsDeleteDialogOpen(false);
+      setRideToDeleteId(null);
+    }
+  };
+
+  const getStatusBadge = (status: RideRequest['status']) => {
     switch (status) {
       case 'pending':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">قيد الانتظار</Badge>;
@@ -202,7 +242,7 @@ export default function PassengerMyRidesPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="sr-only">جاري تحميل الرحلات...</span>
+        <span className="sr-only">جاري تحميل طلبات الرحلات...</span>
       </div>
     );
   }
@@ -210,122 +250,123 @@ export default function PassengerMyRidesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
-        <div className="px-6 pt-0"> {/* Adjusted padding */}
+        <div className="p-6">
           <PageHeader
-            title="رحلاتي"
-            description="عرض وإدارة جميع رحلاتك"
+            title="طلبات رحلاتي"
+            description="عرض حالة طلبات رحلاتك"
             backPath="/passenger-dashboard"
           />
         </div>
         <CardContent className="space-y-4">
-          {myRides.length === 0 ? (
+          {passengerRequests.length > 0 ? (
+            passengerRequests.map((request) => (
+              <div key={request.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <div className="text-right sm:text-left mb-2 sm:mb-0">
+                  <p className="text-lg font-medium text-gray-900 dark:text-white">
+                    من: {request.pickup_location} إلى: {request.destination}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    عدد الركاب: {request.passengers_count} | الحالة: {request.status === 'pending' ? 'قيد الانتظار' : request.status === 'accepted' ? 'مقبولة' : request.status === 'completed' ? 'مكتملة' : 'ملغاة'}
+                  </p>
+                  {request.driver_name !== "لا يوجد" && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      السائق: {request.driver_name}
+                    </p>
+                  )}
+                  {request.has_rated && request.current_rating !== undefined && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      تقييمك: {request.current_rating} <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                      {request.current_comment && ` ("${request.current_comment}")`}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-2 sm:mt-0"> {/* Added margin-top for small screens */}
+                  <Button
+                    variant="outline"
+                    className="text-primary border-primary hover:bg-primary hover:text-primary-foreground text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                    onClick={() => navigate(`/ride-details/${request.id}`)}
+                  >
+                    عرض التفاصيل
+                  </Button>
+                  {request.status === "accepted" && (
+                    <Button
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                      onClick={() => navigate(`/passenger-dashboard/track-ride/${request.id}`)}
+                    >
+                      تتبع الرحلة <MapPin className="h-4 w-4 mr-1 rtl:ml-1" />
+                    </Button>
+                  )}
+                  {request.status === "completed" && !request.has_rated && request.driver_id && (
+                    <Button
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg shadow-md transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                      onClick={() => handleRateDriver(request)}
+                    >
+                      تقييم السائق
+                    </Button>
+                  )}
+                  {request.status === "completed" && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClick(request.id)}
+                      disabled={loading}
+                      className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                    >
+                      {loading && rideToDeleteId === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      ) : (
+                        <>
+                          حذف <Trash2 className="h-4 w-4 mr-1 rtl:ml-1" />
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
             <EmptyState
               icon={Car}
-              title="لا توجد رحلات حاليًا"
-              description="اطلب رحلة جديدة لتبدأ!"
-            >
-              <Button onClick={() => navigate("/passenger-dashboard/request-ride")} className="mt-4 bg-primary hover:bg-primary-dark text-primary-foreground transition-transform duration-200 ease-in-out hover:scale-[1.01]">
-                طلب رحلة جديدة
-              </Button>
-            </EmptyState>
-          ) : (
-            myRides.map((ride) => (
-              <Card key={ride.id} className={`border-l-4 ${ride.status === 'accepted' ? 'border-blue-500' : ride.status === 'pending' ? 'border-yellow-500' : ride.status === 'completed' ? 'border-green-500' : 'border-red-500'} shadow-sm hover:shadow-md transition-shadow duration-200`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <div className="flex items-center">
-                      <MapPin className="h-5 w-5 text-primary ml-2 rtl:mr-2" />
-                      <span>{ride.pickup_location} <span className="mx-1">إلى</span> {ride.destination}</span>
-                    </div>
-                    {getStatusBadge(ride.status)}
-                  </CardTitle>
-                  <CardDescription className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    {ride.ride_date && ride.ride_time ? (
-                      <>
-                        <Calendar className="h-4 w-4 ml-1 rtl:mr-1" />
-                        {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "EEEE, dd MMMM yyyy", { locale: ar })}
-                        <Clock className="h-4 w-4 ml-3 rtl:mr-3" />
-                        {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "hh:mm a", { locale: ar })}
-                      </>
-                    ) : (
-                      <span>التاريخ والوقت غير متاحين</span>
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {ride.driver_profile && ride.status === 'accepted' && (
-                    <>
-                      <div className="flex items-center text-gray-700 dark:text-gray-300">
-                        <Car className="h-4 w-4 ml-2 rtl:mr-2" />
-                        السائق: {ride.driver_profile.full_name} ({ride.driver_profile.car_model} - {ride.driver_profile.license_plate})
-                      </div>
-                      <div className="flex items-center text-gray-700 dark:text-gray-300">
-                        <Phone className="h-4 w-4 ml-2 rtl:mr-2" />
-                        رقم السائق: {ride.driver_profile.phone_number}
-                      </div>
-                    </>
-                  )}
-                  <div className="flex items-center text-gray-700 dark:text-gray-300">
-                    <DollarSign className="h-4 w-4 ml-2 rtl:mr-2" />
-                    السعر: {ride.price !== null ? `${ride.price} دينار` : "غير متاح"}
-                  </div>
-                  <div className="flex items-center text-gray-700 dark:text-gray-300">
-                    <Info className="h-4 w-4 ml-2 rtl:mr-2" />
-                    عدد الركاب: {ride.passengers_count}
-                  </div>
-                  {ride.cancellation_reason && ride.status === 'cancelled' && (
-                    <div className="flex items-start text-red-600 dark:text-red-400">
-                      <XCircle className="h-4 w-4 ml-2 rtl:mr-2 mt-1 flex-shrink-0" />
-                      سبب الإلغاء: {ride.cancellation_reason}
-                    </div>
-                  )}
-                  <div className="flex justify-end space-x-2 rtl:space-x-reverse mt-4">
-                    {ride.status === 'pending' && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => openCancellationReasonDialog(ride)}
-                        disabled={isCancelling}
-                        className="transition-transform duration-200 ease-in-out hover:scale-[1.02]"
-                      >
-                        {isCancelling && selectedRideToCancel?.id === ride.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                        ) : (
-                          "إلغاء الرحلة"
-                        )}
-                      </Button>
-                    )}
-                    {ride.status === 'accepted' && (
-                      <Button
-                        onClick={() => navigate(`/passenger-dashboard/track-ride/${ride.id}`)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white transition-transform duration-200 ease-in-out hover:scale-[1.02]"
-                      >
-                        تتبع الرحلة
-                      </Button>
-                    )}
-                    {ride.status === 'completed' && (
-                      <Button
-                        variant="outline"
-                        disabled
-                        className="text-green-600 border-green-600"
-                      >
-                        <CheckCircle2 className="h-4 w-4 ml-2 rtl:mr-2" />
-                        تمت بنجاح
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+              title="لم تقم بطلب أي رحلات بعد"
+              description="ابدأ بطلب رحلة جديدة لتظهر هنا."
+            />
           )}
         </CardContent>
       </Card>
-
+      {rideToRate && (
+        <RatingDialog
+          open={isRatingDialogOpen}
+          onOpenChange={setIsRatingDialogOpen}
+          onSave={handleSaveRating}
+          targetUserName={rideToRate.driver_name || "السائق"}
+          initialRating={rideToRate.current_rating}
+          initialComment={rideToRate.current_comment}
+        />
+      )}
       <CancellationReasonDialog
         open={isCancellationReasonDialogOpen}
         onOpenChange={setIsCancellationReasonDialogOpen}
         onConfirm={handleCancelRideWithReason}
         isSubmitting={isCancelling}
       />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف هذه الرحلة بشكل دائم.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-}
+};
+
+export default PassengerRequestsPage;

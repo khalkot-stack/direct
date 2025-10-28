@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, Car, MapPin, Calendar, Clock, User, Phone, DollarSign, Info } from "lucide-react";
+import { Loader2, Car, MapPin, Calendar, Clock, User, Phone, DollarSign, Info, Trash2 } from "lucide-react"; // Added Trash2 icon
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale"; // Import Arabic locale
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog
 
 // Define an interface for the raw data returned by Supabase select with joins
 interface SupabaseJoinedRideData {
@@ -69,6 +79,8 @@ export default function DriverAcceptedRidesPage() {
   const [selectedRideToCancel, setSelectedRideToCancel] = useState<Ride | null>(null);
   const [isCompletingRide, setIsCompletingRide] = useState(false);
   const [isCancellingRide, setIsCancellingRide] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // New state for delete dialog
+  const [rideToDeleteId, setRideToDeleteId] = useState<string | null>(null); // New state for ride to delete
 
   useEffect(() => {
     const fetchDriverId = async () => {
@@ -114,7 +126,7 @@ export default function DriverAcceptedRidesPage() {
           profiles_passenger:passenger_id (full_name, phone_number, avatar_url)
         `)
         .eq("driver_id", driverId)
-        .eq("status", "accepted")
+        .in("status", ["accepted", "completed"]) // Fetch both accepted and completed rides
         .order("ride_date", { ascending: true })
         .order("ride_time", { ascending: true });
 
@@ -192,6 +204,53 @@ export default function DriverAcceptedRidesPage() {
     setSelectedRideToCancel(null);
   };
 
+  const handleDeleteClick = (rideId: string) => {
+    setRideToDeleteId(rideId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!rideToDeleteId || !currentDriverId) return;
+
+    setLoading(true); // Use general loading for deletion process
+    try {
+      const { error } = await supabase
+        .from("rides")
+        .delete()
+        .eq("id", rideToDeleteId)
+        .eq("driver_id", currentDriverId); // Ensure only driver can delete their own ride
+
+      if (error) throw error;
+
+      toast.success("تم حذف الرحلة بنجاح!");
+      if (currentDriverId) {
+        fetchAcceptedRides(currentDriverId); // Refresh the list
+      }
+    } catch (error) {
+      toast.error("فشل حذف الرحلة.");
+      console.error("Error deleting ride:", error);
+    } finally {
+      setLoading(false);
+      setIsDeleteDialogOpen(false);
+      setRideToDeleteId(null);
+    }
+  };
+
+  const getStatusBadge = (status: Ride['status']) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">قيد الانتظار</Badge>;
+      case 'accepted':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">مقبولة</Badge>;
+      case 'completed':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">مكتملة</Badge>;
+      case 'cancelled':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">ملغاة</Badge>;
+      default:
+        return <Badge variant="secondary">غير معروف</Badge>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -206,26 +265,24 @@ export default function DriverAcceptedRidesPage() {
       <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
         <div className="px-6 pt-0"> {/* Adjusted padding */}
           <PageHeader
-            title="رحلاتي المقبولة"
-            description="عرض وإدارة الرحلات التي قبلتها"
+            title="رحلاتي المقبولة والمكتملة"
+            description="عرض وإدارة الرحلات التي قبلتها أو أكملتها"
             backPath="/driver-dashboard"
           />
         </div>
         <CardContent className="space-y-4">
           {acceptedRides.length === 0 ? (
-            <p className="text-center text-gray-600 dark:text-gray-400">لا توجد رحلات مقبولة حاليًا.</p>
+            <p className="text-center text-gray-600 dark:text-gray-400">لا توجد رحلات مقبولة أو مكتملة حاليًا.</p>
           ) : (
             acceptedRides.map((ride) => (
-              <Card key={ride.id} className="border-l-4 border-primary shadow-sm hover:shadow-md transition-shadow duration-200">
+              <Card key={ride.id} className={`border-l-4 ${ride.status === 'accepted' ? 'border-primary' : ride.status === 'completed' ? 'border-green-500' : 'border-red-500'} shadow-sm hover:shadow-md transition-shadow duration-200`}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 text-primary ml-2 rtl:mr-2" />
                       <span>{ride.pickup_location} <span className="mx-1">إلى</span> {ride.destination}</span>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      مقبولة
-                    </Badge>
+                    {getStatusBadge(ride.status)}
                   </CardTitle>
                   <CardDescription className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     {ride.ride_date && ride.ride_time ? (
@@ -264,29 +321,50 @@ export default function DriverAcceptedRidesPage() {
                     </div>
                   )}
                   <div className="flex justify-end space-x-2 rtl:space-x-reverse mt-4">
-                    <Button
-                      variant="destructive"
-                      onClick={() => openCancelDialog(ride)}
-                      disabled={isCancellingRide || isCompletingRide}
-                      className="transition-transform duration-200 ease-in-out hover:scale-[1.02]"
-                    >
-                      {isCancellingRide && selectedRideToCancel?.id === ride.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                      ) : (
-                        "إلغاء الرحلة"
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => handleCompleteRide(ride.id)}
-                      disabled={isCompletingRide || isCancellingRide}
-                      className="bg-green-600 hover:bg-green-700 text-white transition-transform duration-200 ease-in-out hover:scale-[1.02]"
-                    >
-                      {isCompletingRide ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                      ) : (
-                        "إكمال الرحلة"
-                      )}
-                    </Button>
+                    {ride.status === "accepted" && (
+                      <>
+                        <Button
+                          variant="destructive"
+                          onClick={() => openCancelDialog(ride)}
+                          disabled={isCancellingRide || isCompletingRide}
+                          className="transition-transform duration-200 ease-in-out hover:scale-[1.02]"
+                        >
+                          {isCancellingRide && selectedRideToCancel?.id === ride.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                          ) : (
+                            "إلغاء الرحلة"
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => handleCompleteRide(ride.id)}
+                          disabled={isCompletingRide || isCancellingRide}
+                          className="bg-green-600 hover:bg-green-700 text-white transition-transform duration-200 ease-in-out hover:scale-[1.02]"
+                        >
+                          {isCompletingRide ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                          ) : (
+                            "إكمال الرحلة"
+                          )}
+                        </Button>
+                      </>
+                    )}
+                    {ride.status === "completed" && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(ride.id)}
+                        disabled={loading}
+                        className="transition-transform duration-200 ease-in-out hover:scale-[1.01]"
+                      >
+                        {loading && rideToDeleteId === ride.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                        ) : (
+                          <>
+                            حذف <Trash2 className="h-4 w-4 mr-1 rtl:ml-1" />
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -317,6 +395,23 @@ export default function DriverAcceptedRidesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف هذه الرحلة بشكل دائم.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
