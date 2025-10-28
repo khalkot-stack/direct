@@ -17,16 +17,16 @@ interface SupabaseJoinedRideData {
   id: string;
   driver_id: string;
   passenger_id: string;
-  pickup_location: string; // Changed from 'origin'
+  pickup_location: string;
   destination: string;
   status: "pending" | "accepted" | "completed" | "cancelled";
-  price: number;
+  price: number | null; // Make nullable
   requested_at: string;
   accepted_at: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
-  ride_date: string;
-  ride_time: string;
+  ride_date: string | null; // Make nullable
+  ride_time: string | null; // Make nullable
   passengers_count: number;
   driver_notes: string | null;
   passenger_notes: string | null;
@@ -41,16 +41,16 @@ interface Ride {
   id: string;
   driver_id: string;
   passenger_id: string;
-  pickup_location: string; // Changed from 'origin'
+  pickup_location: string;
   destination: string;
   status: "pending" | "accepted" | "completed" | "cancelled";
-  price: number;
+  price: number | null;
   requested_at: string;
   accepted_at: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
-  ride_date: string;
-  ride_time: string;
+  ride_date: string | null;
+  ride_time: string | null;
   passengers_count: number;
   driver_notes: string | null;
   passenger_notes: string | null;
@@ -228,10 +228,16 @@ export default function DriverAcceptedRidesPage() {
                     </Badge>
                   </CardTitle>
                   <CardDescription className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <Calendar className="h-4 w-4 ml-1 rtl:mr-1" />
-                    {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "EEEE, dd MMMM yyyy", { locale: ar })}
-                    <Clock className="h-4 w-4 ml-3 rtl:mr-3" />
-                    {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "hh:mm a", { locale: ar })}
+                    {ride.ride_date && ride.ride_time ? (
+                      <>
+                        <Calendar className="h-4 w-4 ml-1 rtl:mr-1" />
+                        {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "EEEE, dd MMMM yyyy", { locale: ar })}
+                        <Clock className="h-4 w-4 ml-3 rtl:mr-3" />
+                        {format(new Date(`${ride.ride_date}T${ride.ride_time}`), "hh:mm a", { locale: ar })}
+                      </>
+                    ) : (
+                      <span>التاريخ والوقت غير متاحين</span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -245,7 +251,7 @@ export default function DriverAcceptedRidesPage() {
                   </div>
                   <div className="flex items-center text-gray-700 dark:text-gray-300">
                     <DollarSign className="h-4 w-4 ml-2 rtl:mr-2" />
-                    السعر: {ride.price} ريال
+                    السعر: {ride.price !== null ? `${ride.price} دينار` : "غير متاح"}
                   </div>
                   <div className="flex items-center text-gray-700 dark:text-gray-300">
                     <User className="h-4 w-4 ml-2 rtl:mr-2" />
