@@ -1,239 +1,129 @@
--- 1. Disable RLS on all affected tables temporarily
-ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rides DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ratings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;
+-- Drop all existing RLS policies on the profiles table
+DROP POLICY IF EXISTS "Allow self-read access to profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can read all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Drivers can read passenger profiles for their rides" ON public.profiles;
+DROP POLICY IF EXISTS "Passengers can read driver profiles for their rides" ON public.profiles;
+DROP POLICY IF EXISTS "Allow self-insert access to profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can insert profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Allow self-update access to profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can delete profiles" ON public.profiles;
 
--- 2. Drop all known RLS policies from profiles table
-DROP POLICY IF EXISTS "Authenticated users can view their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can create their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can update their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can delete their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Allow drivers to view passenger profiles for their rides" ON public.profiles;
-DROP POLICY IF EXISTS "Allow passengers to view driver profiles for their accepted rides" ON public.profiles;
-DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles;
-
--- 3. Drop all known RLS policies from rides table
+-- Drop all existing RLS policies on the rides table
+DROP POLICY IF EXISTS "Allow passengers to read their own rides" ON public.rides;
+DROP POLICY IF EXISTS "Allow passengers to insert rides" ON public.rides;
+DROP POLICY IF EXISTS "Allow drivers to read rides assigned to them" ON public.rides;
+DROP POLICY IF EXISTS "Allow drivers to update rides assigned to them" ON public.rides;
 DROP POLICY IF EXISTS "Admins can manage all rides" ON public.rides;
-DROP POLICY IF EXISTS "Drivers can view and update their accepted rides" ON public.rides;
-DROP POLICY IF EXISTS "Passengers can view and manage their own rides" ON public.rides;
-DROP POLICY IF EXISTS "Drivers can view pending rides" ON public.rides;
-DROP POLICY IF EXISTS "Drivers can accept pending rides" ON public.rides;
-DROP POLICY IF EXISTS "Drivers can delete their completed/cancelled rides" ON public.rides;
-DROP POLICY IF EXISTS "Passengers can delete their completed/cancelled rides" ON public.rides;
+DROP POLICY IF EXISTS "Admins can read all rides" ON public.rides;
+DROP POLICY IF EXISTS "Admins can insert rides" ON public.rides;
+DROP POLICY IF EXISTS "Admins can update rides" ON public.rides;
+DROP POLICY IF EXISTS "Admins can delete rides" ON public.rides;
+DROP POLICY IF EXISTS "Allow passengers to cancel their pending/accepted rides" ON public.rides;
+DROP POLICY IF EXISTS "Allow drivers to delete completed rides" ON public.rides;
+DROP POLICY IF EXISTS "Allow passengers to delete completed/cancelled rides" ON public.rides;
 
--- 4. Drop all known RLS policies from settings table
-DROP POLICY IF EXISTS "Admins can view settings" ON public.settings;
-DROP POLICY IF EXISTS "Admins can insert settings" ON public.settings;
-DROP POLICY IF EXISTS "Admins can update settings" ON public.settings;
 
--- 5. Drop all known RLS policies from ratings table
-DROP POLICY IF EXISTS "Allow authenticated users to insert ratings" ON public.ratings;
-DROP POLICY IF EXISTS "Allow authenticated users to view ratings" ON public.ratings;
-DROP POLICY IF EXISTS "Admins can manage all ratings" ON public.ratings;
-
--- 6. Drop all known RLS policies from messages table
-DROP POLICY IF EXISTS "Allow authenticated users to send messages" ON public.messages;
-DROP POLICY IF EXISTS "Allow authenticated users to view messages" ON public.messages;
-DROP POLICY IF EXISTS "Admins can manage all messages" ON public.messages;
-
--- 7. Drop the get_user_type function with CASCADE to remove any dependent objects
-DROP FUNCTION IF EXISTS public.get_user_type(uuid) CASCADE;
-
--- 8. Drop the trigger and trigger function for new user metadata if they exist (related to app_metadata)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS public.handle_new_user_metadata() CASCADE;
-
--- 9. Re-create the get_user_type function to read from auth.users raw_user_meta_data
--- This is the fallback since app_metadata column is reported as missing.
-CREATE OR REPLACE FUNCTION public.get_user_type(user_id uuid)
- RETURNS text
- LANGUAGE plpgsql
- SECURITY DEFINER -- SECURITY DEFINER is important for RLS functions
-AS $function$
-DECLARE
-  u_type text;
-BEGIN
-  -- Retrieve user_type from auth.users.raw_user_meta_data
-  SELECT (raw_user_meta_data->>'user_type') INTO u_type
-  FROM auth.users
-  WHERE id = user_id;
-  RETURN u_type;
-END;
-$function$;
-
--- 10. No need for handle_new_user_metadata trigger or function if app_metadata is missing.
--- The frontend already sets user_type in raw_user_meta_data during signup.
-
--- 11. No need to update app_metadata for existing users if the column doesn't exist.
-
--- 12. Re-enable RLS on all tables
+-- Ensure RLS is enabled on both tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
--- 13. Re-create essential RLS policies for profiles (self-access, admin, and cross-user)
--- Self-access policies (DO NOT use get_user_type here for direct self-check)
-CREATE POLICY "Authenticated users can view their own profile"
-ON public.profiles FOR SELECT TO authenticated USING (
-  (auth.uid() = id)
-);
+-- Recreate the get_user_type function (ensure it's correct and security definer)
+-- This function is crucial for RLS and should only query auth.users, not public.profiles
+CREATE OR REPLACE FUNCTION public.get_user_type(user_id uuid)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  user_role text;
+BEGIN
+  SELECT raw_user_meta_data->>'user_type' INTO user_role
+  FROM auth.users
+  WHERE id = user_id;
 
-CREATE POLICY "Authenticated users can create their own profile"
-ON public.profiles FOR INSERT TO authenticated WITH CHECK (
-  (auth.uid() = id)
-);
+  RETURN user_role;
+END;
+$$;
 
-CREATE POLICY "Authenticated users can update their own profile"
-ON public.profiles FOR UPDATE TO authenticated USING (
-  (auth.uid() = id)
-) WITH CHECK (
-  (auth.uid() = id)
-);
+--
+-- RLS Policies for public.profiles
+--
 
-CREATE POLICY "Authenticated users can delete their own profile"
-ON public.profiles FOR DELETE TO authenticated USING (
-  (auth.uid() = id)
-);
+-- Allow users to read their own profile
+CREATE POLICY "Allow self-read access to profiles" ON public.profiles
+FOR SELECT USING (auth.uid() = id);
 
--- Admin can manage all profiles
-CREATE POLICY "Admins can manage all profiles"
-ON public.profiles FOR ALL TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow admins to read all profiles
+CREATE POLICY "Admins can read all profiles" ON public.profiles
+FOR SELECT USING (public.get_user_type(auth.uid()) = 'admin');
 
--- Allow drivers to view passenger profiles for their rides
-CREATE POLICY "Allow drivers to view passenger profiles for their rides"
-ON public.profiles FOR SELECT TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'driver' AND EXISTS (
-    SELECT 1 FROM public.rides
-    WHERE (rides.driver_id = auth.uid() AND rides.passenger_id = profiles.id)
-  ))
-);
+-- Allow users to insert their own profile on signup
+CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
+FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Allow passengers to view driver profiles for their accepted rides
-CREATE POLICY "Allow passengers to view driver profiles for their accepted rides"
-ON public.profiles FOR SELECT TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'passenger' AND EXISTS (
-    SELECT 1 FROM public.rides
-    WHERE (rides.passenger_id = auth.uid() AND rides.driver_id = profiles.id AND rides.status = 'accepted')
-  ))
-);
+-- Allow admins to insert profiles
+CREATE POLICY "Admins can insert profiles" ON public.profiles
+FOR INSERT WITH CHECK (public.get_user_type(auth.uid()) = 'admin');
 
--- 14. Re-create RLS policies for rides
--- Admin can manage all rides
-CREATE POLICY "Admins can manage all rides"
-ON public.rides FOR ALL TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow users to update their own profile
+CREATE POLICY "Allow self-update access to profiles" ON public.profiles
+FOR UPDATE USING (auth.uid() = id);
 
--- Passengers can view and manage their own rides
-CREATE POLICY "Passengers can view and manage their own rides"
-ON public.rides FOR ALL TO authenticated USING (
-  (auth.uid() = passenger_id)
-) WITH CHECK (
-  (auth.uid() = passenger_id)
-);
+-- Allow admins to update all profiles
+CREATE POLICY "Admins can update all profiles" ON public.profiles
+FOR UPDATE USING (public.get_user_type(auth.uid()) = 'admin');
 
--- Drivers can view pending rides
-CREATE POLICY "Drivers can view pending rides"
-ON public.rides FOR SELECT TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'driver' AND status = 'pending')
-);
+-- Allow admins to delete profiles
+CREATE POLICY "Admins can delete profiles" ON public.profiles
+FOR DELETE USING (public.get_user_type(auth.uid()) = 'admin');
 
--- Drivers can accept pending rides
-CREATE POLICY "Drivers can accept pending rides"
-ON public.rides FOR UPDATE TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'driver' AND status = 'pending')
-) WITH CHECK (
-  (public.get_user_type(auth.uid()) = 'driver' AND status = 'accepted' AND driver_id = auth.uid())
-);
+--
+-- RLS Policies for public.rides
+--
 
--- Drivers can view and update their accepted rides
-CREATE POLICY "Drivers can view and update their accepted rides"
-ON public.rides FOR ALL TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'driver' AND driver_id = auth.uid() AND status IN ('accepted', 'completed', 'cancelled'))
-) WITH CHECK (
-  (public.get_user_type(auth.uid()) = 'driver' AND driver_id = auth.uid())
-);
+-- Allow passengers to read their own rides
+CREATE POLICY "Allow passengers to read their own rides" ON public.rides
+FOR SELECT USING (passenger_id = auth.uid());
 
--- Drivers can delete their completed/cancelled rides
-CREATE POLICY "Drivers can delete their completed/cancelled rides"
-ON public.rides FOR DELETE TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'driver' AND driver_id = auth.uid() AND status IN ('completed', 'cancelled'))
-);
+-- Allow drivers to read rides assigned to them
+CREATE POLICY "Allow drivers to read rides assigned to them" ON public.rides
+FOR SELECT USING (driver_id = auth.uid());
 
--- Passengers can delete their completed/cancelled rides
-CREATE POLICY "Passengers can delete their completed/cancelled rides"
-ON public.rides FOR DELETE TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'passenger' AND passenger_id = auth.uid() AND status IN ('completed', 'cancelled'))
-);
+-- Allow admins to read all rides
+CREATE POLICY "Admins can read all rides" ON public.rides
+FOR SELECT USING (public.get_user_type(auth.uid()) = 'admin');
 
--- 15. Re-create RLS policies for settings
--- Admins can view settings
-CREATE POLICY "Admins can view settings"
-ON public.settings FOR SELECT TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow passengers to insert new rides
+CREATE POLICY "Allow passengers to insert rides" ON public.rides
+FOR INSERT WITH CHECK (passenger_id = auth.uid());
 
--- Admins can insert settings
-CREATE POLICY "Admins can insert settings"
-ON public.settings FOR INSERT TO authenticated WITH CHECK (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow admins to insert rides
+CREATE POLICY "Admins can insert rides" ON public.rides
+FOR INSERT WITH CHECK (public.get_user_type(auth.uid()) = 'admin');
 
--- Admins can update settings
-CREATE POLICY "Admins can update settings"
-ON public.settings FOR UPDATE TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-) WITH CHECK (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow drivers to update rides assigned to them (e.g., accept, complete)
+CREATE POLICY "Allow drivers to update rides assigned to them" ON public.rides
+FOR UPDATE USING (driver_id = auth.uid())
+WITH CHECK (driver_id = auth.uid()); -- Ensure driver_id doesn't change
 
--- 16. Re-create RLS policies for ratings
--- Allow authenticated users to insert ratings
-CREATE POLICY "Allow authenticated users to insert ratings"
-ON public.ratings FOR INSERT TO authenticated WITH CHECK (
-  (auth.uid() = rater_id)
-);
+-- Allow passengers to cancel their pending/accepted rides
+CREATE POLICY "Allow passengers to cancel their pending/accepted rides" ON public.rides
+FOR UPDATE USING (passenger_id = auth.uid() AND status IN ('pending', 'accepted'))
+WITH CHECK (passenger_id = auth.uid() AND status = 'cancelled'); -- Only allow status change to 'cancelled'
 
--- Allow authenticated users to view ratings
-CREATE POLICY "Allow authenticated users to view ratings"
-ON public.ratings FOR SELECT TO authenticated USING (
-  (auth.uid() = rater_id) OR
-  (public.get_user_type(auth.uid()) = 'admin') OR
-  (public.get_user_type(auth.uid()) = 'driver' AND rated_user_id = auth.uid()) OR
-  (public.get_user_type(auth.uid()) = 'passenger' AND rater_id = auth.uid())
-);
+-- Allow admins to update all rides
+CREATE POLICY "Admins can update rides" ON public.rides
+FOR UPDATE USING (public.get_user_type(auth.uid()) = 'admin');
 
--- Admins can manage all ratings
-CREATE POLICY "Admins can manage all ratings"
-ON public.ratings FOR ALL TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow drivers to delete their completed rides
+CREATE POLICY "Allow drivers to delete completed rides" ON public.rides
+FOR DELETE USING (driver_id = auth.uid() AND status = 'completed');
 
--- 17. Re-create RLS policies for messages
--- Allow authenticated users to send messages
-CREATE POLICY "Allow authenticated users to send messages"
-ON public.messages FOR INSERT TO authenticated WITH CHECK (
-  (auth.uid() = sender_id) AND (
-    EXISTS (SELECT 1 FROM public.rides WHERE id = ride_id AND (passenger_id = auth.uid() OR driver_id = auth.uid()))
-  )
-);
+-- Allow passengers to delete their completed or cancelled rides
+CREATE POLICY "Allow passengers to delete completed/cancelled rides" ON public.rides
+FOR DELETE USING (passenger_id = auth.uid() AND status IN ('completed', 'cancelled'));
 
--- Allow authenticated users to view messages
-CREATE POLICY "Allow authenticated users to view messages"
-ON public.messages FOR SELECT TO authenticated USING (
-  (auth.uid() = sender_id) OR (auth.uid() = receiver_id) OR
-  (public.get_user_type(auth.uid()) = 'admin') OR
-  (EXISTS (SELECT 1 FROM public.rides WHERE id = ride_id AND (passenger_id = auth.uid() OR driver_id = auth.uid())))
-);
-
--- Admins can manage all messages
-CREATE POLICY "Admins can manage all messages" -- Added missing CREATE POLICY keyword
-ON public.messages FOR ALL TO authenticated USING (
-  (public.get_user_type(auth.uid()) = 'admin')
-);
+-- Allow admins to delete all rides
+CREATE POLICY "Admins can delete rides" ON public.rides
+FOR DELETE USING (public.get_user_type(auth.uid()) = 'admin');
