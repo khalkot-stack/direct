@@ -32,7 +32,7 @@ interface SupabaseJoinedRideData {
   pickup_location: string;
   destination: string;
   status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
+  accepted_at: string | null; // Changed from created_at
   profiles_passenger: Array<{ full_name: string }> | null;
   profiles_driver: Array<{ full_name: string }> | null;
 }
@@ -92,11 +92,11 @@ const OverviewPage = () => {
         pickup_location,
         destination,
         status,
-        created_at,
+        accepted_at,  // Use accepted_at instead of created_at
         profiles_passenger:passenger_id (full_name),
         profiles_driver:driver_id (full_name)
       `)
-      .order('accepted_at', { ascending: false }) // Changed to accepted_at
+      .order('accepted_at', { ascending: false })
       .limit(5);
 
     if (recentRidesError) {
@@ -133,7 +133,7 @@ const OverviewPage = () => {
           id: ride.id,
           type: `ride_${ride.status}` as Activity['type'],
           description,
-          created_at: ride.created_at,
+          created_at: ride.accepted_at || new Date().toISOString(), // Use accepted_at, fallback to current time if null
         };
       }));
     }
