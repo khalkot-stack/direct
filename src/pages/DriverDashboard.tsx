@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Car, MapPin, History, Settings, Loader2, MessageSquare } from "lucide-react";
+import { Car, MapPin, History, Settings, Loader2, MessageSquare, LocateFixed, PauseCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -27,6 +27,8 @@ interface Ride {
   pickup_lng: number;
   destination_lat: number;
   destination_lng: number;
+  driver_current_lat: number | null;
+  driver_current_lng: number | null;
   passenger_profiles: {
     id: string;
     full_name: string;
@@ -51,6 +53,9 @@ const DriverDashboard: React.FC = () => {
   const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
   const [rideToRate, setRideToRate] = useState<Ride | null>(null);
 
+  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+  const locationIntervalRef = useRef<number | null>(null);
+
   const navigate = useNavigate();
 
   const fetchUserDataAndCurrentRide = useCallback(async () => {
@@ -74,7 +79,7 @@ const DriverDashboard: React.FC = () => {
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
       .eq('driver_id', user.id)
-      .in('status', ['accepted', 'pending']) // Driver sees accepted and pending rides assigned to them
+      .in('status', ['accepted']) // Driver only sees accepted rides as current
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -126,6 +131,11 @@ const DriverDashboard: React.FC = () => {
               setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
               setIsRatingDialogOpen(true);
             }
+            setIsTrackingLocation(false); // Stop tracking when ride is completed
+          }
+          if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+            toast.warning(`تم إلغاء الرحلة. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+            setIsTrackingLocation(false); // Stop tracking when ride is cancelled
           }
         }
       )
@@ -134,8 +144,54 @@ const DriverDashboard: React.FC = () => {
     return () => {
       authListener.subscription.unsubscribe();
       supabase.removeChannel(rideChannel);
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+      }
     };
   }, [fetchUserDataAndCurrentRide, user?.id, navigate]);
+
+  const updateDriverLocation = useCallback(async () => {
+    if (!currentRide || !user) return;
+
+    // Simulate location change (e.g., move slightly towards destination)
+    const currentLat = currentRide.driver_current_lat || currentRide.pickup_lat;
+    const currentLng = currentRide.driver_current_lng || currentRide.pickup_lng;
+    const destLat = currentRide.destination_lat;
+    const destLng = currentRide.destination_lng;
+
+    const newLat = currentLat + (destLat - currentLat) * 0.01; // Move 1% towards destination
+    const newLng = currentLng + (destLng - currentLng) * 0.01;
+
+    const { error } = await supabase
+      .from('rides')
+      .update({ driver_current_lat: newLat, driver_current_lng: newLng })
+      .eq('id', currentRide.id);
+
+    if (error) {
+      console.error("Error updating driver location:", error);
+      toast.error("فشل تحديث موقع السائق.");
+    }
+  }, [currentRide, user]);
+
+  const handleStartTracking = () => {
+    if (!currentRide) {
+      toast.error("لا توجد رحلة نشطة لبدء التتبع.");
+      return;
+    }
+    setIsTrackingLocation(true);
+    toast.info("بدء تتبع موقعك.");
+    // Start updating location every 5 seconds
+    locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
+  };
+
+  const handleStopTracking = () => {
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+    setIsTrackingLocation(false);
+    toast.info("تم إيقاف تتبع موقعك.");
+  };
 
   const handleCompleteRide = async () => {
     if (!currentRide) return;
@@ -153,6 +209,7 @@ const DriverDashboard: React.FC = () => {
     } else {
       // The realtime listener will handle the toast and rating dialog
       setCurrentRide(null); // Clear current ride from state immediately
+      handleStopTracking(); // Stop tracking when ride is completed
     }
   };
 
@@ -188,7 +245,16 @@ const DriverDashboard: React.FC = () => {
   const markers = currentRide ? [
     { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' },
     { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' },
+    ...(currentRide.driver_current_lat && currentRide.driver_current_lng
+      ? [{ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' }]
+      : [])
   ] : [];
+
+  const mapCenter = currentRide?.driver_current_lat && currentRide?.driver_current_lng
+    ? { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng }
+    : currentRide?.pickup_lat && currentRide?.pickup_lng
+      ? { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng }
+      : undefined;
 
   if (loading) {
     return (
@@ -224,7 +290,7 @@ const DriverDashboard: React.FC = () => {
               <span>{currentRide.passengers_count}</span>
             </div>
             <div className="h-[300px] w-full rounded-md overflow-hidden">
-              <InteractiveMap markers={markers} />
+              <InteractiveMap markers={markers} center={mapCenter} zoom={14} />
             </div>
             <div className="flex gap-2 mt-4">
               <Button onClick={handleCompleteRide} disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
@@ -234,6 +300,19 @@ const DriverDashboard: React.FC = () => {
                 <MessageSquare className="h-4 w-4 ml-2 rtl:mr-2" />
                 محادثة مع الراكب
               </Button>
+            </div>
+            <div className="flex gap-2 mt-2">
+              {isTrackingLocation ? (
+                <Button onClick={handleStopTracking} variant="secondary" className="flex-1">
+                  <PauseCircle className="h-4 w-4 ml-2 rtl:mr-2" />
+                  إيقاف التتبع
+                </Button>
+              ) : (
+                <Button onClick={handleStartTracking} variant="outline" className="flex-1">
+                  <LocateFixed className="h-4 w-4 ml-2 rtl:mr-2" />
+                  بدء التتبع
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
