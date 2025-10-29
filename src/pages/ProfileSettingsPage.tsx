@@ -54,11 +54,12 @@ export default function ProfileSettingsPage() {
       }
       setCurrentUserId(user.id);
       setUserEmail(user.email); // Set the user's email
-      setUserType(user.app_metadata?.user_type as Profile["user_type"] || null); // Initialize userType from app_metadata
+      // Initialize userType from user.user_metadata
+      setUserType(user.user_metadata?.user_type as Profile["user_type"] || null);
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`full_name, username, website, avatar_url, car_model, car_color, license_plate, phone_number`) // Removed user_type from select
+        .select(`full_name, username, website, avatar_url, car_model, car_color, license_plate, phone_number`)
         .eq("id", user.id)
         .single();
 
@@ -74,7 +75,7 @@ export default function ProfileSettingsPage() {
         setCarModel(data.car_model);
         setCarColor(data.car_color);
         setLicensePlate(data.license_plate);
-        setPhoneNumber(data.phone_number); // Set phone_number
+        setPhoneNumber(data.phone_number);
       }
     } catch (error) {
       toast.error("فشل تحميل ملف تعريف المستخدم!");
@@ -133,11 +134,11 @@ export default function ProfileSettingsPage() {
       });
       if (profileError) throw profileError;
 
-      // Also update app_metadata in auth.users if user_type changed
+      // Also update user_metadata in auth.users if user_type changed
       const { data: { user }, error: authUserError } = await supabase.auth.getUser();
       if (authUserError) throw authUserError;
 
-      if (user?.app_metadata?.user_type !== user_type) {
+      if (user?.user_metadata?.user_type !== user_type) {
         const { error: updateAuthError } = await supabase.auth.updateUser({
           data: { user_type: user_type }
         });
