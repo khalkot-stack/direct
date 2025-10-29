@@ -17,8 +17,8 @@ const BottomNavigationBar = () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get user_type directly from app_metadata
-        setUserRole(user.app_metadata?.user_type as string || null);
+        // Get user_type directly from user_metadata
+        setUserRole(user.user_metadata?.user_type as string || null);
       } else {
         setUserRole(null);
       }
@@ -29,7 +29,7 @@ const BottomNavigationBar = () => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUserRole(session.user.app_metadata?.user_type as string || null);
+        setUserRole(session.user.user_metadata?.user_type as string || null);
       } else {
         setUserRole(null);
       }

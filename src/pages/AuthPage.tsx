@@ -29,6 +29,7 @@ const AuthPage = () => {
     const checkUserSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (session) {
+        // Read user_type from user_metadata
         const userRole = session.user?.user_metadata?.user_type;
         if (userRole === "passenger") {
           navigate("/passenger-dashboard");
@@ -47,6 +48,7 @@ const AuthPage = () => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
+        // Read user_type from user_metadata
         const userRole = session.user?.user_metadata?.user_type;
         if (userRole === "passenger") {
           navigate("/passenger-dashboard");
@@ -91,7 +93,7 @@ const AuthPage = () => {
         data: {
           full_name: registerName,
           phone_number: registerPhone,
-          user_type: userType,
+          user_type: userType, // Ensure user_type is passed to user_metadata
         },
       },
     });

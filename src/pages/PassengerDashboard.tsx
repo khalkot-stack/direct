@@ -26,8 +26,8 @@ const PassengerDashboard = () => {
         return;
       }
 
-      // Get user_type from app_metadata for role check
-      const userRole = user.app_metadata?.user_type;
+      // Get user_type from user_metadata for role check
+      const userRole = user.user_metadata?.user_type;
 
       if (userRole !== 'passenger') {
         toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم الراكب.");
@@ -45,7 +45,7 @@ const PassengerDashboard = () => {
       let currentProfile;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name') // Only fetch full_name, user_type is from app_metadata
+        .select('full_name') // Only fetch full_name, user_type is from user_metadata
         .eq('id', user.id)
         .single();
 
@@ -57,7 +57,7 @@ const PassengerDashboard = () => {
             id: user.id,
             full_name: user.user_metadata.full_name || 'راكب',
             email: user.email,
-            user_type: user.app_metadata.user_type || 'passenger', // Use app_metadata for user_type
+            user_type: user.user_metadata.user_type || 'passenger', // Use user_metadata for user_type
             phone_number: user.user_metadata.phone_number || null,
             status: 'active', // Default status
           })

@@ -31,8 +31,8 @@ const DriverDashboard = () => {
       }
       setDriverId(user.id);
 
-      // Get user_type from app_metadata for role check
-      const userRole = user.app_metadata?.user_type;
+      // Get user_type from user_metadata for role check
+      const userRole = user.user_metadata?.user_type;
 
       if (userRole !== 'driver') {
         toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم السائق.");
@@ -62,7 +62,7 @@ const DriverDashboard = () => {
             id: user.id,
             full_name: user.user_metadata.full_name || 'السائق',
             email: user.email,
-            user_type: user.app_metadata.user_type || 'driver', // Use app_metadata for user_type
+            user_type: user.user_metadata.user_type || 'driver', // Use user_metadata for user_type
             phone_number: user.user_metadata.phone_number || null,
             status: 'active', // Default status
           })

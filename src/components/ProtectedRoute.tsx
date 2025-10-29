@@ -33,6 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
       }
 
       const user = session.user;
+      // Read user_type from user_metadata (which is raw_user_meta_data in auth.users)
       const userRole = user?.user_metadata?.user_type;
 
       if (userRole && allowedRoles.includes(userRole)) {

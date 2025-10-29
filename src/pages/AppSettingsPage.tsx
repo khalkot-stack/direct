@@ -19,8 +19,8 @@ const AppSettingsPage = () => {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get user_type directly from app_metadata
-        setUserRole(user.app_metadata?.user_type as string || null);
+        // Get user_type directly from user_metadata
+        setUserRole(user.user_metadata?.user_type as string || null);
       }
       setLoading(false);
     };
