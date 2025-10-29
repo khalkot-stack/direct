@@ -21,7 +21,7 @@ interface MarkerLocation {
   lng: number;
   title: string;
   description?: string;
-  iconColor?: string;
+  iconColor?: 'green' | 'red' | 'blue' | 'default'; // Define specific colors
 }
 
 interface InteractiveMapProps {
@@ -43,9 +43,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
-  // Removed unused setMapCenter and setMapZoom
-  const [mapCenter] = useState(center); 
-  const [mapZoom] = useState(zoom);
+  const [mapCenter, setMapCenter] = useState(center);
+  const [mapZoom, setMapZoom] = useState(zoom);
 
   useEffect(() => {
     if (markers.length > 0 && mapRef.current) {
@@ -61,7 +60,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       mapRef.current.setCenter(defaultCenter);
       mapRef.current.setZoom(zoom);
     }
-  }, [markers, zoom]);
+    setMapCenter(center);
+    setMapZoom(zoom);
+  }, [markers, center, zoom]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
@@ -80,7 +81,32 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     );
   }
 
-  const mapPinSvgPath = "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z";
+  const getMarkerIcon = (color: 'green' | 'red' | 'blue' | 'default' = 'default') => {
+    let fillColor = "hsl(var(--primary))"; // Default primary color
+    switch (color) {
+      case 'green':
+        fillColor = "#22C55E"; // Tailwind green-500
+        break;
+      case 'red':
+        fillColor = "#EF4444"; // Tailwind red-500
+        break;
+      case 'blue':
+        fillColor = "#3B82F6"; // Tailwind blue-500
+        break;
+      case 'default':
+      default:
+        fillColor = "hsl(var(--primary))";
+        break;
+    }
+
+    return {
+      path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z", // Standard map pin
+      fillColor: fillColor,
+      fillOpacity: 1,
+      strokeWeight: 0,
+      scale: 2,
+    };
+  };
 
   return (
     <GoogleMap
@@ -100,13 +126,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           position={{ lat: marker.lat, lng: marker.lng }}
           title={marker.title}
           onClick={() => onMarkerClick && onMarkerClick(marker)}
-          icon={{
-            path: mapPinSvgPath,
-            fillColor: marker.iconColor || "hsl(var(--primary))",
-            fillOpacity: 1,
-            strokeWeight: 0,
-            scale: 2,
-          }}
+          icon={getMarkerIcon(marker.iconColor)}
         />
       ))}
     </GoogleMap>

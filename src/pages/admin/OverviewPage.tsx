@@ -6,6 +6,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, Car, DollarSign, Star, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
 interface StatCardProps {
   title: string;
@@ -105,6 +114,16 @@ const OverviewPage: React.FC = () => {
     fetchOverviewData();
   }, [fetchOverviewData]);
 
+  const revenueData = [
+    { name: "يناير", total: 4000 },
+    { name: "فبراير", total: 3000 },
+    { name: "مارس", total: 5000 },
+    { name: "أبريل", total: 4500 },
+    { name: "مايو", total: 6000 },
+    { name: "يونيو", total: 5500 },
+    { name: "يوليو", total: 7000 },
+  ];
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 flex justify-center items-center h-64">
@@ -131,9 +150,43 @@ const OverviewPage: React.FC = () => {
             <CardTitle>نظرة عامة على الإيرادات</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            {/* Placeholder for a chart - Recharts or similar library could be integrated here */}
-            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-              مخطط الإيرادات هنا (يتطلب بيانات إيرادات مفصلة)
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={revenueData}>
+                  <XAxis
+                    dataKey="name"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `SAR ${value}`}
+                  />
+                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                  <Tooltip
+                    cursor={{ fill: 'hsl(var(--accent))', opacity: 0.2 }}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: 'var(--radius)',
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    formatter={(value: number) => [`SAR ${value.toLocaleString()}`, 'الإجمالي']}
+                  />
+                  <Bar
+                    dataKey="total"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                    className="fill-primary"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
