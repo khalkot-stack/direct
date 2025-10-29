@@ -6,7 +6,7 @@ import IndexPage from './pages/Index';
 import AuthPage from './pages/AuthPage';
 import PassengerDashboard from './pages/PassengerDashboard';
 import DriverDashboard from './pages/DriverDashboard';
-import PassengerRequestsPage from './pages/PassengerRequestsPage';
+import PassengerMyRidesPage from './pages/PassengerMyRidesPage'; // Updated import name
 import RequestRidePage from './pages/RequestRidePage';
 import FindRidesPage from './pages/FindRidesPage';
 import DriverAcceptedRidesPage from './pages/DriverAcceptedRidesPage';
@@ -28,7 +28,7 @@ import HelpPage from './pages/HelpPage';
 import AboutUsPage from './pages/AboutUsPage';
 import NotFound from './pages/NotFound';
 import MainLayout from './components/MainLayout';
-import PassengerTrackingPage from './pages/PassengerTrackingPage'; // Import the new page
+import PassengerTrackingPage from './pages/PassengerTrackingPage';
 
 function App() {
   return (
@@ -47,8 +47,8 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={["passenger", "driver"]}><MainLayout /></ProtectedRoute>}>
               <Route path="passenger-dashboard" element={<PassengerDashboard />} />
               <Route path="passenger-dashboard/request-ride" element={<RequestRidePage />} />
-              <Route path="passenger-dashboard/my-rides" element={<PassengerRequestsPage />} />
-              <Route path="passenger-dashboard/track-ride/:rideId" element={<PassengerTrackingPage />} /> {/* New route */}
+              <Route path="passenger-dashboard/my-rides" element={<PassengerMyRidesPage />} /> {/* Updated component name */}
+              <Route path="passenger-dashboard/track-ride/:rideId" element={<PassengerTrackingPage />} />
               
               <Route path="driver-dashboard" element={<DriverDashboard />} />
               <Route path="driver-dashboard/find-rides" element={<FindRidesPage />} />
