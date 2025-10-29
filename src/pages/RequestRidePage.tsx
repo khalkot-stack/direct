@@ -11,11 +11,19 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import InteractiveMap from "@/components/InteractiveMap";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const rideRequestSchema = z.object({
+  pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
+  destination: z.string().min(3, { message: "الوجهة مطلوبة." }),
+  passengersCount: z.number().min(1, { message: "يجب أن يكون عدد الركاب واحدًا على الأقل." }).max(10, { message: "الحد الأقصى لعدد الركاب هو 10." }),
+});
+
+type RideRequestInputs = z.infer<typeof rideRequestSchema>;
 
 const RequestRidePage: React.FC = () => {
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [destination, setDestination] = useState("");
-  const [passengersCount, setPassengersCount] = useState(1);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -24,6 +32,19 @@ const RequestRidePage: React.FC = () => {
   const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [mapMarkers, setMapMarkers] = useState<any[]>([]);
+
+  const form = useForm<RideRequestInputs>({
+    resolver: zodResolver(rideRequestSchema),
+    defaultValues: {
+      pickupLocation: "",
+      destination: "",
+      passengersCount: 1,
+    },
+  });
+
+  const { watch, setValue, formState: { errors } } = form;
+  const pickupLocation = watch("pickupLocation");
+  const destination = watch("destination");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -54,12 +75,12 @@ const RequestRidePage: React.FC = () => {
         const { lat, lng } = data.results[0].geometry.location;
         return { lat, lng };
       } else {
-        toast.error(`لم يتم العثور على إحداثيات لـ: ${address}`);
+        // toast.error(`لم يتم العثور على إحداثيات لـ: ${address}`); // Suppress frequent toasts for geocoding
         return null;
       }
     } catch (error) {
       console.error("Error geocoding address:", error);
-      toast.error("فشل تحديد الموقع الجغرافي. الرجاء المحاولة مرة أخرى.");
+      // toast.error("فشل تحديد الموقع الجغرافي. الرجاء المحاولة مرة أخرى."); // Suppress frequent toasts
       return null;
     }
   }, []);
@@ -85,7 +106,7 @@ const RequestRidePage: React.FC = () => {
         setDestinationCoords(coords);
         if (coords) {
           newMarkers.push({ id: 'destination', lat: coords.lat, lng: coords.lng, title: 'الوجهة', iconColor: 'red' });
-          if (!newCenter) newCenter = coords; // If only destination is set, center on it
+          if (!newCenter) newCenter = coords;
         }
       } else {
         setDestinationCoords(null);
@@ -95,38 +116,33 @@ const RequestRidePage: React.FC = () => {
       if (newCenter) {
         setMapCenter(newCenter);
       } else {
-        setMapCenter(undefined); // Reset to default if no locations
+        setMapCenter(undefined);
       }
     };
 
     const delayDebounceFn = setTimeout(() => {
       updateMap();
-    }, 1000); // Debounce for 1 second
+    }, 1000);
 
     return () => clearTimeout(delayDebounceFn);
   }, [pickupLocation, destination, geocodeAddress]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: RideRequestInputs) => {
     if (!userId) {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
       return;
     }
-    if (!pickupLocation || !destination || !pickupCoords || !destinationCoords) {
-      toast.error("الرجاء تحديد موقع الانطلاق والوجهة بشكل صحيح.");
-      return;
-    }
-    if (passengersCount <= 0) {
-      toast.error("يجب أن يكون عدد الركاب واحدًا على الأقل.");
+    if (!pickupCoords || !destinationCoords) {
+      toast.error("الرجاء تحديد موقع الانطلاق والوجهة بشكل صحيح على الخريطة.");
       return;
     }
 
     setLoading(true);
     const { error } = await supabase.from('rides').insert({
       passenger_id: userId,
-      pickup_location: pickupLocation,
-      destination: destination,
-      passengers_count: passengersCount,
+      pickup_location: values.pickupLocation,
+      destination: values.destination,
+      passengers_count: values.passengersCount,
       status: 'pending',
       pickup_lat: pickupCoords.lat,
       pickup_lng: pickupCoords.lng,
@@ -154,17 +170,18 @@ const RequestRidePage: React.FC = () => {
           <CardDescription>املأ الحقول أدناه لطلب رحلة.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="pickup-location">موقع الانطلاق</Label>
               <Input
                 id="pickup-location"
                 type="text"
                 placeholder="أدخل موقع الانطلاق"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                required
+                {...form.register("pickupLocation")}
               />
+              {errors.pickupLocation && (
+                <p className="text-red-500 text-sm">{errors.pickupLocation.message}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="destination">الوجهة</Label>
@@ -172,10 +189,11 @@ const RequestRidePage: React.FC = () => {
                 id="destination"
                 type="text"
                 placeholder="أدخل الوجهة"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                required
+                {...form.register("destination")}
               />
+              {errors.destination && (
+                <p className="text-red-500 text-sm">{errors.destination.message}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="passengers-count">عدد الركاب</Label>
@@ -183,10 +201,12 @@ const RequestRidePage: React.FC = () => {
                 id="passengers-count"
                 type="number"
                 min="1"
-                value={passengersCount}
-                onChange={(e) => setPassengersCount(parseInt(e.target.value) || 1)}
-                required
+                {...form.register("passengersCount", { valueAsNumber: true })}
+                onChange={(e) => setValue("passengersCount", parseInt(e.target.value) || 1)}
               />
+              {errors.passengersCount && (
+                <p className="text-red-500 text-sm">{errors.passengersCount.message}</p>
+              )}
             </div>
             <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground" disabled={loading}>
               {loading ? (
