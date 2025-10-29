@@ -238,7 +238,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">تاريخ الطلب:</span>
-                  <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
+                  <span>{new Date(ride.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 {ride.status === 'cancelled' && ride.cancellation_reason && (
                   <div className="text-sm text-red-500">
