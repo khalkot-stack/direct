@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button"; // Import buttonVariants
@@ -18,14 +18,15 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   }[];
 }
 
-export function Sidebar({ className, isCollapsed, links }: SidebarProps) {
+export function Sidebar({ className, isCollapsed, links, ...props }: SidebarProps) {
   return (
     <div
       data-collapsed={isCollapsed}
       className={cn(
-        "group flex flex-col gap-4 py-2 data-[collapsed=true]:py-2",
+        "group flex flex-col h-full gap-4 py-2 data-[collapsed=true]:py-2",
         className,
       )}
+      {...props}
     >
       <nav className="grid gap-1 px-2 group-[[data-collapsed=true]]:justify-center group-[[data-collapsed=true]]:px-2">
         {links.map((link, index) =>
@@ -77,12 +78,13 @@ export function Sidebar({ className, isCollapsed, links }: SidebarProps) {
 
 interface SidebarToggleProps extends React.ComponentPropsWithoutRef<typeof Button> {
   isCollapsed?: boolean;
+  onToggle: () => void;
 }
 
 const SidebarToggle = React.forwardRef<
   HTMLButtonElement,
   SidebarToggleProps
->(({ className, isCollapsed, ...props }, ref) => {
+>(({ className, isCollapsed, onToggle, ...props }, ref) => {
   return (
     <Button
       ref={ref}
@@ -92,6 +94,7 @@ const SidebarToggle = React.forwardRef<
         "h-7 w-7",
         className,
       )}
+      onClick={onToggle}
       {...props}
     >
       <ChevronLeft className={cn("h-4 w-4", isCollapsed && "rotate-180")} />
@@ -104,14 +107,13 @@ SidebarToggle.displayName = "SidebarToggle";
 interface SidebarLinkProps extends React.ComponentPropsWithoutRef<typeof Button> {
   isCollapsed?: boolean;
   icon: React.ElementType;
-  title: string;
   label?: string;
 }
 
 const SidebarLink = React.forwardRef<
   HTMLButtonElement,
   SidebarLinkProps
->(({ className, isCollapsed, icon: Icon, title, label, ...props }, ref) => {
+>(({ className, isCollapsed, icon: Icon, label, children, ...props }, ref) => {
   return (
     <Button
       ref={ref}
@@ -119,16 +121,17 @@ const SidebarLink = React.forwardRef<
       size="sm"
       className={cn(
         "justify-start",
+        isCollapsed ? "h-9 w-9" : "h-9 px-3",
         className,
       )}
       {...props}
     >
-      <Icon className="h-4 w-4 mr-2" />
+      <Icon className="h-4 w-4" />
       {!isCollapsed && (
         <>
-          {title}
+          <span className="ml-2">{children}</span>
           {label && (
-            <span className="ml-auto text-muted-foreground">
+            <span className={cn("ml-auto text-muted-foreground")}>
               {label}
             </span>
           )}

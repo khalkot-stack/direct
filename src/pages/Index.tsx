@@ -5,11 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Users, Settings } from "lucide-react"; // Removed unused 'Car' import
+import { Loader2, Users, Settings } from "lucide-react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const Index: React.FC = () => {
-  const [userRole, setUserRole] = useState<string | null>(null); // Keeping userRole for clarity, though not directly used in render
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -18,7 +17,6 @@ const Index: React.FC = () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserRole(user.user_metadata?.user_type as string || null);
         // Redirect authenticated users to their respective dashboards
         if (user.user_metadata?.user_type === "passenger") {
           navigate("/passenger-dashboard");
@@ -27,8 +25,6 @@ const Index: React.FC = () => {
         } else if (user.user_metadata?.user_type === "admin") {
           navigate("/admin-dashboard");
         }
-      } else {
-        setUserRole(null);
       }
       setLoading(false);
     };
@@ -37,7 +33,6 @@ const Index: React.FC = () => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUserRole(session.user.user_metadata?.user_type as string || null);
         if (session.user.user_metadata?.user_type === "passenger") {
           navigate("/passenger-dashboard");
         } else if (session.user.user_metadata?.user_type === "driver") {
@@ -45,8 +40,6 @@ const Index: React.FC = () => {
         } else if (session.user.user_metadata?.user_type === "admin") {
           navigate("/admin-dashboard");
         }
-      } else {
-        setUserRole(null);
       }
     });
 

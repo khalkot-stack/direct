@@ -42,11 +42,11 @@ import AdminSettingsPage from "@/pages/admin/SettingsPage";
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null); // Keep userRole for potential future use in redirects
+  const [userRole, setUserRole] = useState<string | null>(null); // Keep userRole for conditional rendering/redirection logic
 
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession(); // Removed unused 'error' variable
+      const { data: { session } } = await supabase.auth.getSession(); // Removed unused 'error'
       if (session) {
         setUserRole(session.user?.user_metadata?.user_type || null);
       } else {

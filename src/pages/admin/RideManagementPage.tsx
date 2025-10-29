@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search, Edit, Trash2, Loader2, MessageSquare } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, Loader2, MessageSquare, Car as CarIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import RideFormDialog from "@/components/RideFormDialog";
@@ -107,7 +107,7 @@ const RideManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveRide = async (rideData: Ride) => {
+  const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'profiles'>) => {
     if (selectedRide) {
       // Update existing ride
       const { id, ...updates } = rideData;
@@ -249,7 +249,7 @@ const RideManagementPage: React.FC = () => {
         </div>
       ) : filteredRides.length === 0 ? (
         <EmptyState
-          icon={Car}
+          icon={CarIcon}
           title="لا توجد رحلات"
           description="لا توجد بيانات رحلات لعرضها. ابدأ بإضافة رحلة جديدة."
         />
@@ -269,8 +269,8 @@ const RideManagementPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredRides.map((ride) => {
-                const passengerName = ride.profiles.find(p => p.id === ride.passenger_id)?.full_name || 'غير معروف';
-                const driverName = ride.profiles.find(p => p.id === ride.driver_id)?.full_name || 'لا يوجد';
+                const passengerName = ride.profiles.find(p => p.id === ride.passenger_id)?.full_name || '';
+                const driverName = ride.profiles.find(p => p.id === ride.driver_id)?.full_name || '';
                 return (
                   <TableRow key={ride.id}>
                     <TableCell className="font-medium">{passengerName}</TableCell>

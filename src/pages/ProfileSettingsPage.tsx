@@ -97,7 +97,8 @@ const ProfileSettingsPage: React.FC = () => {
     if (!profile) return;
 
     setIsSaving(true);
-    const { id, email, created_at, ...updates } = profile; // Exclude id, email, created_at from updates
+    // Exclude id, email, created_at from updates as they are not directly editable via this form
+    const { id, email, created_at, ...updates } = profile; 
     const { error } = await supabase
       .from('profiles')
       .update(updates)
