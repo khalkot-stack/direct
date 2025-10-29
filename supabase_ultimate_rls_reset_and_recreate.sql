@@ -47,38 +47,26 @@ END;
 $$;
 
 --
--- RLS Policies for public.profiles
+-- RLS Policies for public.profiles (EXTREMELY SIMPLIFIED for recursion diagnosis)
 --
 
--- Allow users to read their own profile (minimal SELECT policy for testing)
+-- Allow users to read their own profile
 CREATE POLICY "Allow self-read access to profiles" ON public.profiles
 FOR SELECT USING (auth.uid() = id);
-
--- IMPORTANT: Temporarily REMOVED "Admins can read all profiles" policy to diagnose recursion.
--- If this fixes the issue, we will re-introduce a safer admin read policy.
 
 -- Allow users to insert their own profile on signup
 CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
 FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Allow admins to insert profiles
-CREATE POLICY "Admins can insert profiles" ON public.profiles
-FOR INSERT WITH CHECK (public.get_user_type(auth.uid()) = 'admin');
-
 -- Allow users to update their own profile
 CREATE POLICY "Allow self-update access to profiles" ON public.profiles
 FOR UPDATE USING (auth.uid() = id);
 
--- Allow admins to update all profiles
-CREATE POLICY "Admins can update all profiles" ON public.profiles
-FOR UPDATE USING (public.get_user_type(auth.uid()) = 'admin');
-
--- Allow admins to delete profiles
-CREATE POLICY "Admins can delete profiles" ON public.profiles
-FOR DELETE USING (public.get_user_type(auth.uid()) = 'admin');
+-- IMPORTANT: All admin policies for 'profiles' are REMOVED to isolate the recursion.
+-- This means admins will NOT be able to read/insert/update/delete other profiles via RLS on 'profiles'.
 
 --
--- RLS Policies for public.rides
+-- RLS Policies for public.rides (These remain as they were, as the error is on 'profiles')
 --
 
 -- Allow passengers to read their own rides
