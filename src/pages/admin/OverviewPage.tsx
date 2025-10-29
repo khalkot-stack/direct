@@ -47,17 +47,28 @@ const OverviewPage = () => {
     setLoading(true);
     let hasError = false;
 
-    // Fetch total users
-    const { count: usersCount, error: usersError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
+    // Fetch total users using the new security invoker function for admins
+    const { data: allProfiles, error: profilesError } = await supabase.rpc('get_all_profiles_for_admin');
 
-    if (usersError) {
-      toast.error(`فشل جلب عدد المستخدمين: ${usersError.message}`);
-      console.error("Error fetching user count:", usersError);
+    if (profilesError) {
+      toast.error(`فشل جلب عدد المستخدمين: ${profilesError.message}`);
+      console.error("Error fetching user count:", profilesError);
       hasError = true;
     } else {
-      setTotalUsers(usersCount);
+      setTotalUsers(allProfiles?.length || 0);
+      // Filter new users from allProfiles if needed for activities, or fetch separately
+      const newUsers = (allProfiles || [])
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+
+      let activities: Activity[] = [];
+      activities = activities.concat(newUsers.map((user: any) => ({
+        id: user.id,
+        type: 'user_registered',
+        description: `مستخدم جديد "${user.full_name}" سجل.`,
+        created_at: user.created_at,
+      })));
+      setLatestActivities(activities); // Temporarily set to only new users, will combine later
     }
 
     // Fetch total rides
@@ -71,19 +82,6 @@ const OverviewPage = () => {
       hasError = true;
     } else {
       setTotalRides(ridesCount);
-    }
-
-    // Fetch recent user registrations
-    const { data: newUsers, error: newUsersError } = await supabase
-      .from('profiles')
-      .select('id, full_name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (newUsersError) {
-      toast.error(`فشل جلب المستخدمين الجدد: ${newUsersError.message}`);
-      console.error("Error fetching new users:", newUsersError);
-      hasError = true;
     }
 
     // Fetch recent ride activities
@@ -107,19 +105,10 @@ const OverviewPage = () => {
       hasError = true;
     }
 
-    let activities: Activity[] = [];
-
-    if (newUsers) {
-      activities = activities.concat(newUsers.map(user => ({
-        id: user.id,
-        type: 'user_registered',
-        description: `مستخدم جديد "${user.full_name}" سجل.`,
-        created_at: user.created_at,
-      })));
-    }
+    let combinedActivities: Activity[] = latestActivities; // Start with user activities
 
     if (recentRides) {
-      activities = activities.concat(recentRides.map((ride: SupabaseJoinedRideData) => {
+      combinedActivities = combinedActivities.concat(recentRides.map((ride: SupabaseJoinedRideData) => {
         let description = '';
         const passengerName = ride.profiles_passenger?.[0]?.full_name || 'راكب';
         const driverName = ride.profiles_driver?.[0]?.full_name || 'سائق';
@@ -150,11 +139,11 @@ const OverviewPage = () => {
     }
 
     // Sort all activities by created_at descending and take top 5
-    activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    setLatestActivities(activities.slice(0, 5));
+    combinedActivities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setLatestActivities(combinedActivities.slice(0, 5));
 
     setLoading(false);
-  }, []);
+  }, [latestActivities]); // Added latestActivities to dependencies to ensure it's updated before combining
 
   useEffect(() => {
     fetchOverviewData();

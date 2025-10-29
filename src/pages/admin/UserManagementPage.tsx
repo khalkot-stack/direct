@@ -41,7 +41,9 @@ const UserManagementPage = () => {
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('profiles').select('*');
+    // Use the new security invoker function to fetch all profiles for admins
+    const { data, error } = await supabase.rpc('get_all_profiles_for_admin');
+    
     if (error) {
       toast.error(`فشل جلب المستخدمين: ${error.message}`);
       console.error("Error fetching profiles:", error);

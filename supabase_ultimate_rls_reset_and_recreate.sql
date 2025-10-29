@@ -33,7 +33,7 @@ CREATE OR REPLACE FUNCTION public.get_user_type(user_id uuid)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-STABLE -- Added STABLE for better query planning
+STABLE
 AS $$
 DECLARE
   user_role text;
@@ -47,7 +47,7 @@ END;
 $$;
 
 --
--- RLS Policies for public.profiles (EXTREMELY SIMPLIFIED for recursion diagnosis)
+-- RLS Policies for public.profiles (Simplified to avoid recursion)
 --
 
 -- Allow users to read their own profile
@@ -58,15 +58,27 @@ FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
 FOR INSERT WITH CHECK (auth.uid() = id);
 
+-- Allow admins to insert profiles
+CREATE POLICY "Admins can insert profiles" ON public.profiles
+FOR INSERT WITH CHECK (public.get_user_type(auth.uid()) = 'admin');
+
 -- Allow users to update their own profile
 CREATE POLICY "Allow self-update access to profiles" ON public.profiles
 FOR UPDATE USING (auth.uid() = id);
 
--- IMPORTANT: All admin policies for 'profiles' are REMOVED to isolate the recursion.
--- This means admins will NOT be able to read/insert/update/delete other profiles via RLS on 'profiles'.
+-- Allow admins to update all profiles
+CREATE POLICY "Admins can update all profiles" ON public.profiles
+FOR UPDATE USING (public.get_user_type(auth.uid()) = 'admin');
+
+-- Allow admins to delete profiles
+CREATE POLICY "Admins can delete profiles" ON public.profiles
+FOR DELETE USING (public.get_user_type(auth.uid()) = 'admin');
+
+-- IMPORTANT: The "Admins can read all profiles" policy for SELECT is intentionally OMITTED from here.
+-- Admin SELECT access to profiles will be handled by bypassing RLS in the frontend code.
 
 --
--- RLS Policies for public.rides (These remain as they were, as the error is on 'profiles')
+-- RLS Policies for public.rides
 --
 
 -- Allow passengers to read their own rides
