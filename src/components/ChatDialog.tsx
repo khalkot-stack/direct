@@ -25,6 +25,15 @@ interface Message {
   profiles: { full_name: string } | null; // Joined sender profile
 }
 
+// Helper interface to match the raw data structure from Supabase select with joins
+interface SupabaseJoinedMessageData {
+  id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  profiles: Array<{ full_name: string }> | null; // Supabase returns joined relations as an array
+}
+
 interface ChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,7 +79,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       toast.error(`فشل جلب الرسائل: ${error.message}`);
       console.error("Error fetching messages:", error);
     } else {
-      setMessages(data as Message[]);
+      // Map the raw data to the Message interface, handling the profiles array
+      const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => ({
+        id: msg.id,
+        sender_id: msg.sender_id,
+        content: msg.content,
+        created_at: msg.created_at,
+        profiles: msg.profiles?.[0] || null, // Take the first profile object or null
+      }));
+      setMessages(formattedMessages);
     }
     setLoading(false);
   }, [rideId]);
@@ -112,9 +129,17 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               if (error) {
                 console.error("Error fetching new message for realtime:", error);
               } else if (data) {
-                setMessages((prevMessages) => [...prevMessages, data as Message]);
+                // Format the new message to match the Message interface
+                const formattedNewMessage: Message = {
+                  id: data.id,
+                  sender_id: data.sender_id,
+                  content: data.content,
+                  created_at: data.created_at,
+                  profiles: (data as SupabaseJoinedMessageData).profiles?.[0] || null,
+                };
+                setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
-                  toast.info(`رسالة جديدة من ${data.profiles?.full_name || 'مستخدم'}: ${data.content.substring(0, 30)}...`);
+                  toast.info(`رسالة جديدة من ${formattedNewMessage.profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
                 }
               }
             });
