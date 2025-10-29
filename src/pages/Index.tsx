@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Car, Users, Settings } from "lucide-react";
+import { Loader2, Users, Settings } from "lucide-react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const Index: React.FC = () => {

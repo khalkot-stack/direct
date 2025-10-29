@@ -3,7 +3,6 @@
 import React, { useCallback, useRef, useEffect, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 const containerStyle = {
   width: '100%',

@@ -13,7 +13,7 @@ import InteractiveMap from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; // Imported Badge
 
 interface Ride {
   id: string;
@@ -41,6 +41,7 @@ interface Ride {
   } | null;
 }
 
+// Rating interface is used as a type, so keeping it.
 interface Rating {
   id: string;
   ride_id: string;
@@ -56,6 +57,7 @@ const PassengerDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [chatRideId, setChatRideId] = useState(""); // Correctly defined
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
@@ -164,7 +166,7 @@ const PassengerDashboard: React.FC = () => {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
-    setChatRideId(currentRide.id);
+    setChatRideId(currentRide.id); // Corrected usage
     setChatOtherUserId(currentRide.driver_id!);
     setChatOtherUserName(currentRide.driver_profiles.full_name || 'السائق');
     setIsChatDialogOpen(true);
@@ -327,7 +329,7 @@ const PassengerDashboard: React.FC = () => {
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
-          rideId={currentRide.id}
+          rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
           currentUserId={user.id}

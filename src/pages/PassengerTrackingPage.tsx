@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Car, MapPin, MessageSquare } from "lucide-react";
+import { Loader2, MapPin, MessageSquare } from "lucide-react"; // Removed Car
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import InteractiveMap from "@/components/InteractiveMap";
 import { Button } from "@/components/ui/button";
 import ChatDialog from "@/components/ChatDialog";
+import { Badge } from "@/components/ui/badge"; // Imported Badge
 
 interface Ride {
   id: string;
@@ -118,7 +119,7 @@ const PassengerTrackingPage: React.FC = () => {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
-    setChatRideId(ride.id);
+    setChatRideId(ride.id); // Corrected usage
     setChatOtherUserId(ride.driver_id);
     setChatOtherUserName(ride.driver_profiles.full_name || 'السائق');
     setIsChatDialogOpen(true);
@@ -195,7 +196,7 @@ const PassengerTrackingPage: React.FC = () => {
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
-          rideId={ride.id}
+          rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
           currentUserId={currentUserId}

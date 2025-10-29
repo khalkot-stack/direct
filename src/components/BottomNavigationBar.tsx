@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, MapPin, Car, History, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';

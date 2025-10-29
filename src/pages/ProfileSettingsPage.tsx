@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -21,6 +21,7 @@ interface Profile {
   status: "active" | "suspended" | "banned";
   phone_number?: string;
   avatar_url?: string | null;
+  created_at: string; // Added created_at
 }
 
 const ProfileSettingsPage: React.FC = () => {
@@ -40,7 +41,7 @@ const ProfileSettingsPage: React.FC = () => {
 
     const { data, error, status } = await supabase
       .from('profiles')
-      .select('id, full_name, email, user_type, status, phone_number, avatar_url')
+      .select('id, full_name, email, user_type, status, phone_number, avatar_url, created_at') // Select created_at
       .eq('id', user.id)
       .single();
 

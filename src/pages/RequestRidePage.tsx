@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MapPin, Car } from "lucide-react";
+import { Loader2, Car } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -38,7 +38,7 @@ const RequestRidePage: React.FC = () => {
     fetchUser();
   }, [navigate]);
 
-  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
+  const geocodeAddress = useCallback(async (address: string) => { // Removed 'type' parameter
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       toast.error("Google Maps API Key is not configured.");
       return null;
@@ -70,7 +70,7 @@ const RequestRidePage: React.FC = () => {
       let newCenter = undefined;
 
       if (pickupLocation) {
-        const coords = await geocodeAddress(pickupLocation, 'pickup');
+        const coords = await geocodeAddress(pickupLocation); // Removed 'pickup' argument
         setPickupCoords(coords);
         if (coords) {
           newMarkers.push({ id: 'pickup', lat: coords.lat, lng: coords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
@@ -81,7 +81,7 @@ const RequestRidePage: React.FC = () => {
       }
 
       if (destination) {
-        const coords = await geocodeAddress(destination, 'destination');
+        const coords = await geocodeAddress(destination); // Removed 'destination' argument
         setDestinationCoords(coords);
         if (coords) {
           newMarkers.push({ id: 'destination', lat: coords.lat, lng: coords.lng, title: 'الوجهة', iconColor: 'red' });
