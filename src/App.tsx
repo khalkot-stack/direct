@@ -21,6 +21,7 @@ import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import HelpPage from "@/pages/HelpPage";
 import AboutUsPage from "@/pages/AboutUsPage";
 import NotFound from "@/pages/NotFound";
+import AdminLoginPage from "@/pages/AdminLoginPage"; // Import AdminLoginPage
 
 // Passenger Pages
 import PassengerDashboard from "@/pages/PassengerDashboard";
@@ -81,6 +82,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/admin-login" element={<AdminLoginPage />} /> {/* New Admin Login Page */}
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/help" element={<HelpPage />} />
