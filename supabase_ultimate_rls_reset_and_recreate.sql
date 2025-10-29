@@ -233,6 +233,7 @@ ON public.messages FOR SELECT TO authenticated USING (
 );
 
 -- Admins can manage all messages
+CREATE POLICY "Admins can manage all messages" -- Added missing CREATE POLICY keyword
 ON public.messages FOR ALL TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'admin')
 );
