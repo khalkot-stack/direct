@@ -17,7 +17,7 @@ const UserLayout: React.FC = () => {
         <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="hidden md:block">
           <AdminSidebar />
         </ResizablePanel>
-        <ResizableHandle withHandle className="hidden md:flex" />
+        <ResizableHandle className="hidden md:flex" />
         <ResizablePanel defaultSize={80}>
           <div className="flex-1 p-6">
             <Outlet />
