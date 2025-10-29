@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   allowedRoles: ("passenger" | "driver" | "admin")[];
-  children: React.ReactNode; // Added children prop
+  children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children }) => {
@@ -33,14 +33,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
       }
 
       const user = session.user;
-      // Read user_type from user_metadata (which is raw_user_meta_data in auth.users)
       const userRole = user?.user_metadata?.user_type;
 
       if (userRole && allowedRoles.includes(userRole)) {
         setIsAuthorized(true);
       } else {
         toast.error("ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة.");
-        // Redirect to a default dashboard or home based on actual role if available, or auth page
         if (userRole === "passenger") {
           navigate("/passenger-dashboard");
         } else if (userRole === "driver") {
@@ -60,13 +58,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري التحميل...</span>
       </div>
     );
   }
 
-  return isAuthorized ? <>{children}</> : null; // Render children if authorized
+  return isAuthorized ? <>{children}</> : null;
 };
 
 export default ProtectedRoute;

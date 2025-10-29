@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button"; // Ensure Button is imported
+import { Button } from "@/components/ui/button";
 
 interface AppHeaderProps {
   className?: string;
@@ -70,7 +70,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className }) => {
     <header className={cn("sticky top-0 z-50 w-full bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-4 flex items-center justify-between shadow-sm", className)}>
       <div className="flex items-center gap-3">
         <Link to="/">
-          <img src="/assets/images/دايركت.png" alt="DIRECT Logo" className="h-10 w-auto" />
+          {/* Placeholder for logo */}
+          <span className="text-xl font-bold text-primary dark:text-primary-light">DIRECT</span>
         </Link>
       </div>
 

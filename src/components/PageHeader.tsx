@@ -25,7 +25,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, o
   };
 
   return (
-    <div className="flex items-center justify-between mb-6"> {/* Increased bottom margin */}
+    <div className="flex items-center justify-between mb-6">
       {(backPath || onBackClick) && (
         <Button
           variant="ghost"
@@ -42,12 +42,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, backPath, o
           {title}
         </CardTitle>
         {description && (
-          <CardDescription className="text-gray-600 dark:text-gray-400 mt-2"> {/* Increased top margin */}
+          <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
             {description}
           </CardDescription>
         )}
       </div>
-      {!(backPath || onBackClick) && <div className="w-10"></div>} {/* Placeholder to balance the flex layout */}
+      {!(backPath || onBackClick) && <div className="w-10"></div>}
     </div>
   );
 };

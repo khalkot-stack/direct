@@ -1,1 +1,0 @@
-get_user_type() = 'admin'

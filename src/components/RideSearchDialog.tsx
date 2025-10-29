@@ -63,7 +63,7 @@ const RideSearchDialog: React.FC<RideSearchDialogProps> = ({
     setPickupLocation("");
     setDestination("");
     setPassengersCount("");
-    onSearch({}); // Clear search results
+    onSearch({});
     onOpenChange(false);
   };
 

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Home, Users, Car, Settings } from "lucide-react";
-import LogoutButton from "@/components/LogoutButton"; // Import LogoutButton
+import LogoutButton from "@/components/LogoutButton";
 
 interface AdminSidebarProps {
   className?: string;
@@ -41,7 +41,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className }) => {
   return (
     <div className={cn("h-full flex flex-col border-r dark:border-gray-700 bg-sidebar dark:bg-sidebar-background", className)}>
       <div className="p-4 border-b dark:border-gray-700">
-        {/* Removed logo from AdminSidebar for simplicity */}
         <h2 className="text-2xl font-bold text-sidebar-primary dark:text-sidebar-primary-foreground text-center">لوحة المدير</h2>
       </div>
       <ScrollArea className="flex-1 py-4">
@@ -64,7 +63,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className }) => {
         </nav>
       </ScrollArea>
       <div className="p-4 border-t dark:border-gray-700 space-y-2">
-        <LogoutButton /> {/* Add LogoutButton here */}
+        <LogoutButton />
         <Link to="/">
           <Button variant="outline" className="w-full text-sidebar-foreground dark:text-sidebar-foreground hover:bg-sidebar-accent dark:hover:bg-sidebar-accent">
             العودة للصفحة الرئيسية

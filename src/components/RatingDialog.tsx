@@ -22,7 +22,7 @@ interface RatingDialogProps {
   onSave: (rating: number, comment: string) => void;
   initialRating?: number;
   initialComment?: string;
-  targetUserName: string; // The name of the user being rated
+  targetUserName: string;
 }
 
 const RatingDialog: React.FC<RatingDialogProps> = ({
@@ -52,7 +52,7 @@ const RatingDialog: React.FC<RatingDialogProps> = ({
     setIsSaving(true);
     await onSave(rating, comment);
     setIsSaving(false);
-    onOpenChange(false); // Close dialog after saving
+    onOpenChange(false);
   };
 
   return (
@@ -72,7 +72,7 @@ const RatingDialog: React.FC<RatingDialogProps> = ({
                 className={cn(
                   "h-8 w-8 cursor-pointer transition-colors",
                   (hoverRating || rating) >= star
-                    ? "fill-yellow-500 text-yellow-500" // Using a more vibrant yellow
+                    ? "fill-yellow-500 text-yellow-500"
                     : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600",
                 )}
                 onClick={() => setRating(star)}

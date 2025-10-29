@@ -29,28 +29,28 @@ interface Profile {
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profile?: Profile; // Optional profile object for editing
-  onSave: (profile: Profile) => void; // Callback for saving (update or new user creation)
-  isNewUser: boolean; // New prop to distinguish between adding and editing
+  profile?: Profile;
+  onSave: (profile: Profile) => void;
+  isNewUser: boolean;
 }
 
 const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, profile, onSave, isNewUser }) => {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [email, setEmail] = useState(profile?.email || "");
-  const [password, setPassword] = useState(""); // Only for new users
+  const [password, setPassword] = useState("");
   const [userType, setUserType] = useState<"passenger" | "driver" | "admin">(profile?.user_type || "passenger");
   const [status, setStatus] = useState<"active" | "suspended" | "banned">(profile?.status || "active");
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || "");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (open) { // Reset form when dialog opens
+    if (open) {
       if (isNewUser) {
         setFullName("");
         setEmail("");
         setPassword("");
         setUserType("passenger");
-        setStatus("active"); // Default status for new users
+        setStatus("active");
         setPhoneNumber("");
       } else if (profile) {
         setFullName(profile.full_name);
@@ -58,7 +58,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         setUserType(profile.user_type);
         setStatus(profile.status);
         setPhoneNumber(profile.phone_number || "");
-        setPassword(""); // Ensure password field is empty for existing users
+        setPassword("");
       }
     }
   }, [profile, open, isNewUser]);
@@ -87,7 +87,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             full_name: fullName,
             phone_number: phoneNumber,
             user_type: userType,
-            status: status, // Pass status to metadata for trigger to pick up
+            status: status,
           },
         },
       });
@@ -97,11 +97,10 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         console.error("Error creating new user:", error);
       } else if (data.user) {
         toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
-        onOpenChange(false); // Close dialog
-        onSave(data.user as unknown as Profile); // Trigger parent to refetch profiles
+        onOpenChange(false);
+        onSave(data.user as unknown as Profile);
       }
     } else {
-      // Editing existing user
       if (!profile?.id || !fullName || !email || !userType || !status) {
         toast.error("الرجاء ملء جميع الحقول المطلوبة لتعديل المستخدم.");
         setIsSaving(false);
@@ -111,13 +110,13 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
       const updatedProfile: Profile = {
         id: profile.id,
         full_name: fullName,
-        email, // Email is disabled, so it won't change, but we pass it
+        email,
         user_type: userType,
         status,
         phone_number: phoneNumber,
       };
-      onSave(updatedProfile); // Parent component will handle the actual update to Supabase
-      onOpenChange(false); // Close dialog
+      onSave(updatedProfile);
+      onOpenChange(false);
     }
     setIsSaving(false);
   };

@@ -1,1 +1,0 @@
-driver_id = auth.uid() AND status = 'accepted' AND get_user_type() = 'driver'

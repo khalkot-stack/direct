@@ -1,1 +1,0 @@
-SELECT id, email, raw_user_meta_data, app_metadata FROM auth.users LIMIT 1;

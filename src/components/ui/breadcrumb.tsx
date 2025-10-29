@@ -1,6 +1,8 @@
+"use client";
+
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,8 +21,8 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5",
-      className,
+      "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground",
+      className
     )}
     {...props}
   />
@@ -33,7 +35,7 @@ const BreadcrumbItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <li
     ref={ref}
-    className={cn("inline-flex items-center gap-1.5", className)}
+    className={cn("inline-flex items-center", className)}
     {...props}
   />
 ));
@@ -76,14 +78,14 @@ const BreadcrumbSeparator = ({
   children,
   className,
   ...props
-}: React.ComponentProps<"li">) => (
+}: React.ComponentPropsWithoutRef<"li">) => (
   <li
     role="presentation"
     aria-hidden="true"
-    className={cn("[&>svg]:size-3.5", className)}
+    className={cn("flex items-center", className)}
     {...props}
   >
-    {children ?? <ChevronRight />}
+    {children ?? <ChevronLeft className="h-4 w-4" />}
   </li>
 );
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
@@ -91,7 +93,7 @@ BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
 const BreadcrumbEllipsis = ({
   className,
   ...props
-}: React.ComponentProps<"span">) => (
+}: React.ComponentPropsWithoutRef<"span">) => (
   <span
     role="presentation"
     aria-hidden="true"
@@ -99,10 +101,10 @@ const BreadcrumbEllipsis = ({
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
+    <span className="sr-only">Toggle menu</span>
   </span>
 );
-BreadcrumbEllipsis.displayName = "BreadcrumbElipssis";
+BreadcrumbEllipsis.displayName = "BreadcrumbEllipsis";
 
 export {
   Breadcrumb,

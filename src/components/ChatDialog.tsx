@@ -22,16 +22,15 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
-  profiles: { full_name: string } | null; // Joined sender profile
+  profiles: { full_name: string } | null;
 }
 
-// Helper interface to match the raw data structure from Supabase select with joins
 interface SupabaseJoinedMessageData {
   id: string;
   sender_id: string;
   content: string;
   created_at: string;
-  profiles: Array<{ full_name: string }> | null; // Supabase returns joined relations as an array
+  profiles: Array<{ full_name: string }> | null;
 }
 
 interface ChatDialogProps {
@@ -79,13 +78,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       toast.error(`فشل جلب الرسائل: ${error.message}`);
       console.error("Error fetching messages:", error);
     } else {
-      // Map the raw data to the Message interface, handling the profiles array
       const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => ({
         id: msg.id,
         sender_id: msg.sender_id,
         content: msg.content,
         created_at: msg.created_at,
-        profiles: msg.profiles?.[0] || null, // Take the first profile object or null
+        profiles: msg.profiles?.[0] || null,
       }));
       setMessages(formattedMessages);
     }
@@ -113,7 +111,6 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
         (payload) => {
-          // Fetch the full message with sender profile
           supabase
             .from('messages')
             .select(`
@@ -129,7 +126,6 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               if (error) {
                 console.error("Error fetching new message for realtime:", error);
               } else if (data) {
-                // Format the new message to match the Message interface
                 const formattedNewMessage: Message = {
                   id: data.id,
                   sender_id: data.sender_id,

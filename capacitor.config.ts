@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.curiousmantispeek',
-  appName: 'curious-mantis-peek',
+  appId: 'com.example.dyadapp',
+  appName: 'dyad-app',
   webDir: 'dist'
 };
 

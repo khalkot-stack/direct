@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MapPin, Car, History, User, Settings } from 'lucide-react';
+import { Home, MapPin, Car, History, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -17,7 +17,6 @@ const BottomNavigationBar = () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get user_type directly from user_metadata
         setUserRole(user.user_metadata?.user_type as string || null);
       } else {
         setUserRole(null);
@@ -42,7 +41,7 @@ const BottomNavigationBar = () => {
 
   const getNavItems = () => {
     if (loading) {
-      return []; // Don't show items while loading role
+      return [];
     }
     if (userRole === 'passenger') {
       return [
@@ -59,17 +58,13 @@ const BottomNavigationBar = () => {
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     }
-    // If user is not logged in or role is admin, this component should not be rendered by MainLayout.
-    // However, as a fallback or for testing, we can return empty or default items.
     return [];
   };
 
   const navItems = getNavItems();
 
-  // This component is now rendered conditionally by MainLayout, so no need for internal hide logic.
-  // If it's rendered, it means the user is authenticated as passenger or driver.
   if (navItems.length === 0) {
-    return null; // Should not happen if MainLayout is used correctly
+    return null;
   }
 
   return (
@@ -81,7 +76,7 @@ const BottomNavigationBar = () => {
             <Link to={item.path} key={item.name} className="flex-1 flex items-center justify-center">
               <Button
                 variant="ghost"
-                className={`flex flex-col items-center justify-center h-full w-full text-xs font-medium ${isActive ? 'text-primary dark:text-primary-foreground' : 'text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-foreground'}`}
+                className={`flex flex-col items-center justify-center h-full w-full text-xs font-medium ${isActive ? 'text-primary dark:text-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light'}`}
               >
                 <item.icon className="h-5 w-5 mb-1" />
                 <span>{item.name}</span>

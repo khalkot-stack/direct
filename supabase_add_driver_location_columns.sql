@@ -1,3 +1,0 @@
-ALTER TABLE public.profiles
-ADD COLUMN current_lat DOUBLE PRECISION,
-ADD COLUMN current_lng DOUBLE PRECISION;

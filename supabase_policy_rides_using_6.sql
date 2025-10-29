@@ -1,1 +1,0 @@
-status = 'pending' AND get_user_type() = 'driver'

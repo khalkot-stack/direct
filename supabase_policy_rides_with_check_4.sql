@@ -1,1 +1,0 @@
-passenger_id = auth.uid() AND status IN ('pending', 'cancelled')
