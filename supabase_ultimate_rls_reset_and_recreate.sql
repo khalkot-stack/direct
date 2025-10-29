@@ -41,7 +41,11 @@ DROP POLICY IF EXISTS "Admins can manage all messages" ON public.messages;
 -- 7. Drop the get_user_type function with CASCADE to remove any dependent objects
 DROP FUNCTION IF EXISTS public.get_user_type(uuid) CASCADE;
 
--- 8. Re-create the get_user_type function to read from auth.users metadata
+-- 8. Drop the trigger and trigger function for new user metadata if they exist
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user_metadata() CASCADE;
+
+-- 9. Re-create the get_user_type function to read from auth.users app_metadata
 CREATE OR REPLACE FUNCTION public.get_user_type(user_id uuid)
  RETURNS text
  LANGUAGE plpgsql
@@ -50,22 +54,38 @@ AS $function$
 DECLARE
   u_type text;
 BEGIN
-  -- Retrieve user_type from auth.users.raw_user_meta_data
-  SELECT (raw_user_meta_data->>'user_type') INTO u_type
+  -- Retrieve user_type from auth.users.app_metadata
+  SELECT (app_metadata->>'user_type') INTO u_type
   FROM auth.users
   WHERE id = user_id;
   RETURN u_type;
 END;
 $function$;
 
--- 9. Re-enable RLS on all tables
+-- 10. Create a function to copy user_type from raw_user_meta_data to app_metadata
+CREATE OR REPLACE FUNCTION public.handle_new_user_metadata()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.raw_user_meta_data->>'user_type' IS NOT NULL THEN
+    NEW.app_metadata := NEW.app_metadata || jsonb_build_object('user_type', NEW.raw_user_meta_data->>'user_type');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 11. Create a trigger to run the function before inserting into auth.users
+CREATE TRIGGER on_auth_user_created
+BEFORE INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_metadata();
+
+-- 12. Re-enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
--- 10. Re-create essential RLS policies for profiles (self-access, admin, and cross-user)
+-- 13. Re-create essential RLS policies for profiles (self-access, admin, and cross-user)
 -- Self-access policies (DO NOT use get_user_type here)
 CREATE POLICY "Authenticated users can view their own profile"
 ON public.profiles FOR SELECT TO authenticated USING (
@@ -113,7 +133,7 @@ ON public.profiles FOR SELECT TO authenticated USING (
   ))
 );
 
--- 11. Re-create RLS policies for rides
+-- 14. Re-create RLS policies for rides
 -- Admin can manage all rides
 CREATE POLICY "Admins can manage all rides"
 ON public.rides FOR ALL TO authenticated USING (
@@ -162,7 +182,7 @@ ON public.rides FOR DELETE TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'passenger' AND passenger_id = auth.uid() AND status IN ('completed', 'cancelled'))
 );
 
--- 12. Re-create RLS policies for settings
+-- 15. Re-create RLS policies for settings
 -- Admins can view settings
 CREATE POLICY "Admins can view settings"
 ON public.settings FOR SELECT TO authenticated USING (
@@ -183,7 +203,7 @@ ON public.settings FOR UPDATE TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'admin')
 );
 
--- 13. Re-create RLS policies for ratings
+-- 16. Re-create RLS policies for ratings
 -- Allow authenticated users to insert ratings
 CREATE POLICY "Allow authenticated users to insert ratings"
 ON public.ratings FOR INSERT TO authenticated WITH CHECK (
@@ -205,7 +225,7 @@ ON public.ratings FOR ALL TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'admin')
 );
 
--- 14. Re-create RLS policies for messages
+-- 17. Re-create RLS policies for messages
 -- Allow authenticated users to send messages
 CREATE POLICY "Allow authenticated users to send messages"
 ON public.messages FOR INSERT TO authenticated WITH CHECK (
