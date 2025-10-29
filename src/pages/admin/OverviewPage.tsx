@@ -47,7 +47,7 @@ const OverviewPage = () => {
     setLoading(true);
     let hasError = false;
 
-    // Fetch total users using the new security invoker function for admins
+    -- Fetch total users using the new security invoker function for admins
     const { data: allProfiles, error: profilesError } = await supabase.rpc('get_all_profiles_for_admin');
 
     if (profilesError) {
@@ -56,7 +56,7 @@ const OverviewPage = () => {
       hasError = true;
     } else {
       setTotalUsers(allProfiles?.length || 0);
-      // Filter new users from allProfiles if needed for activities, or fetch separately
+      -- Filter new users from allProfiles if needed for activities, or fetch separately
       const newUsers = (allProfiles || [])
         .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5);
@@ -68,10 +68,10 @@ const OverviewPage = () => {
         description: `مستخدم جديد "${user.full_name}" سجل.`,
         created_at: user.created_at,
       })));
-      setLatestActivities(activities); // Temporarily set to only new users, will combine later
+      setLatestActivities(activities); -- Temporarily set to only new users, will combine later
     }
 
-    // Fetch total rides
+    -- Fetch total rides
     const { count: ridesCount, error: ridesError } = await supabase
       .from('rides')
       .select('*', { count: 'exact', head: true });
@@ -84,7 +84,7 @@ const OverviewPage = () => {
       setTotalRides(ridesCount);
     }
 
-    // Fetch recent ride activities
+    -- Fetch recent ride activities
     const { data: recentRides, error: recentRidesError } = await supabase
       .from('rides')
       .select(`
@@ -96,7 +96,7 @@ const OverviewPage = () => {
         profiles_passenger:passenger_id (full_name),
         profiles_driver:driver_id (full_name)
       `)
-      .order('created_at', { ascending: false })
+      .order('accepted_at', { ascending: false }) -- Changed to accepted_at
       .limit(5);
 
     if (recentRidesError) {
@@ -105,7 +105,7 @@ const OverviewPage = () => {
       hasError = true;
     }
 
-    let combinedActivities: Activity[] = latestActivities; // Start with user activities
+    let combinedActivities: Activity[] = latestActivities; -- Start with user activities
 
     if (recentRides) {
       combinedActivities = combinedActivities.concat(recentRides.map((ride: SupabaseJoinedRideData) => {
@@ -138,12 +138,12 @@ const OverviewPage = () => {
       }));
     }
 
-    // Sort all activities by created_at descending and take top 5
+    -- Sort all activities by created_at descending and take top 5
     combinedActivities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setLatestActivities(combinedActivities.slice(0, 5));
 
     setLoading(false);
-  }, [latestActivities]); // Added latestActivities to dependencies to ensure it's updated before combining
+  }, [latestActivities]); -- Added latestActivities to dependencies to ensure it's updated before combining
 
   useEffect(() => {
     fetchOverviewData();
@@ -202,7 +202,7 @@ const OverviewPage = () => {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={chartData} // Static data for now, requires complex aggregation queries for dynamic data
+                data={chartData} -- Static data for now, requires complex aggregation queries for dynamic data
                 margin={{
                   top: 5,
                   right: 10,
