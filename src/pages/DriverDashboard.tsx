@@ -12,7 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import InteractiveMap from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
-import { Badge } from "@/components/ui/badge"; // Added Badge import
+import { Badge } from "@/components/ui/badge";
 
 interface Ride {
   id: string;

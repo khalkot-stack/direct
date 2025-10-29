@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import InteractiveMap from "@/components/InteractiveMap";
 import { Button } from "@/components/ui/button";
 import ChatDialog from "@/components/ChatDialog";
-import { Badge } from "@/components/ui/badge"; // Added Badge import
+import { Badge } from "@/components/ui/badge";
 
 interface Ride {
   id: string;
@@ -41,6 +41,7 @@ const PassengerTrackingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
@@ -196,7 +197,7 @@ const PassengerTrackingPage: React.FC = () => {
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
-          rideId={ride.id}
+          rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
           currentUserId={currentUserId}

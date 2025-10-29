@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History } from "lucide-react"; // Import History
+import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -216,7 +216,7 @@ const PassengerMyRidesPage: React.FC = () => {
 
       {rides.length === 0 ? (
         <EmptyState
-          icon={History}
+          icon={HistoryIcon}
           title="لا توجد رحلات سابقة"
           description="لم تطلب أي رحلات بعد. ابدأ بطلب رحلة جديدة!"
         />

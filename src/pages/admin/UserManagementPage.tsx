@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search, Edit, Trash2, Loader2, Users } from "lucide-react"; // Removed Ban, CheckCircle, Clock
+import { PlusCircle, Search, Edit, Trash2, Loader2, Users as UsersIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import UserFormDialog from "@/components/UserFormDialog";
@@ -82,7 +82,7 @@ const UserManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveUser = async (profileData: Profile) => {
+  const handleSaveUser = async (profileData: Omit<Profile, 'created_at'>) => {
     if (isNewUser) {
       // User creation is handled within UserFormDialog via supabase.auth.signUp
       // We just need to refetch users to show the new one
@@ -170,7 +170,7 @@ const UserManagementPage: React.FC = () => {
         </div>
       ) : filteredUsers.length === 0 ? (
         <EmptyState
-          icon={Users}
+          icon={UsersIcon}
           title="لا يوجد مستخدمون"
           description="لا توجد بيانات مستخدمين لعرضها. ابدأ بإضافة مستخدم جديد."
         />
