@@ -31,10 +31,26 @@ const DriverDashboard = () => {
       }
       setDriverId(user.id);
 
+      // Get user_type from app_metadata for role check
+      const userRole = user.app_metadata?.user_type;
+
+      if (userRole !== 'driver') {
+        toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم السائق.");
+        if (userRole === 'passenger') {
+          navigate('/passenger-dashboard');
+        } else if (userRole === 'admin') {
+          navigate('/admin-dashboard');
+        } else {
+          navigate('/');
+        }
+        setLoading(false);
+        return;
+      }
+
       let currentProfile;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, user_type, current_lat, current_lng') // Include new location columns
+        .select('full_name, avatar_url, current_lat, current_lng') // Only fetch relevant profile data
         .eq('id', user.id)
         .single();
 
@@ -46,11 +62,11 @@ const DriverDashboard = () => {
             id: user.id,
             full_name: user.user_metadata.full_name || 'السائق',
             email: user.email,
-            user_type: user.user_metadata.user_type || 'driver', // Default to driver if not explicitly set in metadata
+            user_type: user.app_metadata.user_type || 'driver', // Use app_metadata for user_type
             phone_number: user.user_metadata.phone_number || null,
             status: 'active', // Default status
           })
-          .select('full_name, avatar_url, user_type, current_lat, current_lng') // Include new location columns
+          .select('full_name, avatar_url, current_lat, current_lng')
           .single();
 
         if (insertError) {
@@ -76,21 +92,6 @@ const DriverDashboard = () => {
       if (currentProfile) {
         setDriverName(currentProfile.full_name || 'السائق');
         setDriverAvatar(currentProfile.avatar_url || '');
-
-        // Double-check user_type from the profile table
-        if (currentProfile.user_type !== 'driver') {
-          toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم السائق.");
-          // Redirect based on actual role or to home
-          if (currentProfile.user_type === 'passenger') {
-            navigate('/passenger-dashboard');
-          } else if (currentProfile.user_type === 'admin') {
-            navigate('/admin-dashboard');
-          } else {
-            navigate('/');
-          }
-          setLoading(false);
-          return;
-        }
       }
       setLoading(false);
     };
@@ -125,7 +126,7 @@ const DriverDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل لوحة تحكم السائق...</span>
       </div>
@@ -135,14 +136,14 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 p-4 sm:p-6 pb-20">
       <div className="max-w-4xl mx-auto">
-        <div className="px-6 pt-0 pb-0"> {/* Adjusted padding */}
+        <div className="px-6 pt-0 pb-0">
           <PageHeader
             title={`مرحباً، ${driverName}!`}
             description="لوحة تحكم السائق"
           />
         </div>
 
-        <div className="mb-8 flex flex-col sm:flex-row gap-4 p-6 pt-0"> {/* Adjusted padding */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-4 p-6 pt-0">
             <Link to="/driver-dashboard/find-rides" className="flex-1 transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground text-lg px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <Search className="h-5 w-5" />
@@ -167,7 +168,7 @@ const DriverDashboard = () => {
             </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-6 pt-0"> {/* Adjusted padding */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-6 pt-0">
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">الرحلات المتاحة</CardTitle>
@@ -200,8 +201,8 @@ const DriverDashboard = () => {
           </Card>
         </div>
 
-        <h2 className="text-xl font-semibold mb-4 px-6 pt-0">إجراءات سريعة</h2> {/* Adjusted padding */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 px-6 pt-0"> {/* Adjusted padding */}
+        <h2 className="text-xl font-semibold mb-4 px-6 pt-0">إجراءات سريعة</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 px-6 pt-0">
           <Link to="/driver-dashboard/accepted-rides" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-gray-100 dark:hover:bg-gray-800">
               <History className="h-8 w-8 mb-2 text-blue-500" />

@@ -26,10 +26,26 @@ const PassengerDashboard = () => {
         return;
       }
 
+      // Get user_type from app_metadata for role check
+      const userRole = user.app_metadata?.user_type;
+
+      if (userRole !== 'passenger') {
+        toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم الراكب.");
+        if (userRole === 'driver') {
+          navigate('/driver-dashboard');
+        } else if (userRole === 'admin') {
+          navigate('/admin-dashboard');
+        } else {
+          navigate('/');
+        }
+        setLoading(false);
+        return;
+      }
+
       let currentProfile;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, user_type')
+        .select('full_name') // Only fetch full_name, user_type is from app_metadata
         .eq('id', user.id)
         .single();
 
@@ -41,11 +57,11 @@ const PassengerDashboard = () => {
             id: user.id,
             full_name: user.user_metadata.full_name || 'راكب',
             email: user.email,
-            user_type: user.user_metadata.user_type || 'passenger', // Default to passenger
+            user_type: user.app_metadata.user_type || 'passenger', // Use app_metadata for user_type
             phone_number: user.user_metadata.phone_number || null,
             status: 'active', // Default status
           })
-          .select('full_name, user_type')
+          .select('full_name')
           .single();
 
         if (insertError) {
@@ -70,20 +86,6 @@ const PassengerDashboard = () => {
 
       if (currentProfile) {
         setUserName(currentProfile.full_name || "راكب");
-        // Double-check user_type from the profile table
-        if (currentProfile.user_type !== 'passenger') {
-          toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم الراكب.");
-          // Redirect based on actual role or to home
-          if (currentProfile.user_type === 'driver') {
-            navigate('/driver-dashboard');
-          } else if (currentProfile.user_type === 'admin') {
-            navigate('/admin-dashboard');
-          } else {
-            navigate('/');
-          }
-          setLoading(false);
-          return;
-        }
       }
       setLoading(false);
     };

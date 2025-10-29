@@ -17,19 +17,8 @@ const BottomNavigationBar = () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching user role:", error);
-          toast.error("فشل جلب دور المستخدم.");
-          setUserRole(null);
-        } else if (profile) {
-          setUserRole(profile.user_type);
-        }
+        // Get user_type directly from app_metadata
+        setUserRole(user.app_metadata?.user_type as string || null);
       } else {
         setUserRole(null);
       }
@@ -40,7 +29,7 @@ const BottomNavigationBar = () => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        fetchUserRole();
+        setUserRole(session.user.app_metadata?.user_type as string || null);
       } else {
         setUserRole(null);
       }

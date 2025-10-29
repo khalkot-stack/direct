@@ -50,15 +50,15 @@ export default function ProfileSettingsPage() {
 
       if (userError || !user) {
         toast.error("الرجاء تسجيل الدخول لعرض ملفك الشخصي.");
-        // Navigation is handled by ProtectedRoute, so no need to navigate here
         return;
       }
       setCurrentUserId(user.id);
       setUserEmail(user.email); // Set the user's email
+      setUserType(user.app_metadata?.user_type as Profile["user_type"] || null); // Initialize userType from app_metadata
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`full_name, username, website, avatar_url, user_type, car_model, car_color, license_plate, phone_number`) // Select user_type and phone_number
+        .select(`full_name, username, website, avatar_url, car_model, car_color, license_plate, phone_number`) // Removed user_type from select
         .eq("id", user.id)
         .single();
 
@@ -71,7 +71,6 @@ export default function ProfileSettingsPage() {
         setUsername(data.username);
         setWebsite(data.website);
         setAvatarUrl(data.avatar_url);
-        setUserType(data.user_type); // Set userType
         setCarModel(data.car_model);
         setCarColor(data.car_color);
         setLicensePlate(data.license_plate);
@@ -118,20 +117,33 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      const { error } = await supabase.from("profiles").upsert({
+      // Update profiles table
+      const { error: profileError } = await supabase.from("profiles").upsert({
         id: currentUserId,
         full_name: fullname,
         username,
         website,
         avatar_url,
-        user_type, // Update user_type
+        user_type, // Update user_type in profiles table
         car_model: user_type === "driver" ? car_model : null, // Clear car details if not a driver
         car_color: user_type === "driver" ? car_color : null,
         license_plate: user_type === "driver" ? license_plate : null,
         phone_number, // Update phone_number
         updated_at: new Date().toISOString(),
       });
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Also update app_metadata in auth.users if user_type changed
+      const { data: { user }, error: authUserError } = await supabase.auth.getUser();
+      if (authUserError) throw authUserError;
+
+      if (user?.app_metadata?.user_type !== user_type) {
+        const { error: updateAuthError } = await supabase.auth.updateUser({
+          data: { user_type: user_type }
+        });
+        if (updateAuthError) throw updateAuthError;
+      }
+
       toast.success("تم تحديث الملف الشخصي بنجاح!");
     } catch (error) {
       toast.error("فشل تحديث الملف الشخصي!");
@@ -171,9 +183,9 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Removed items-center justify-center */}
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
-        <div className="px-6 pt-0"> {/* Adjusted padding */}
+        <div className="px-6 pt-0">
           <PageHeader
             title="إعدادات الملف الشخصي"
             description="تحديث معلومات ملفك الشخصي"

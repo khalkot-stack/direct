@@ -19,19 +19,8 @@ const AppSettingsPage = () => {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch user_type from profiles table
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching user role from profile:", error);
-          setUserRole(null);
-        } else if (profile) {
-          setUserRole(profile.user_type);
-        }
+        // Get user_type directly from app_metadata
+        setUserRole(user.app_metadata?.user_type as string || null);
       }
       setLoading(false);
     };
@@ -55,9 +44,9 @@ const AppSettingsPage = () => {
   const backPath = userRole === "passenger" ? "/passenger-dashboard" : userRole === "driver" ? "/driver-dashboard" : "/";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Changed flex items-center justify-center to flex-col */}
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
-        <div className="px-6 pt-0"> {/* Adjusted padding */}
+        <div className="px-6 pt-0">
           <PageHeader
             title="إعدادات التطبيق"
             description="إدارة تفضيلات التطبيق والإشعارات والبلاغات"
