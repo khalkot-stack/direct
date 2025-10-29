@@ -8,7 +8,7 @@ ALTER TABLE IF EXISTS public.settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.ratings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.messages DISABLE ROW LEVEL SECURITY;
 
--- Drop all RLS policies
+-- Drop all RLS policies (order doesn't strictly matter here as tables will be dropped)
 DROP POLICY IF EXISTS "Allow self-read access to profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Allow self-insert access to profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Allow self-update access to profiles" ON public.profiles;
@@ -44,19 +44,20 @@ DROP POLICY IF EXISTS "Allow authenticated users to insert messages" ON public.m
 DROP POLICY IF EXISTS "Allow authenticated users to update their own messages" ON public.messages;
 DROP POLICY IF EXISTS "Allow authenticated users to delete their own messages" ON public.messages;
 
--- Drop functions
-DROP FUNCTION IF EXISTS public.get_all_profiles_for_admin() CASCADE;
+-- Drop functions (using CASCADE to drop dependent objects like triggers)
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.get_all_profiles_for_admin() CASCADE;
 DROP FUNCTION IF EXISTS public.get_user_type(uuid) CASCADE; -- Ensure this is dropped if it exists
 
--- Drop tables
-DROP TABLE IF EXISTS public.profiles CASCADE;
-DROP TABLE IF EXISTS public.rides CASCADE;
-DROP TABLE IF EXISTS public.settings CASCADE;
+-- Drop tables (using CASCADE to drop dependent objects like foreign keys)
 DROP TABLE IF EXISTS public.ratings CASCADE;
 DROP TABLE IF EXISTS public.messages CASCADE;
+DROP TABLE IF EXISTS public.rides CASCADE;
+DROP TABLE IF EXISTS public.settings CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- Drop types (enums)
+
+-- Drop types (enums) - now after tables that depend on them
 DROP TYPE IF EXISTS public.user_status_enum CASCADE;
 DROP TYPE IF EXISTS public.user_type_enum CASCADE;
 DROP TYPE IF EXISTS public.ride_status_enum CASCADE;
