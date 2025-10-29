@@ -8,9 +8,12 @@ DROP POLICY IF EXISTS "Admins can insert profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Allow self-update access to profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can delete profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Allow self-profile view" ON public.profiles; -- Ensure all possible policies are dropped
+DROP POLICY IF EXISTS "Allow self-profile view" ON public.profiles;
 DROP POLICY IF EXISTS "Allow driver to view passenger profile" ON public.profiles;
 DROP POLICY IF EXISTS "Allow passenger to view driver profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles; -- Policy name from error
+DROP POLICY IF EXISTS "Allow drivers to view passenger profiles for their rides" ON public.profiles; -- Policy name from error
+DROP POLICY IF EXISTS "Allow passengers to view driver profiles for their accepted rid" ON public.profiles; -- Policy name from error
 
 -- Drop all existing RLS policies on the rides table
 DROP POLICY IF EXISTS "Allow passengers to read their own rides" ON public.rides;
@@ -25,16 +28,17 @@ DROP POLICY IF EXISTS "Admins can delete rides" ON public.rides;
 DROP POLICY IF EXISTS "Allow passengers to cancel their pending/accepted rides" ON public.rides;
 DROP POLICY IF EXISTS "Allow drivers to delete completed rides" ON public.rides;
 DROP POLICY IF EXISTS "Allow passengers to delete completed/cancelled rides" ON public.rides;
-DROP POLICY IF EXISTS "Drivers can view pending rides" ON public.rides; -- Specific policy from error
-DROP POLICY IF EXISTS "Drivers can accept pending rides" ON public.rides; -- Specific policy from error
-DROP POLICY IF EXISTS "Drivers can view and update their accepted rides" ON public.rides; -- Specific policy from error
-DROP POLICY IF EXISTS "Drivers can delete their completed/cancelled rides" ON public.rides; -- Specific policy from error
+DROP POLICY IF EXISTS "Drivers can view pending rides" ON public.rides;
+DROP POLICY IF EXISTS "Drivers can accept pending rides" ON public.rides;
+DROP POLICY IF EXISTS "Drivers can view and update their accepted rides" ON public.rides;
+DROP POLICY IF EXISTS "Drivers can delete their completed/cancelled rides" ON public.rides;
+DROP POLICY IF EXISTS "Passengers can delete their completed/cancelled rides" ON public.rides; -- Policy name from error
 
 -- Drop all existing RLS policies on the settings table
 DROP POLICY IF EXISTS "Admins can view settings" ON public.settings;
 DROP POLICY IF EXISTS "Admins can insert settings" ON public.settings;
 DROP POLICY IF EXISTS "Admins can update settings" ON public.settings;
-DROP POLICY IF EXISTS "Allow admin to manage settings" ON public.settings; -- Ensure all possible policies are dropped
+DROP POLICY IF EXISTS "Allow admin to manage settings" ON public.settings;
 
 -- Drop all existing RLS policies on the ratings table
 DROP POLICY IF EXISTS "Allow authenticated users to view ratings" ON public.ratings;
@@ -51,8 +55,8 @@ DROP POLICY IF EXISTS "Allow authenticated users to update their own messages" O
 DROP POLICY IF EXISTS "Allow authenticated users to delete their own messages" ON public.messages;
 
 
--- Drop the problematic get_user_type function
-DROP FUNCTION IF EXISTS public.get_user_type(uuid);
+-- Drop the problematic get_user_type function with CASCADE
+DROP FUNCTION IF EXISTS public.get_user_type(uuid) CASCADE;
 
 -- Ensure RLS is enabled on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
