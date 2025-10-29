@@ -29,19 +29,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className }) => {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('profiles')
       .select('full_name, avatar_url')
       .eq('id', user.id)
       .single();
 
-    if (error) {
+    if (error && status !== 406) { // 406 means no rows found, which is fine if profile doesn't exist yet
       console.error("Error fetching user profile for header:", error);
       setUserName(null);
       setUserAvatar(null);
     } else if (data) {
       setUserName(data.full_name);
       setUserAvatar(data.avatar_url);
+    } else { // No data found (status 406) or other non-critical error
+      setUserName(user.email?.split('@')[0] || 'مستخدم'); // Fallback to email part or 'مستخدم'
+      setUserAvatar(null);
     }
     setLoading(false);
   }, []);
