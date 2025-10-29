@@ -78,14 +78,22 @@ CREATE TRIGGER on_auth_user_created
 BEFORE INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_metadata();
 
--- 12. Re-enable RLS on all tables
+-- 12. Update app_metadata for existing users to include user_type from raw_user_meta_data
+-- This step is crucial for existing users who registered before the trigger was in place.
+UPDATE auth.users
+SET app_metadata = app_metadata || jsonb_build_object('user_type', raw_user_meta_data->>'user_type')
+WHERE
+  raw_user_meta_data->>'user_type' IS NOT NULL
+  AND (app_metadata->>'user_type' IS NULL OR app_metadata->>'user_type' = '');
+
+-- 13. Re-enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
--- 13. Re-create essential RLS policies for profiles (self-access, admin, and cross-user)
+-- 14. Re-create essential RLS policies for profiles (self-access, admin, and cross-user)
 -- Self-access policies (DO NOT use get_user_type here)
 CREATE POLICY "Authenticated users can view their own profile"
 ON public.profiles FOR SELECT TO authenticated USING (
@@ -133,7 +141,7 @@ ON public.profiles FOR SELECT TO authenticated USING (
   ))
 );
 
--- 14. Re-create RLS policies for rides
+-- 15. Re-create RLS policies for rides
 -- Admin can manage all rides
 CREATE POLICY "Admins can manage all rides"
 ON public.rides FOR ALL TO authenticated USING (
@@ -182,7 +190,7 @@ ON public.rides FOR DELETE TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'passenger' AND passenger_id = auth.uid() AND status IN ('completed', 'cancelled'))
 );
 
--- 15. Re-create RLS policies for settings
+-- 16. Re-create RLS policies for settings
 -- Admins can view settings
 CREATE POLICY "Admins can view settings"
 ON public.settings FOR SELECT TO authenticated USING (
@@ -203,7 +211,7 @@ ON public.settings FOR UPDATE TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'admin')
 );
 
--- 16. Re-create RLS policies for ratings
+-- 17. Re-create RLS policies for ratings
 -- Allow authenticated users to insert ratings
 CREATE POLICY "Allow authenticated users to insert ratings"
 ON public.ratings FOR INSERT TO authenticated WITH CHECK (
@@ -225,7 +233,7 @@ ON public.ratings FOR ALL TO authenticated USING (
   (public.get_user_type(auth.uid()) = 'admin')
 );
 
--- 17. Re-create RLS policies for messages
+-- 18. Re-create RLS policies for messages
 -- Allow authenticated users to send messages
 CREATE POLICY "Allow authenticated users to send messages"
 ON public.messages FOR INSERT TO authenticated WITH CHECK (
