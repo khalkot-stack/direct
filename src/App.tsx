@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
@@ -42,15 +42,12 @@ import AdminSettingsPage from "@/pages/admin/SettingsPage";
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null); // Keep userRole for conditional rendering/redirection logic
 
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession(); // Removed unused 'error'
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setUserRole(session.user?.user_metadata?.user_type || null);
-      } else {
-        setUserRole(null);
+        // No need to set userRole state here, ProtectedRoute handles it
       }
       setInitialLoading(false);
     };
@@ -59,9 +56,7 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUserRole(session.user.user_metadata?.user_type || null);
-      } else {
-        setUserRole(null);
+        // No need to set userRole state here
       }
     });
 
