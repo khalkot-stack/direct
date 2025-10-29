@@ -66,30 +66,12 @@ ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
 --
--- RLS Policies for public.profiles (Simplified to avoid recursion)
+-- RLS Policies for public.profiles (Simplified SELECT policies to avoid recursion)
 --
 
 -- Allow users to read their own profile
 CREATE POLICY "Allow self-read access to profiles" ON public.profiles
 FOR SELECT USING (auth.uid() = id);
-
--- Allow drivers to read passenger profiles for their rides
-CREATE POLICY "Drivers can read passenger profiles for their rides" ON public.profiles
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.rides
-    WHERE (rides.driver_id = auth.uid() AND rides.passenger_id = profiles.id)
-  )
-);
-
--- Allow passengers to read driver profiles for their rides
-CREATE POLICY "Passengers can read driver profiles for their rides" ON public.profiles
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.rides
-    WHERE (rides.passenger_id = auth.uid() AND rides.driver_id = profiles.id)
-  )
-);
 
 -- Allow users to insert their own profile on signup
 CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
@@ -113,6 +95,9 @@ FOR DELETE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE
 
 -- IMPORTANT: The "Admins can read all profiles" policy for SELECT is intentionally OMITTED from here.
 -- Admin SELECT access to profiles will be handled by the get_all_profiles_for_admin function.
+-- The policies for drivers/passengers to read *other* profiles are also removed from here.
+-- Instead, when a driver/passenger needs to see another user's profile (e.g., on a ride details page),
+-- the query should join `rides` and rely on the RLS of `rides` to filter which `profiles` can be seen.
 
 --
 -- RLS Policies for public.rides
