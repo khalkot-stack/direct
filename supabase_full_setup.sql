@@ -1,147 +1,242 @@
--- 1. Drop existing triggers, functions, and tables (in reverse dependency order to avoid errors)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE;
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-DROP FUNCTION IF EXISTS public.set_updated_at() CASCADE;
-DROP FUNCTION IF EXISTS public.get_user_type() CASCADE;
-DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
+-- Set search path to public
+SET search_path = public;
 
-DROP TABLE IF EXISTS public.settings CASCADE;
-DROP TABLE IF EXISTS public.rides CASCADE;
-DROP TABLE IF EXISTS public.profiles CASCADE;
+-- Create ENUM types
+CREATE TYPE public.user_type_enum AS ENUM ('passenger', 'driver', 'admin');
+CREATE TYPE public.user_status_enum AS ENUM ('active', 'suspended', 'banned');
+CREATE TYPE public.ride_status_enum AS ENUM ('pending', 'accepted', 'completed', 'cancelled');
 
--- 2. Create Helper Functions and Triggers
--- Helper function to check if current user is admin
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean AS $$
-  SELECT auth.jwt() -> 'app_metadata' ->> 'user_type' = 'admin';
-$$ LANGUAGE sql STABLE;
+-- Create tables
 
--- Helper function to get current user's type
-CREATE OR REPLACE FUNCTION public.get_user_type() -- Corrected: Removed duplicated 'OR'
-RETURNS text AS $$
-  SELECT auth.jwt() -> 'app_metadata' ->> 'user_type';
-$$ LANGUAGE sql STABLE;
-
--- Function to update the updated_at column automatically
-CREATE OR REPLACE FUNCTION public.set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create a function to create a profile for new users and update app_metadata
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-DECLARE
-  _full_name text;
-  _phone_number text;
-  _user_type text;
-BEGIN
-  -- Attempt to get full_name, phone_number, and user_type from new.raw_user_meta_data
-  -- Coalesce with NULL if the key doesn't exist or is null
-  _full_name := NEW.raw_user_meta_data->>'full_name';
-  _phone_number := NEW.raw_user_meta_data->>'phone_number';
-  _user_type := COALESCE(NEW.raw_user_meta_data->>'user_type', 'passenger'); -- Default to 'passenger'
-
-  INSERT INTO public.profiles (id, full_name, email, phone_number, user_type)
-  VALUES (NEW.id, _full_name, NEW.email, _phone_number, _user_type);
-
-  -- IMPORTANT: Update app_metadata for RLS checks
-  UPDATE auth.users
-  SET raw_app_meta_data = raw_app_meta_data || jsonb_build_object('user_type', _user_type)
-  WHERE id = NEW.id;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create a trigger to call the function when a new user is created in auth.users
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- 3. Create profiles table and RLS policies
+-- profiles table
 CREATE TABLE public.profiles (
-    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+    id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL PRIMARY KEY,
     full_name text,
-    email text UNIQUE,
+    username text UNIQUE,
+    website text,
+    avatar_url text,
+    user_type user_type_enum DEFAULT 'passenger'::public.user_type_enum NOT NULL,
+    car_model text,
+    car_color text,
+    license_plate text,
     phone_number text,
-    user_type text CHECK (user_type IN ('passenger', 'driver', 'admin')) NOT NULL DEFAULT 'passenger',
-    status text CHECK (status IN ('active', 'suspended', 'banned')) NOT NULL DEFAULT 'active',
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    status user_status_enum DEFAULT 'active'::public.user_status_enum NOT NULL,
+    current_lat numeric,
+    current_lng numeric,
+    updated_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
--- Set up Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
--- Create RLS policies
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT USING (public.is_admin());
-CREATE POLICY "Admins can insert profiles" ON public.profiles FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update any profile" ON public.profiles FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admins can delete any profile" ON public.profiles FOR DELETE USING (public.is_admin());
--- Create an index on user_type for faster lookups
-CREATE INDEX profiles_user_type_idx ON public.profiles (user_type);
--- Create an index on email for faster lookups
-CREATE INDEX profiles_email_idx ON public.profiles (email);
--- Trigger to update `updated_at` column
-CREATE OR REPLACE TRIGGER set_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 4. Create rides table
+-- rides table
 CREATE TABLE public.rides (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    passenger_id uuid NOT NULL,
-    driver_id uuid,
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    passenger_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    driver_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
     pickup_location text NOT NULL,
+    pickup_lat numeric NOT NULL,
+    pickup_lng numeric NOT NULL,
     destination text NOT NULL,
-    passengers_count integer NOT NULL DEFAULT 1 CHECK (passengers_count >= 1),
-    status text CHECK (status IN ('pending', 'accepted', 'completed', 'cancelled')) NOT NULL DEFAULT 'pending',
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    destination_lat numeric NOT NULL,
+    destination_lng numeric NOT NULL,
+    passengers_count integer DEFAULT 1 NOT NULL,
+    status ride_status_enum DEFAULT 'pending'::public.ride_status_enum NOT NULL,
+    price numeric,
+    requested_at timestamp with time zone DEFAULT now() NOT NULL,
+    accepted_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    cancelled_at timestamp with time zone,
+    cancellation_reason text,
+    ride_date date,
+    ride_time time with time zone,
+    driver_notes text,
+    passenger_notes text
 );
--- Set up Row Level Security (RLS)
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
--- Create an index on passenger_id for faster lookups
-CREATE INDEX rides_passenger_id_idx ON public.rides (passenger_id);
--- Create an index on driver_id for faster lookups
-CREATE INDEX rides_driver_id_idx ON public.rides (driver_id);
--- Create an index on status for faster lookups
-CREATE INDEX rides_status_idx ON public.rides (status);
--- Trigger to update `updated_at` column
-CREATE OR REPLACE TRIGGER set_rides_updated_at BEFORE UPDATE ON public.rides FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 5. Add foreign keys and RLS policies for rides table
-ALTER TABLE public.rides ADD CONSTRAINT rides_passenger_id_fkey FOREIGN KEY (passenger_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
-ALTER TABLE public.rides ADD CONSTRAINT rides_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
--- Create RLS policies for rides table
-CREATE POLICY "Passengers can view their own rides" ON public.rides FOR SELECT USING (auth.uid() = passenger_id AND public.get_user_type() = 'passenger');
-CREATE POLICY "Passengers can insert rides" ON public.rides FOR INSERT WITH CHECK (auth.uid() = passenger_id AND public.get_user_type() = 'passenger');
-CREATE POLICY "Passengers can update their pending rides" ON public.rides FOR UPDATE USING (auth.uid() = passenger_id AND status = 'pending' AND public.get_user_type() = 'passenger') WITH CHECK (auth.uid() = passenger_id AND public.get_user_type() = 'passenger');
-CREATE POLICY "Drivers can view relevant rides" ON public.rides FOR SELECT USING (public.get_user_type() = 'driver' AND (status = 'pending' OR driver_id = auth.uid()));
-CREATE POLICY "Drivers can accept pending rides" ON public.rides FOR UPDATE USING (public.get_user_type() = 'driver' AND status = 'pending' AND driver_id IS NULL) WITH CHECK (driver_id = auth.uid() AND status = 'accepted');
-CREATE POLICY "Drivers can complete accepted rides" ON public.rides FOR UPDATE USING (public.get_user_type() = 'driver' AND driver_id = auth.uid() AND status = 'accepted') WITH CHECK (driver_id = auth.uid() AND status = 'completed');
-CREATE POLICY "Admins can view all rides" ON public.rides FOR SELECT USING (public.is_admin());
-CREATE POLICY "Admins can insert rides" ON public.rides FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update any ride" ON public.rides FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admins can delete any ride" ON public.rides FOR DELETE USING (public.is_admin());
-
--- 6. Create settings table and RLS policies
+-- settings table
 CREATE TABLE public.settings (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    commission_rate numeric(5, 2) NOT NULL DEFAULT 10.00 CHECK (commission_rate >= 0 AND commission_rate <= 100),
-    notifications_enabled boolean NOT NULL DEFAULT TRUE,
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    commission_rate numeric DEFAULT 10.0 NOT NULL,
+    notifications_enabled boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone
 );
--- Set up Row Level Security (RLS)
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
--- Create RLS policies
-CREATE POLICY "Admins can view settings" ON public.settings FOR SELECT USING (public.is_admin());
-CREATE POLICY "Admins can insert settings" ON public.settings FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update settings" ON public.settings FOR UPDATE USING (public.is_admin());
--- Trigger to update `updated_at` column
-CREATE OR REPLACE TRIGGER set_settings_updated_at BEFORE UPDATE ON public.settings FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
--- Insert default settings if the table is empty
-INSERT INTO public.settings (commission_rate, notifications_enabled) SELECT 10.00, TRUE WHERE NOT EXISTS (SELECT 1 FROM public.settings);
+
+-- ratings table
+CREATE TABLE public.ratings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    ride_id uuid REFERENCES public.rides(id) ON DELETE CASCADE NOT NULL,
+    rater_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    rated_user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
+
+-- messages table
+CREATE TABLE public.messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    ride_id uuid REFERENCES public.rides(id) ON DELETE CASCADE NOT NULL,
+    sender_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    receiver_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+
+--
+-- Functions and Triggers
+--
+
+-- Function to handle new user creation in auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, user_type, phone_number)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.email,
+    COALESCE((NEW.raw_user_meta_data->>'user_type')::public.user_type_enum, 'passenger'),
+    NEW.raw_user_meta_data->>'phone_number'
+  );
+  RETURN NEW;
+END;
+$$;
+
+-- Trigger to call handle_new_user() on auth.users insert
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Function for admin to get all profiles (bypasses RLS)
+CREATE OR REPLACE FUNCTION public.get_all_profiles_for_admin()
+RETURNS SETOF public.profiles
+LANGUAGE plpgsql
+SECURITY INVOKER
+AS $$
+DECLARE
+  current_user_role text;
+BEGIN
+  SELECT raw_user_meta_data->>'user_type' INTO current_user_role
+  FROM auth.users
+  WHERE id = auth.uid();
+
+  IF current_user_role = 'admin' THEN
+    SET LOCAL row_level_security.active = false;
+    RETURN QUERY SELECT * FROM public.profiles;
+  ELSE
+    RAISE EXCEPTION 'Access denied: Only admins can call this function.';
+  END IF;
+END;
+$$;
+
+--
+-- RLS Policies
+--
+
+-- Policies for public.profiles
+CREATE POLICY "Allow self-read access to profiles" ON public.profiles
+FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
+FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Allow self-update access to profiles" ON public.profiles
+FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Admins can insert profiles" ON public.profiles
+FOR INSERT WITH CHECK ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Admins can update all profiles" ON public.profiles
+FOR UPDATE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Admins can delete profiles" ON public.profiles
+FOR DELETE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+-- Policies for public.rides
+CREATE POLICY "Allow passengers to read their own rides" ON public.rides
+FOR SELECT USING (passenger_id = auth.uid());
+
+CREATE POLICY "Allow drivers to read rides assigned to them" ON public.rides
+FOR SELECT USING (driver_id = auth.uid());
+
+CREATE POLICY "Admins can read all rides" ON public.rides
+FOR SELECT USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Allow passengers to insert rides" ON public.rides
+FOR INSERT WITH CHECK (passenger_id = auth.uid());
+
+CREATE POLICY "Admins can insert rides" ON public.rides
+FOR INSERT WITH CHECK ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Allow drivers to update rides assigned to them" ON public.rides
+FOR UPDATE USING (driver_id = auth.uid())
+WITH CHECK (driver_id = auth.uid());
+
+CREATE POLICY "Allow passengers to cancel their pending/accepted rides" ON public.rides
+FOR UPDATE USING (passenger_id = auth.uid() AND status IN ('pending', 'accepted'))
+WITH CHECK (passenger_id = auth.uid() AND status = 'cancelled');
+
+CREATE POLICY "Admins can update rides" ON public.rides
+FOR UPDATE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Allow drivers to delete completed rides" ON public.rides
+FOR DELETE USING (driver_id = auth.uid() AND status = 'completed');
+
+CREATE POLICY "Allow passengers to delete completed/cancelled rides" ON public.rides
+FOR DELETE USING (passenger_id = auth.uid() AND status IN ('completed', 'cancelled'));
+
+CREATE POLICY "Admins can delete rides" ON public.rides
+FOR DELETE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+-- Policies for public.settings
+CREATE POLICY "Admins can view settings" ON public.settings
+FOR SELECT USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Admins can insert settings" ON public.settings
+FOR INSERT WITH CHECK ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+CREATE POLICY "Admins can update settings" ON public.settings
+FOR UPDATE USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+-- Policies for public.ratings
+CREATE POLICY "Allow authenticated users to view ratings" ON public.ratings
+FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Allow authenticated users to insert ratings" ON public.ratings
+FOR INSERT WITH CHECK (rater_id = auth.uid());
+
+CREATE POLICY "Allow authenticated users to update their own ratings" ON public.ratings
+FOR UPDATE USING (rater_id = auth.uid());
+
+CREATE POLICY "Allow authenticated users to delete their own ratings" ON public.ratings
+FOR DELETE USING (rater_id = auth.uid());
+
+CREATE POLICY "Admins can manage all ratings" ON public.ratings
+FOR ALL USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+-- Policies for public.messages
+CREATE POLICY "Allow authenticated users to view messages" ON public.messages
+FOR SELECT USING (sender_id = auth.uid() OR receiver_id = auth.uid());
+
+CREATE POLICY "Allow authenticated users to insert messages" ON public.messages
+FOR INSERT WITH CHECK (sender_id = auth.uid());
+
+CREATE POLICY "Allow authenticated users to update their own messages" ON public.messages
+FOR UPDATE USING (sender_id = auth.uid());
+
+CREATE POLICY "Allow authenticated users to delete their own messages" ON public.messages
+FOR DELETE USING (sender_id = auth.uid());
+
+CREATE POLICY "Admins can manage all messages" ON public.messages
+FOR ALL USING ((SELECT raw_user_meta_data->>'user_type' FROM auth.users WHERE id = auth.uid()) = 'admin');
+
+-- Reset search path
+RESET search_path;
