@@ -145,7 +145,7 @@ const UserManagementPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين في النظام." />
+      <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين في النظام." showBackButton={false} />
 
       <div className="flex items-center justify-between mb-4">
         <div className="relative w-full max-w-sm">

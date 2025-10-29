@@ -86,7 +86,7 @@ const AdminSettingsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="إعدادات النظام" description="إدارة الإعدادات العامة للتطبيق." />
+      <PageHeader title="إعدادات النظام" description="إدارة الإعدادات العامة للتطبيق." showBackButton={false} />
 
       <Card className="mb-6">
         <CardHeader>

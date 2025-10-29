@@ -224,7 +224,7 @@ const RideManagementPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="إدارة الرحلات" description="عرض وإدارة جميع الرحلات في النظام." />
+      <PageHeader title="إدارة الرحلات" description="عرض وإدارة جميع الرحلات في النظام." showBackButton={false} />
 
       <div className="flex items-center justify-between mb-4">
         <div className="relative w-full max-w-sm">
@@ -328,9 +328,9 @@ const RideManagementPage: React.FC = () => {
                                   <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
                                   جاري الحذف...
                                 </>
-                              ) : (
+                            ) : (
                                 "حذف"
-                              )}
+                            )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

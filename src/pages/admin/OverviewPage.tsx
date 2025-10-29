@@ -135,7 +135,7 @@ const OverviewPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="نظرة عامة على لوحة المدير" description="عرض ملخص سريع لأداء النظام." />
+      <PageHeader title="نظرة عامة على لوحة المدير" description="عرض ملخص سريع لأداء النظام." showBackButton={false} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="إجمالي المستخدمين" value={totalUsers !== null ? totalUsers : "N/A"} icon={Users} color="text-blue-500" description="+20.1% من الشهر الماضي" />
