@@ -92,7 +92,7 @@ const OverviewPage = () => {
         pickup_location,
         destination,
         status,
-        accepted_at,  // Use accepted_at instead of created_at
+        accepted_at,
         profiles_passenger:passenger_id (full_name),
         profiles_driver:driver_id (full_name)
       `)
