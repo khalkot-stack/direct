@@ -219,45 +219,23 @@ const RideManagementPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>معرف الرحلة</TableHead>
-                <TableHead>الراكب</TableHead>
-                <TableHead>السائق</TableHead>
-                <TableHead>الانطلاق</TableHead>
-                <TableHead>الوجهة</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>سبب الإلغاء</TableHead> {/* New column */}
-                <TableHead className="text-right">الإجراءات</TableHead>
+                <TableHead>معرف الرحلة</TableHead><TableHead>الراكب</TableHead><TableHead>السائق</TableHead><TableHead>الانطلاق</TableHead><TableHead>الوجهة</TableHead><TableHead>الحالة</TableHead><TableHead>سبب الإلغاء</TableHead><TableHead className="text-right">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRides.length > 0 ? (
                 filteredRides.map((ride) => (
                   <TableRow key={ride.id}>
-                    <TableCell>{ride.id.substring(0, 8)}...</TableCell>
-                    <TableCell>{ride.passenger_name}</TableCell>
-                    <TableCell>{ride.driver_name}</TableCell>
-                    <TableCell>{ride.pickup_location}</TableCell>
-                    <TableCell>{ride.destination}</TableCell>
-                    <TableCell>{ride.status}</TableCell>
-                    <TableCell>{ride.cancellation_reason || 'لا يوجد'}</TableCell> {/* Display cancellation reason */}
-                    <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(ride)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">
-                        تعديل
-                      </Button>
+                    <TableCell>{ride.id.substring(0, 8)}...</TableCell><TableCell>{ride.passenger_name}</TableCell><TableCell>{ride.driver_name}</TableCell><TableCell>{ride.pickup_location}</TableCell><TableCell>{ride.destination}</TableCell><TableCell>{ride.status}</TableCell><TableCell>{ride.cancellation_reason || 'لا يوجد'}</TableCell><TableCell className="text-right space-x-2 rtl:space-x-reverse">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(ride)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">تعديل</Button>
                       {ride.status !== "completed" && ride.status !== "cancelled" && (
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(ride.id)}>
-                          إلغاء
-                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(ride.id)}>إلغاء</Button>
                       )}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center"> {/* Updated colspan */}
-                    لا توجد نتائج.
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={8} className="h-24 text-center">لا توجد نتائج.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

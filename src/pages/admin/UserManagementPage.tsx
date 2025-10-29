@@ -161,37 +161,21 @@ const UserManagementPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الاسم الكامل</TableHead>
-                <TableHead>البريد الإلكتروني</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-right">الإجراءات</TableHead>
+                <TableHead>الاسم الكامل</TableHead><TableHead>البريد الإلكتروني</TableHead><TableHead>النوع</TableHead><TableHead>الحالة</TableHead><TableHead className="text-right">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProfiles.length > 0 ? (
                 filteredProfiles.map((profile) => (
                   <TableRow key={profile.id}>
-                    <TableCell>{profile.full_name}</TableCell>
-                    <TableCell>{profile.email}</TableCell>
-                    <TableCell>{profile.user_type === 'passenger' ? 'راكب' : profile.user_type === 'driver' ? 'سائق' : 'مدير'}</TableCell>
-                    <TableCell>{profile.status === 'active' ? 'نشط' : profile.status === 'suspended' ? 'معلق' : 'محظور'}</TableCell>
-                    <TableCell className="text-right space-x-2 rtl:space-x-reverse">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(profile)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">
-                        تعديل
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(profile.id)}>
-                        حذف
-                      </Button>
+                    <TableCell>{profile.full_name}</TableCell><TableCell>{profile.email}</TableCell><TableCell>{profile.user_type === 'passenger' ? 'راكب' : profile.user_type === 'driver' ? 'سائق' : 'مدير'}</TableCell><TableCell>{profile.status === 'active' ? 'نشط' : profile.status === 'suspended' ? 'معلق' : 'محظور'}</TableCell><TableCell className="text-right space-x-2 rtl:space-x-reverse">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(profile)} className="text-primary border-primary hover:bg-primary hover:text-primary-foreground">تعديل</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(profile.id)}>حذف</Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    لا توجد نتائج.
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="h-24 text-center">لا توجد نتائج.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
