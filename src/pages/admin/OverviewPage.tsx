@@ -54,6 +54,7 @@ const OverviewPage = () => {
       toast.error(`فشل جلب عدد المستخدمين: ${profilesError.message}`);
       console.error("Error fetching user count:", profilesError);
       hasError = true;
+      setTotalUsers(0); // Set to 0 or null on error
     } else {
       setTotalUsers(allProfiles?.length || 0);
       // Filter new users from allProfiles if needed for activities, or fetch separately
@@ -80,6 +81,7 @@ const OverviewPage = () => {
       toast.error(`فشل جلب عدد الرحلات: ${ridesError.message}`);
       console.error("Error fetching ride count:", ridesError);
       hasError = true;
+      setTotalRides(0); // Set to 0 or null on error
     } else {
       setTotalRides(ridesCount);
     }
