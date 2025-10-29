@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Keep useNavigate for potential future use
 import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react"; // Removed unused 'User' import
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className }) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // 'navigate' is used in other components, keeping it here for consistency
 
   const fetchUserProfile = useCallback(async () => {
     setLoading(true);

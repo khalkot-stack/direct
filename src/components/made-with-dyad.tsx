@@ -1,5 +1,7 @@
 "use client";
 
+// import React from "react"; // Removed unused import
+
 export const MadeWithDyad = () => {
   return (
     <div className="p-4 text-center">

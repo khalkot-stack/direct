@@ -25,7 +25,7 @@ const AppSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const { setTheme } = useTheme();
+  const { setTheme } = useTheme(); // Removed unused 'theme' variable
 
   const fetchUserSettings = useCallback(async () => {
     setLoading(true);

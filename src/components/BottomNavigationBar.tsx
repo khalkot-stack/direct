@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, MapPin, Car, History, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+// import { toast } from 'sonner'; // Removed unused import
 
 const BottomNavigationBar = () => {
   const location = useLocation();

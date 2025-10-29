@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react"; // Import Loader2
 
 // Layouts
 import MainLayout from "@/components/MainLayout";
-import UserLayout from "@/components/UserLayout"; // For admin dashboard
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Pages
@@ -42,11 +42,11 @@ import AdminSettingsPage from "@/pages/admin/SettingsPage";
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null); // Keep userRole for potential future use in redirects
 
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession(); // Removed unused 'error' variable
       if (session) {
         setUserRole(session.user?.user_metadata?.user_type || null);
       } else {
@@ -58,8 +58,8 @@ function App() {
     checkUserSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUserRole(session.user?.user_metadata?.user_type || null);
+      if (session?.user) {
+        setUserRole(session.user.user_metadata?.user_type || null);
       } else {
         setUserRole(null);
       }

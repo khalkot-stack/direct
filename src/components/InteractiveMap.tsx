@@ -3,6 +3,7 @@
 import React, { useCallback, useRef, useEffect, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
+// import { toast } from "sonner"; // Removed unused import
 
 const containerStyle = {
   width: '100%',
@@ -43,8 +44,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
-  const [mapCenter, setMapCenter] = useState(center);
-  const [mapZoom, setMapZoom] = useState(zoom);
+  const [mapCenter, setMapCenter] = useState(center); // Keeping for potential future use if map center needs to be dynamic
+  const [mapZoom, setMapZoom] = useState(zoom); // Keeping for potential future use if map zoom needs to be dynamic
 
   useEffect(() => {
     if (markers.length > 0 && mapRef.current) {
