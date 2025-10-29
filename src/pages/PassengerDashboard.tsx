@@ -22,20 +22,68 @@ const PassengerDashboard = () => {
       if (userError || !user) {
         toast.error("الرجاء تسجيل الدخول للوصول إلى لوحة التحكم.");
         navigate("/auth");
+        setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
+      let currentProfile;
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, user_type')
         .eq('id', user.id)
         .single();
 
-      if (error) {
-        console.error("Error fetching user profile:", error);
-        toast.error("فشل جلب معلومات المستخدم.");
-      } else if (data) {
-        setUserName(data.full_name || "راكب");
+      if (profileError && profileError.code === 'PGRST116') { // No profile found
+        console.warn("No profile found for user, attempting to create one based on auth metadata.");
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata.full_name || 'راكب',
+            email: user.email,
+            user_type: user.user_metadata.user_type || 'passenger', // Default to passenger
+            phone_number: user.user_metadata.phone_number || null,
+            status: 'active', // Default status
+          })
+          .select('full_name, user_type')
+          .single();
+
+        if (insertError) {
+          toast.error(`فشل إنشاء ملف تعريف الراكب: ${insertError.message}`);
+          console.error("Error creating passenger profile:", insertError);
+          navigate('/auth');
+          setLoading(false);
+          return;
+        } else if (newProfile) {
+          currentProfile = newProfile;
+          toast.success("تم إنشاء ملف تعريف الراكب بنجاح.");
+        }
+      } else if (profileError) { // Other types of errors fetching profile
+        toast.error(`فشل جلب ملف تعريف الراكب: ${profileError.message}`);
+        console.error("Error fetching passenger profile:", profileError);
+        navigate('/auth');
+        setLoading(false);
+        return;
+      } else if (profile) {
+        currentProfile = profile;
+      }
+
+      if (currentProfile) {
+        setUserName(currentProfile.full_name || "راكب");
+        // Double-check user_type from the profile table
+        if (currentProfile.user_type !== 'passenger') {
+          toast.error("ليس لديك الصلاحيات الكافية للوصول إلى لوحة تحكم الراكب.");
+          // Redirect based on actual role or to home
+          if (currentProfile.user_type === 'driver') {
+            navigate('/driver-dashboard');
+          } else if (currentProfile.user_type === 'admin') {
+            navigate('/admin-dashboard');
+          } else {
+            navigate('/');
+          }
+          setLoading(false);
+          return;
+        }
       }
       setLoading(false);
     };
@@ -53,15 +101,15 @@ const PassengerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4"> {/* Removed items-center justify-center */}
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-md bg-white dark:bg-gray-900 shadow-lg rounded-lg mx-auto">
-        <div className="px-6 pt-0"> {/* Adjusted padding */}
+        <div className="px-6 pt-0">
           <PageHeader
             title={`أهلاً بك، ${userName}`}
             description="لوحة تحكم الراكب الخاصة بك"
           />
         </div>
-        <CardContent className="space-y-6 p-6 pt-0"> {/* Adjusted padding */}
+        <CardContent className="space-y-6 p-6 pt-0">
           <div className="grid grid-cols-1 gap-4">
             <Link to="/passenger-dashboard/request-ride" className="transition-transform duration-200 ease-in-out hover:scale-[1.01]">
               <Button
