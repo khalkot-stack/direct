@@ -29,11 +29,11 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rides ENABLE ROW LEVEL SECURITY;
 
 -- Recreate the get_user_type function (ensure it's correct and security definer)
--- This function is crucial for RLS and should only query auth.users, not public.profiles
 CREATE OR REPLACE FUNCTION public.get_user_type(user_id uuid)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
+STABLE -- Added STABLE for better query planning
 AS $$
 DECLARE
   user_role text;
@@ -50,13 +50,12 @@ $$;
 -- RLS Policies for public.profiles
 --
 
--- Allow users to read their own profile
+-- Allow users to read their own profile (minimal SELECT policy for testing)
 CREATE POLICY "Allow self-read access to profiles" ON public.profiles
 FOR SELECT USING (auth.uid() = id);
 
--- Allow admins to read all profiles
-CREATE POLICY "Admins can read all profiles" ON public.profiles
-FOR SELECT USING (public.get_user_type(auth.uid()) = 'admin');
+-- IMPORTANT: Temporarily REMOVED "Admins can read all profiles" policy to diagnose recursion.
+-- If this fixes the issue, we will re-introduce a safer admin read policy.
 
 -- Allow users to insert their own profile on signup
 CREATE POLICY "Allow self-insert access to profiles" ON public.profiles
