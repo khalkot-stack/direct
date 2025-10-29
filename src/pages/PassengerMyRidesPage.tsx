@@ -4,11 +4,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History } from "lucide-react"; // Imported History
+import { Loader2, MessageSquare, Star, XCircle, History } from "lucide-react"; // Import History
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
-import { Badge } from "@/components/ui/badge"; // Imported Badge
+import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -33,17 +33,6 @@ interface Ride {
     full_name: string;
     avatar_url: string | null;
   } | null;
-}
-
-// Rating interface is used as a type, so keeping it.
-interface Rating {
-  id: string;
-  ride_id: string;
-  rater_id: string;
-  rated_user_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
 }
 
 const PassengerMyRidesPage: React.FC = () => {

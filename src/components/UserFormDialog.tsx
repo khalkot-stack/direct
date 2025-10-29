@@ -24,13 +24,14 @@ interface Profile {
   user_type: "passenger" | "driver" | "admin";
   status: "active" | "suspended" | "banned";
   phone_number?: string;
+  created_at?: string; // Added created_at as optional
 }
 
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile?: Profile;
-  onSave: (profile: Profile) => void;
+  onSave: (profile: Profile) => Promise<void>; // Updated to accept Promise<void>
   isNewUser: boolean;
 }
 
@@ -98,7 +99,8 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
       } else if (data.user) {
         toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
         onOpenChange(false);
-        onSave(data.user as unknown as Profile);
+        // Pass a dummy profile with minimal data for new user, actual data will be fetched by parent
+        await onSave({ id: data.user.id, full_name: fullName, email, user_type, status, created_at: new Date().toISOString() });
       }
     } else {
       if (!profile?.id || !fullName || !email || !userType || !status) {
@@ -114,8 +116,9 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         user_type: userType,
         status,
         phone_number: phoneNumber,
+        created_at: profile.created_at, // Ensure created_at is passed
       };
-      onSave(updatedProfile);
+      await onSave(updatedProfile);
       onOpenChange(false);
     }
     setIsSaving(false);

@@ -38,7 +38,7 @@ const RequestRidePage: React.FC = () => {
     fetchUser();
   }, [navigate]);
 
-  const geocodeAddress = useCallback(async (address: string) => { // Removed 'type' parameter
+  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       toast.error("Google Maps API Key is not configured.");
       return null;
@@ -70,7 +70,7 @@ const RequestRidePage: React.FC = () => {
       let newCenter = undefined;
 
       if (pickupLocation) {
-        const coords = await geocodeAddress(pickupLocation); // Removed 'pickup' argument
+        const coords = await geocodeAddress(pickupLocation, 'pickup');
         setPickupCoords(coords);
         if (coords) {
           newMarkers.push({ id: 'pickup', lat: coords.lat, lng: coords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
@@ -81,7 +81,7 @@ const RequestRidePage: React.FC = () => {
       }
 
       if (destination) {
-        const coords = await geocodeAddress(destination); // Removed 'destination' argument
+        const coords = await geocodeAddress(destination, 'destination');
         setDestinationCoords(coords);
         if (coords) {
           newMarkers.push({ id: 'destination', lat: coords.lat, lng: coords.lng, title: 'الوجهة', iconColor: 'red' });

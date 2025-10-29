@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search, Edit, Trash2, Loader2, Ban, CheckCircle, Clock } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, Loader2, Users } from "lucide-react"; // Removed Ban, CheckCircle, Clock
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import UserFormDialog from "@/components/UserFormDialog";

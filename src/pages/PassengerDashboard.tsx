@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, History, Settings, Loader2, MessageSquare, Star, XCircle } from "lucide-react";
+import { MapPin, History, Settings, Loader2, MessageSquare, XCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -13,7 +13,7 @@ import InteractiveMap from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import { Badge } from "@/components/ui/badge"; // Imported Badge
+import { Badge } from "@/components/ui/badge";
 
 interface Ride {
   id: string;
@@ -41,23 +41,12 @@ interface Ride {
   } | null;
 }
 
-// Rating interface is used as a type, so keeping it.
-interface Rating {
-  id: string;
-  ride_id: string;
-  rater_id: string;
-  rated_user_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-}
-
 const PassengerDashboard: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-  const [chatRideId, setChatRideId] = useState(""); // Correctly defined
+  const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
@@ -166,7 +155,7 @@ const PassengerDashboard: React.FC = () => {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
-    setChatRideId(currentRide.id); // Corrected usage
+    setChatRideId(currentRide.id);
     setChatOtherUserId(currentRide.driver_id!);
     setChatOtherUserName(currentRide.driver_profiles.full_name || 'السائق');
     setIsChatDialogOpen(true);

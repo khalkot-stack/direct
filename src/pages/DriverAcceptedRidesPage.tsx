@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle } from "lucide-react";
+import { Loader2, MessageSquare, Star, XCircle, History } from "lucide-react"; // Import History
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -33,16 +33,6 @@ interface Ride {
     full_name: string;
     avatar_url: string | null;
   } | null;
-}
-
-interface Rating {
-  id: string;
-  ride_id: string;
-  rater_id: string;
-  rated_user_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
 }
 
 const DriverAcceptedRidesPage: React.FC = () => {

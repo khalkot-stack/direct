@@ -5,13 +5,14 @@ import { Link, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Car, MapPin, History, Settings, Loader2, MessageSquare, Star } from "lucide-react";
+import { Car, MapPin, History, Settings, Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import InteractiveMap from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
+import { Badge } from "@/components/ui/badge"; // Added Badge import
 
 interface Ride {
   id: string;
@@ -36,16 +37,6 @@ interface Ride {
     full_name: string;
     avatar_url: string | null;
   } | null;
-}
-
-interface Rating {
-  id: string;
-  ride_id: string;
-  rater_id: string;
-  rated_user_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
 }
 
 const DriverDashboard: React.FC = () => {
