@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Users, Settings } from "lucide-react";
+import { Loader2, Users, Settings, Shield } from "lucide-react"; // Added Shield icon
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const Index: React.FC = () => {
@@ -84,6 +84,14 @@ const Index: React.FC = () => {
               <Button variant="outline" className="w-full py-6 text-lg border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                 <Settings className="h-6 w-6 ml-3 rtl:mr-3" />
                 المزيد عنا
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-4">
+            <Link to="/admin-login">
+              <Button variant="ghost" className="w-full text-primary hover:underline">
+                <Shield className="h-5 w-5 ml-2 rtl:mr-2" />
+                تسجيل دخول المدير
               </Button>
             </Link>
           </div>
