@@ -17,16 +17,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-import { Message, ProfileDetails } from "@/types/supabase"; // Import shared types
-
-interface SupabaseJoinedMessageData {
-  id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-  sender_profiles: ProfileDetails | ProfileDetails[] | null;
-  receiver_profiles: ProfileDetails | ProfileDetails[] | null;
-}
+import { Message, ProfileDetails, SupabaseJoinedMessageData } from "@/types/supabase"; // Import shared types
 
 interface ChatDialogProps {
   open: boolean;

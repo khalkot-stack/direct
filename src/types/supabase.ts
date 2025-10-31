@@ -51,6 +51,12 @@ export interface Message {
   receiver_profiles: ProfileDetails | null;
 }
 
+// New interface to handle raw data from Supabase joins for messages where profiles might be arrays
+export interface SupabaseJoinedMessageData extends Omit<Message, 'sender_profiles' | 'receiver_profiles'> {
+  sender_profiles: ProfileDetails | ProfileDetails[] | null;
+  receiver_profiles: ProfileDetails | ProfileDetails[] | null;
+}
+
 export interface Rating {
   id: string;
   ride_id: string;
