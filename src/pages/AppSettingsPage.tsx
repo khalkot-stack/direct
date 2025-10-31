@@ -36,7 +36,7 @@ const AppSettingsPage: React.FC = () => {
       .eq('user_id', userId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
       toast.error(`فشل جلب إعدادات المستخدم: ${error.message}`);
       console.error("Error fetching user settings:", error);
       setSettings(null);
@@ -44,21 +44,22 @@ const AppSettingsPage: React.FC = () => {
       setSettings(data as UserSettings);
       setTheme(data.theme);
     } else {
+      // If no settings found, create default ones using upsert
       const defaultSettings: Omit<UserSettings, 'id'> = {
         user_id: userId,
         theme: 'system',
         notifications_enabled: true,
         language: 'ar',
       };
-      const { data: newSettings, error: insertError } = await supabase
+      const { data: newSettings, error: upsertError } = await supabase
         .from('user_settings')
-        .insert(defaultSettings)
+        .upsert(defaultSettings, { onConflict: 'user_id' }) // Use upsert with onConflict
         .select()
         .single();
 
-      if (insertError) {
-        toast.error(`فشل إنشاء الإعدادات الافتراضية: ${insertError.message}`);
-        console.error("Error creating default settings:", insertError);
+      if (upsertError) {
+        toast.error(`فشل إنشاء الإعدادات الافتراضية: ${upsertError.message}`);
+        console.error("Error creating default settings:", upsertError);
       } else {
         setSettings(newSettings as UserSettings);
         setTheme(newSettings.theme);
