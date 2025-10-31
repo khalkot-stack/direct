@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
+// import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Commented out
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -25,9 +25,9 @@ const DriverHome: React.FC = () => {
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
-  const [mapZoom, setMapZoom] = useState<number>(12);
+  // const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]); // Commented out
+  // const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined); // Commented out
+  // const [mapZoom, setMapZoom] = useState<number>(12); // Commented out
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -179,51 +179,51 @@ const DriverHome: React.FC = () => {
   );
 
   useEffect(() => {
-    const updateMapMarkers = () => {
-      const newMarkers: MarkerLocation[] = [];
-      let currentCenter = undefined;
-      let currentZoom = 12;
+    // const updateMapMarkers = () => { // Commented out
+    //   const newMarkers: MarkerLocation[] = [];
+    //   let currentCenter = undefined;
+    //   let currentZoom = 12;
 
-      if (currentRide) {
-        // Active ride markers
-        if (currentRide.pickup_lat && currentRide.pickup_lng) {
-          newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
-          currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
-        }
-        if (currentRide.destination_lat && currentRide.destination_lng) {
-          newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
-          if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
-        }
-        if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
-          newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' });
-          currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
-          currentZoom = 14; // Zoom in on driver's current location
-        }
-      } else if (availableRides.length > 0) {
-        // Available rides markers
-        const bounds = new window.google.maps.LatLngBounds();
-        availableRides.forEach(ride => {
-          if (ride.pickup_lat && ride.pickup_lng) {
-            newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
-            bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
-          }
-          if (ride.destination_lat && ride.destination_lng) {
-            newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
-            bounds.extend({ lat: ride.destination_lat, lng: ride.destination_lng });
-          }
-        });
-        if (!bounds.isEmpty()) {
-          // Calculate center and zoom to fit all markers
-          currentCenter = bounds.getCenter().toJSON();
-          // No specific zoom, let map fit bounds
-        }
-      }
-      setMapMarkers(newMarkers);
-      setMapCenter(currentCenter);
-      setMapZoom(currentZoom);
-    };
+    //   if (currentRide) {
+    //     // Active ride markers
+    //     if (currentRide.pickup_lat && currentRide.pickup_lng) {
+    //       newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
+    //       currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
+    //     }
+    //     if (currentRide.destination_lat && currentRide.destination_lng) {
+    //       newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
+    //       if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
+    //     }
+    //     if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
+    //       newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' });
+    //       currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
+    //       currentZoom = 14; // Zoom in on driver's current location
+    //     }
+    //   } else if (availableRides.length > 0) {
+    //     // Available rides markers
+    //     const bounds = new window.google.maps.LatLngBounds();
+    //     availableRides.forEach(ride => {
+    //       if (ride.pickup_lat && ride.pickup_lng) {
+    //         newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
+    //         bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
+    //       }
+    //       if (ride.destination_lat && ride.destination_lng) {
+    //         newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
+    //         bounds.extend({ lat: ride.destination_lat, lng: ride.destination_lng });
+    //       }
+    //     });
+    //     if (!bounds.isEmpty()) {
+    //       // Calculate center and zoom to fit all markers
+    //       currentCenter = bounds.getCenter().toJSON();
+    //       // No specific zoom, let map fit bounds
+    //     }
+    //   }
+    //   setMapMarkers(newMarkers);
+    //   setMapCenter(currentCenter);
+    //   setMapZoom(currentZoom);
+    // };
 
-    updateMapMarkers();
+    // updateMapMarkers(); // Commented out
   }, [currentRide, availableRides]);
 
   const updateDriverLocation = useCallback(async () => {
@@ -389,7 +389,7 @@ const DriverHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} />
+      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} /> */} {/* Commented out */}
 
       {currentRide ? (
         // Active Ride Card for Driver

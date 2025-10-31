@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Car, MessageSquare, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
+// import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Commented out
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -36,8 +36,8 @@ const PassengerHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  // const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]); // Commented out
+  // const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined); // Commented out
 
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
@@ -172,53 +172,53 @@ const PassengerHome: React.FC = () => {
   );
 
   useEffect(() => {
-    const updateMapMarkers = async () => {
-      const newMarkers: MarkerLocation[] = [];
-      let currentCenter = undefined;
+    // const updateMapMarkers = async () => { // Commented out
+    //   const newMarkers: MarkerLocation[] = [];
+    //   let currentCenter = undefined;
 
-      if (currentRide) {
-        // Active ride markers
-        if (currentRide.pickup_lat && currentRide.pickup_lng) {
-          newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
-          currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
-        }
-        if (currentRide.destination_lat && currentRide.destination_lng) {
-          newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
-          if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
-        }
-        if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
-          newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' });
-          currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
-        }
-      } else {
-        // Request ride markers
-        let pickupCoords = null;
-        if (pickupLocationInput) {
-          pickupCoords = await geocodeAddress(pickupLocationInput, 'pickup');
-          if (pickupCoords) {
-            newMarkers.push({ id: 'pickup-request', lat: pickupCoords.lat, lng: pickupCoords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
-            currentCenter = pickupCoords;
-          }
-        }
+    //   if (currentRide) {
+    //     // Active ride markers
+    //     if (currentRide.pickup_lat && currentRide.pickup_lng) {
+    //       newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
+    //       currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
+    //     }
+    //     if (currentRide.destination_lat && currentRide.destination_lng) {
+    //       newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
+    //       if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
+    //     }
+    //     if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
+    //       newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' });
+    //       currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
+    //     }
+    //   } else {
+    //     // Request ride markers
+    //     let pickupCoords = null;
+    //     if (pickupLocationInput) {
+    //       pickupCoords = await geocodeAddress(pickupLocationInput, 'pickup');
+    //       if (pickupCoords) {
+    //         newMarkers.push({ id: 'pickup-request', lat: pickupCoords.lat, lng: pickupCoords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
+    //         currentCenter = pickupCoords;
+    //       }
+    //     }
 
-        let destinationCoords = null;
-        if (destinationInput) {
-          destinationCoords = await geocodeAddress(destinationInput, 'destination');
-          if (destinationCoords) {
-            newMarkers.push({ id: 'destination-request', lat: destinationCoords.lat, lng: destinationCoords.lng, title: 'الوجهة', iconColor: 'red' });
-            if (!currentCenter) currentCenter = destinationCoords;
-          }
-        }
-      }
-      setMapMarkers(newMarkers);
-      setMapCenter(currentCenter);
-    };
+    //     let destinationCoords = null;
+    //     if (destinationInput) {
+    //       destinationCoords = await geocodeAddress(destinationInput, 'destination');
+    //       if (destinationCoords) {
+    //         newMarkers.push({ id: 'destination-request', lat: destinationCoords.lat, lng: destinationCoords.lng, title: 'الوجهة', iconColor: 'red' });
+    //         if (!currentCenter) currentCenter = destinationCoords;
+    //       }
+    //     }
+    //   }
+    //   setMapMarkers(newMarkers);
+    //   setMapCenter(currentCenter);
+    // };
 
-    const delayDebounceFn = setTimeout(() => {
-      updateMapMarkers();
-    }, 1000);
+    // const delayDebounceFn = setTimeout(() => {
+    //   updateMapMarkers();
+    // }, 1000);
 
-    return () => clearTimeout(delayDebounceFn);
+    // return () => clearTimeout(delayDebounceFn);
   }, [currentRide, pickupLocationInput, destinationInput, geocodeAddress]);
 
   const handleRequestRide = async (values: RideRequestInputs) => {
@@ -333,7 +333,7 @@ const PassengerHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} />
+      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} /> */} {/* Commented out */}
 
       {currentRide ? (
         // Active Ride Card (similar to Uber's bottom card for active rides)
