@@ -33,6 +33,12 @@ import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
 import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
 
+// Define a raw data interface to correctly type the joined profiles
+interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
+  driver_profiles: ProfileDetails[] | ProfileDetails | null;
+}
+
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [rides, setRides] = useState<Ride[]>([]); // Changed to use Ride interface directly
@@ -78,18 +84,19 @@ const RideManagementPage: React.FC = () => {
       console.error("Error fetching rides:", error);
     } else {
       // Map raw data to conform to the Ride interface
-      const formattedRides: Ride[] = (ridesRaw || []).map(ride => {
-        const rawPassengerProfiles = ride.passenger_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
-        const rawDriverProfiles = ride.driver_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
+        const passengerProfile = Array.isArray(ride.passenger_profiles)
+          ? ride.passenger_profiles[0] || null
+          : ride.passenger_profiles;
+        
+        const driverProfile = Array.isArray(ride.driver_profiles)
+          ? ride.driver_profiles[0] || null
+          : ride.driver_profiles;
 
         return {
           ...ride,
-          passenger_profiles: Array.isArray(rawPassengerProfiles)
-            ? rawPassengerProfiles[0] || null
-            : rawPassengerProfiles,
-          driver_profiles: Array.isArray(rawDriverProfiles)
-            ? rawDriverProfiles[0] || null
-            : rawDriverProfiles,
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
         };
       }) as Ride[]; // Cast to Ride[] after mapping
       setRides(formattedRides);

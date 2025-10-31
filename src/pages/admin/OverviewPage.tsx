@@ -40,6 +40,12 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
+// Define a raw data interface to correctly type the joined profiles
+interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
+  driver_profiles: ProfileDetails[] | ProfileDetails | null;
+}
+
 const OverviewPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
@@ -96,18 +102,19 @@ const OverviewPage: React.FC = () => {
       if (recentRidesError) throw recentRidesError;
 
       // Map raw data to conform to the Ride interface
-      const formattedRecentRides: Ride[] = (recentRidesRaw || []).map(ride => {
-        const rawPassengerProfiles = ride.passenger_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
-        const rawDriverProfiles = ride.driver_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+      const formattedRecentRides: Ride[] = (recentRidesRaw as RawRideData[] || []).map(ride => {
+        const passengerProfile = Array.isArray(ride.passenger_profiles)
+          ? ride.passenger_profiles[0] || null
+          : ride.passenger_profiles;
+        
+        const driverProfile = Array.isArray(ride.driver_profiles)
+          ? ride.driver_profiles[0] || null
+          : ride.driver_profiles;
 
         return {
           ...ride,
-          passenger_profiles: Array.isArray(rawPassengerProfiles)
-            ? rawPassengerProfiles[0] || null
-            : rawPassengerProfiles,
-          driver_profiles: Array.isArray(rawDriverProfiles)
-            ? rawDriverProfiles[0] || null
-            : rawDriverProfiles,
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
         };
       }) as Ride[]; // Cast to Ride[] after mapping
       setRecentRides(formattedRecentRides);
