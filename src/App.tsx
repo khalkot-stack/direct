@@ -25,10 +25,11 @@ import NotFound from "@/pages/NotFound";
 import AdminLoginPage from "@/pages/AdminLoginPage";
 
 // Passenger Pages
-import PassengerDashboard from "@/pages/PassengerDashboard";
-import RequestRidePage from "@/pages/RequestRidePage";
+import PassengerHome from "@/pages/PassengerHome"; // Import the new PassengerHome
+import PassengerDashboard from "@/pages/PassengerDashboard"; // Keep for now, will remove later
+import RequestRidePage from "@/pages/RequestRidePage"; // Keep for now, will remove later
 import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
-import PassengerTrackingPage from "@/pages/PassengerTrackingPage";
+import PassengerTrackingPage from "@/pages/PassengerTrackingPage"; // Keep for now, will remove later
 
 // Driver Pages
 import DriverDashboard from "@/pages/DriverDashboard";
@@ -43,9 +44,6 @@ import RideManagementPage from "@/pages/admin/RideManagementPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
 
 function App() {
-  // initialLoading is now handled by UserProvider
-  // useEffect for auth listener is now handled by UserProvider
-
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Router>
@@ -66,10 +64,10 @@ function App() {
               <Route path="/profile-settings" element={<ProtectedRoute allowedRoles={["passenger", "driver", "admin"]}><ProfileSettingsPage /></ProtectedRoute>} />
 
               {/* Passenger Routes */}
-              <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerDashboard /></ProtectedRoute>} />
-              <Route path="/passenger-dashboard/request-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><RequestRidePage /></ProtectedRoute>} />
+              <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerHome /></ProtectedRoute>} /> {/* Use PassengerHome here */}
+              <Route path="/passenger-dashboard/request-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><RequestRidePage /></ProtectedRoute>} /> {/* Keep for now */}
               <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerMyRidesPage /></ProtectedRoute>} />
-              <Route path="/passenger-dashboard/track-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerTrackingPage /></ProtectedRoute>} />
+              <Route path="/passenger-dashboard/track-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerTrackingPage /></ProtectedRoute>} /> {/* Keep for now */}
 
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverDashboard /></ProtectedRoute>} />

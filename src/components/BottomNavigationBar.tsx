@@ -23,8 +23,7 @@ const BottomNavigationBar = () => {
     }
     if (userRole === 'passenger') {
       return [
-        { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
-        { name: 'طلب رحلة', icon: MapPin, path: '/passenger-dashboard/request-ride' },
+        { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' }, // Points to PassengerHome
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
