@@ -231,14 +231,9 @@ const PassengerHome: React.FC = () => {
     const pickupCoords = await geocodeAddress(values.pickupLocation, 'pickup');
     const destinationCoords = await geocodeAddress(values.destination, 'destination');
 
-    if (!pickupCoords) {
-      toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
-      return;
-    }
-    if (!destinationCoords) {
-      toast.error("الرجاء تحديد الوجهة بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
-      return;
-    }
+    // Removed the conditional checks for pickupCoords and destinationCoords
+    // The ride request will now proceed even if geocoding fails,
+    // passing null for coordinates if they couldn't be determined.
 
     setLoadingRideData(true);
     const { error } = await supabase.from('rides').insert({
@@ -247,10 +242,10 @@ const PassengerHome: React.FC = () => {
       destination: values.destination,
       passengers_count: values.passengersCount,
       status: 'pending',
-      pickup_lat: pickupCoords.lat,
-      pickup_lng: pickupCoords.lng,
-      destination_lat: destinationCoords.lat,
-      destination_lng: destinationCoords.lng,
+      pickup_lat: pickupCoords?.lat || null, // Pass null if geocoding failed
+      pickup_lng: pickupCoords?.lng || null, // Pass null if geocoding failed
+      destination_lat: destinationCoords?.lat || null, // Pass null if geocoding failed
+      destination_lng: destinationCoords?.lng || null, // Pass null if geocoding failed
     } as Omit<Ride, 'id' | 'created_at' | 'cancellation_reason' | 'driver_id' | 'passenger_profiles' | 'driver_profiles' | 'driver_current_lat' | 'driver_current_lng'>);
     setLoadingRideData(false);
 
