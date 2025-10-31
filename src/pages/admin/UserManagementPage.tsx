@@ -69,12 +69,12 @@ const UserManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user) {
+    if (!userLoading && user) { // Ensure user is loaded before fetching data
       fetchUsers();
     } else if (!userLoading && !user) {
       setLoadingUsers(false); // No user, no users to fetch
     }
-  }, [userLoading, user, fetchUsers]);
+  }, [userLoading, user, fetchUsers]); // Add user to dependency array
 
   const handleAddUser = () => {
     setSelectedUser(undefined);
@@ -149,7 +149,7 @@ const UserManagementPage: React.FC = () => {
     }
   };
 
-  if (userLoading || loadingUsers) {
+  if (userLoading || loadingUsers) { // Use combined loading state
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

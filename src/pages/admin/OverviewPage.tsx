@@ -15,6 +15,8 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { Badge } from "@/components/ui/badge"; // Added missing import
+import { useUser } from "@/context/UserContext"; // Added missing import
 
 interface StatCardProps {
   title: string;
@@ -47,15 +49,16 @@ interface RecentRide {
 }
 
 const OverviewPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser(); // Use useUser hook
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [completedRides, setCompletedRides] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null); // Placeholder for now
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [recentRides, setRecentRides] = useState<RecentRide[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with userLoading
 
   const fetchOverviewData = useCallback(async () => {
-    setLoading(true);
+    setLoadingData(true);
     try {
       // Fetch total users
       const { count: usersCount, error: usersError } = await supabase
@@ -106,13 +109,17 @@ const OverviewPage: React.FC = () => {
       toast.error(`فشل جلب بيانات النظرة العامة: ${error.message}`);
       console.error("Error fetching overview data:", error);
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchOverviewData();
-  }, [fetchOverviewData]);
+    if (!userLoading && user) { // Ensure user is loaded before fetching data
+      fetchOverviewData();
+    } else if (!userLoading && !user) {
+      setLoadingData(false); // If no user, stop loading
+    }
+  }, [userLoading, user, fetchOverviewData]); // Add user to dependency array
 
   const revenueData = [
     { name: "يناير", total: 4000 },
@@ -124,7 +131,7 @@ const OverviewPage: React.FC = () => {
     { name: "يوليو", total: 7000 },
   ];
 
-  if (loading) {
+  if (userLoading || loadingData) { // Use combined loading state
     return (
       <div className="container mx-auto p-4 flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
