@@ -171,7 +171,7 @@ const ProfileSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>رقم الهاتف</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="07XXXXXXXX" {...field} />
+                      <Input type="tel" placeholder="07XXXXXXXX" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
