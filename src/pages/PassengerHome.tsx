@@ -261,6 +261,11 @@ const PassengerHome: React.FC = () => {
   };
 
   const handleOpenChat = () => {
+    console.log("Attempting to open chat...");
+    console.log("User:", user);
+    console.log("Current Ride:", currentRide);
+    console.log("Current Ride Driver Profiles:", currentRide?.driver_profiles);
+
     if (!user || !currentRide || !currentRide.driver_profiles) {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
