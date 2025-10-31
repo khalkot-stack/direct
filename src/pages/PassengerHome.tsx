@@ -66,7 +66,7 @@ const PassengerHome: React.FC = () => {
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
-  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
+  const geocodeAddress = useCallback(async (address: string, _type: 'pickup' | 'destination') => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       toast.error("مفتاح Google Maps API غير مكوّن. الرجاء إضافة VITE_GOOGLE_MAPS_API_KEY إلى ملف .env الخاص بك.");
       return null;
