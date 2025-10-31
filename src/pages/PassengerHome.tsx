@@ -333,11 +333,11 @@ const PassengerHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} /> */} {/* Commented out */}
+      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} /> */}
 
       {currentRide ? (
         // Active Ride Card (similar to Uber's bottom card for active rides)
-        <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
+        <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">رحلتك الحالية</CardTitle>
@@ -380,7 +380,7 @@ const PassengerHome: React.FC = () => {
         // Request Ride Button (when no active ride)
         <Button
           onClick={() => setIsRequestDrawerOpen(true)}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
         >
           <Car className="h-5 w-5 ml-2 rtl:mr-2" />
           طلب رحلة
@@ -389,7 +389,7 @@ const PassengerHome: React.FC = () => {
 
       {/* Request Ride Drawer */}
       <Drawer open={isRequestDrawerOpen} onOpenChange={setIsRequestDrawerOpen}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[60vh]"> {/* Reduced max height */}
           <DrawerHeader className="text-right">
             <DrawerTitle>طلب رحلة جديدة</DrawerTitle>
             <DrawerDescription>أدخل تفاصيل رحلتك وسنبحث عن سائق لك.</DrawerDescription>

@@ -389,11 +389,11 @@ const DriverHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} /> */} {/* Commented out */}
+      {/* <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} /> */}
 
       {currentRide ? (
         // Active Ride Card for Driver
-        <Card className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
+        <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">رحلتك الحالية</CardTitle>
@@ -443,7 +443,7 @@ const DriverHome: React.FC = () => {
       ) : (
         // Available Rides Drawer for Driver
         <Drawer open={availableRides.length > 0} onOpenChange={() => { /* Keep open if rides available */ }}>
-          <DrawerContent className="max-h-[80vh]">
+          <DrawerContent className="max-h-[60vh]"> {/* Reduced max height */}
             <DrawerHeader className="text-right">
               <DrawerTitle>الرحلات المتاحة</DrawerTitle>
               <DrawerDescription>
