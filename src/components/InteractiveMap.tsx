@@ -15,7 +15,7 @@ const defaultCenter = {
   lng: 35.9106,
 };
 
-interface MarkerLocation {
+export interface MarkerLocation { // Exporting the interface
   id: string;
   lat: number;
   lng: number;
