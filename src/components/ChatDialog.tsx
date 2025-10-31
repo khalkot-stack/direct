@@ -82,8 +82,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id: msg.sender_id,
         content: msg.content,
         created_at: msg.created_at,
-        sender_profiles: Array.isArray(msg.sender_profiles) ? msg.sender_profiles[0] : msg.sender_profiles,
-        receiver_profiles: Array.isArray(msg.receiver_profiles) ? msg.receiver_profiles[0] : msg.receiver_profiles,
+        sender_profiles: Array.isArray(msg.sender_profiles) && msg.sender_profiles.length > 0 ? msg.sender_profiles[0] : (msg.sender_profiles as ProfileDetails | null),
+        receiver_profiles: Array.isArray(msg.receiver_profiles) && msg.receiver_profiles.length > 0 ? msg.receiver_profiles[0] : (msg.receiver_profiles as ProfileDetails | null),
       }));
       setMessages(formattedMessages);
     }
@@ -139,8 +139,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                   sender_id: data.sender_id,
                   content: data.content,
                   created_at: data.created_at,
-                  sender_profiles: Array.isArray((data as SupabaseJoinedMessageData).sender_profiles) ? (data as SupabaseJoinedMessageData).sender_profiles[0] : (data as SupabaseJoinedMessageData).sender_profiles,
-                  receiver_profiles: Array.isArray((data as SupabaseJoinedMessageData).receiver_profiles) ? (data as SupabaseJoinedMessageData).receiver_profiles[0] : (data as SupabaseJoinedMessageData).receiver_profiles,
+                  sender_profiles: Array.isArray((data as SupabaseJoinedMessageData).sender_profiles) && (data as SupabaseJoinedMessageData).sender_profiles?.length > 0 ? (data as SupabaseJoinedMessageData).sender_profiles[0] : ((data as SupabaseJoinedMessageData).sender_profiles as ProfileDetails | null),
+                  receiver_profiles: Array.isArray((data as SupabaseJoinedMessageData).receiver_profiles) && (data as SupabaseJoinedMessageData).receiver_profiles?.length > 0 ? (data as SupabaseJoinedMessageData).receiver_profiles[0] : ((data as SupabaseJoinedMessageData).receiver_profiles as ProfileDetails | null),
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
