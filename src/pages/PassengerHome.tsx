@@ -20,7 +20,7 @@ import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod"; // Fixed: Changed '*s z' to '* as z'
+import * as z from "zod";
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -66,7 +66,7 @@ const PassengerHome: React.FC = () => {
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
-  const geocodeAddress = useCallback(async (address: string, _type: 'pickup' | 'destination') => {
+  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       toast.error("مفتاح Google Maps API غير مكوّن. الرجاء إضافة VITE_GOOGLE_MAPS_API_KEY إلى ملف .env الخاص بك.");
       return null;
@@ -77,6 +77,7 @@ const PassengerHome: React.FC = () => {
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
+      console.log(`Google Maps Geocoding API response for ${type} (${address}):`, data); // Added console.log
 
       if (data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location;
