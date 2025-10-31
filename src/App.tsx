@@ -1,9 +1,8 @@
 "use client";
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Removed useEffect, useState
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
-// import { supabase } from "@/lib/supabase"; // Removed unused import
 
 // Context
 import { UserProvider } from "@/context/UserContext";
@@ -25,11 +24,8 @@ import NotFound from "@/pages/NotFound";
 import AdminLoginPage from "@/pages/AdminLoginPage";
 
 // Passenger Pages
-import PassengerHome from "@/pages/PassengerHome"; // Import the new PassengerHome
-import PassengerDashboard from "@/pages/PassengerDashboard"; // Keep for now, will remove later
-import RequestRidePage from "@/pages/RequestRidePage"; // Keep for now, will remove later
+import PassengerHome from "@/pages/PassengerHome";
 import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
-import PassengerTrackingPage from "@/pages/PassengerTrackingPage"; // Keep for now, will remove later
 
 // Driver Pages
 import DriverDashboard from "@/pages/DriverDashboard";
@@ -47,7 +43,7 @@ function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Router>
-        <UserProvider> {/* Wrap the entire application with UserProvider */}
+        <UserProvider>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -64,10 +60,8 @@ function App() {
               <Route path="/profile-settings" element={<ProtectedRoute allowedRoles={["passenger", "driver", "admin"]}><ProfileSettingsPage /></ProtectedRoute>} />
 
               {/* Passenger Routes */}
-              <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerHome /></ProtectedRoute>} /> {/* Use PassengerHome here */}
-              <Route path="/passenger-dashboard/request-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><RequestRidePage /></ProtectedRoute>} /> {/* Keep for now */}
+              <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerHome /></ProtectedRoute>} />
               <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerMyRidesPage /></ProtectedRoute>} />
-              <Route path="/passenger-dashboard/track-ride" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerTrackingPage /></ProtectedRoute>} /> {/* Keep for now */}
 
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverDashboard /></ProtectedRoute>} />
