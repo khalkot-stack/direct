@@ -20,7 +20,7 @@ import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import *s z from "zod";
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -62,7 +62,7 @@ const PassengerHome: React.FC = () => {
     },
   });
 
-  const { watch, setValue, formState: { errors = {} } } = form; // Fixed: Added default empty object for errors
+  const { watch, setValue, formState: { errors = {} } } = form;
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
@@ -231,7 +231,7 @@ const PassengerHome: React.FC = () => {
     const destinationCoords = await geocodeAddress(values.destination, 'destination');
 
     if (!pickupCoords) {
-      // toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة."); // Commented out
+      toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
       return;
     }
     if (!destinationCoords) {
