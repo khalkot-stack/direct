@@ -14,7 +14,7 @@ import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-import { Ride, Rating } from "@/types/supabase"; // Import shared Ride and Rating types
+import { Ride, Rating, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride and Rating types
 
 const DriverAcceptedRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -37,7 +37,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
   const fetchAcceptedRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
 
-    const { data, error } = await supabase
+    const { data: ridesRaw, error } = await supabase
       .from('rides')
       .select(`
         *,
@@ -52,7 +52,22 @@ const DriverAcceptedRidesPage: React.FC = () => {
       toast.error(`فشل جلب الرحلات المقبولة: ${error.message}`);
       console.error("Error fetching accepted rides:", error);
     } else {
-      setRides(data as Ride[]);
+      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
+        const passengerProfile = Array.isArray(ride.passenger_profiles)
+          ? ride.passenger_profiles[0] || null
+          : ride.passenger_profiles;
+        
+        const driverProfile = Array.isArray(ride.driver_profiles)
+          ? ride.driver_profiles[0] || null
+          : ride.driver_profiles;
+
+        return {
+          ...ride,
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
+        };
+      }) as Ride[];
+      setRides(formattedRides);
     }
     setLoadingRides(false);
   }, []);

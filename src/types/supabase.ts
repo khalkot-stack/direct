@@ -36,6 +36,12 @@ export interface Ride {
   driver_profiles: ProfileDetails | null;
 }
 
+// New interface to handle raw data from Supabase joins where profiles might be arrays
+export interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
+  driver_profiles: ProfileDetails[] | ProfileDetails | null;
+}
+
 export interface Message {
   id: string;
   sender_id: string;

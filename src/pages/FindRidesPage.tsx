@@ -13,7 +13,7 @@ import InteractiveMap from "@/components/InteractiveMap";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-import { Ride } from "@/types/supabase"; // Import shared Ride type
+import { Ride, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride type
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 interface RideSearchCriteria {
@@ -54,14 +54,28 @@ const FindRidesPage: React.FC = () => {
       query = query.gte('passengers_count', criteria.passengersCount);
     }
 
-    const { data, error } = await query;
+    const { data: ridesRaw, error } = await query;
 
     if (error) {
       toast.error(`فشل جلب الرحلات المتاحة: ${error.message}`);
       console.error("Error fetching available rides:", error);
       setAvailableRides([]);
     } else {
-      setAvailableRides(data as Ride[]);
+      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
+        const passengerProfile = Array.isArray(ride.passenger_profiles)
+          ? ride.passenger_profiles[0] || null
+          : ride.passenger_profiles;
+        
+        // Driver profiles are not selected here, so they will be null
+        const driverProfile = null;
+
+        return {
+          ...ride,
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
+        };
+      }) as Ride[];
+      setAvailableRides(formattedRides);
     }
     setLoadingRides(false);
   }, []);

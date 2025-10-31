@@ -12,7 +12,7 @@ import ChatDialog from "@/components/ChatDialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-import { Ride } from "@/types/supabase"; // Import shared Ride type
+import { Ride, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride type
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 const PassengerTrackingPage: React.FC = () => {
@@ -26,7 +26,7 @@ const PassengerTrackingPage: React.FC = () => {
 
   const fetchRideDetails = useCallback(async (userId: string) => {
     setLoadingRideDetails(true);
-    const { data, error } = await supabase
+    const { data: rideRaw, error } = await supabase
       .from('rides')
       .select(`
         *,
@@ -47,7 +47,20 @@ const PassengerTrackingPage: React.FC = () => {
         console.error("Error fetching ride details:", error);
       }
     } else {
-      setRide(data as Ride);
+      const rawRideData = rideRaw as RawRideData;
+      const passengerProfile = Array.isArray(rawRideData.passenger_profiles)
+        ? rawRideData.passenger_profiles[0] || null
+        : rawRideData.passenger_profiles;
+      
+      const driverProfile = Array.isArray(rawRideData.driver_profiles)
+        ? rawRideData.driver_profiles[0] || null
+        : rawRideData.driver_profiles;
+
+      setRide({
+        ...rawRideData,
+        passenger_profiles: passengerProfile,
+        driver_profiles: driverProfile,
+      } as Ride);
     }
     setLoadingRideDetails(false);
   }, []);
@@ -77,7 +90,20 @@ const PassengerTrackingPage: React.FC = () => {
         toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
         setRide(null); // Clear ride from state
       } else {
-        setRide(payload.new as Ride);
+        const updatedRideRaw = payload.new as RawRideData;
+        const passengerProfile = Array.isArray(updatedRideRaw.passenger_profiles)
+          ? updatedRideRaw.passenger_profiles[0] || null
+          : updatedRideRaw.passenger_profiles;
+        
+        const driverProfile = Array.isArray(updatedRideRaw.driver_profiles)
+          ? updatedRideRaw.driver_profiles[0] || null
+          : updatedRideRaw.driver_profiles;
+
+        setRide({
+          ...updatedRideRaw,
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
+        } as Ride);
       }
     },
     !!user // Only enable if user is logged in

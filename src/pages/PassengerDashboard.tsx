@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-import { Ride } from "@/types/supabase"; // Import shared Ride type
+import { Ride, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride type
 
 const PassengerDashboard: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -41,7 +41,7 @@ const PassengerDashboard: React.FC = () => {
   const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRides(true);
     // Fetch current active ride for the passenger
-    const { data: ridesData, error: ridesError } = await supabase
+    const { data: ridesRaw, error: ridesError } = await supabase
       .from('rides')
       .select(`
         *,
@@ -57,8 +57,21 @@ const PassengerDashboard: React.FC = () => {
       toast.error(`فشل جلب الرحلات الحالية: ${ridesError.message}`);
       console.error("Error fetching current ride:", ridesError);
       setCurrentRide(null);
-    } else if (ridesData && ridesData.length > 0) {
-      setCurrentRide(ridesData[0] as Ride);
+    } else if (ridesRaw && ridesRaw.length > 0) {
+      const ride = ridesRaw[0] as RawRideData;
+      const passengerProfile = Array.isArray(ride.passenger_profiles)
+        ? ride.passenger_profiles[0] || null
+        : ride.passenger_profiles;
+      
+      const driverProfile = Array.isArray(ride.driver_profiles)
+        ? ride.driver_profiles[0] || null
+        : ride.driver_profiles;
+
+      setCurrentRide({
+        ...ride,
+        passenger_profiles: passengerProfile,
+        driver_profiles: driverProfile,
+      } as Ride);
     } else {
       setCurrentRide(null);
     }
