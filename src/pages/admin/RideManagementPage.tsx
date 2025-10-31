@@ -31,6 +31,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 
+interface ProfileInfo {
+  id: string;
+  full_name: string;
+  user_type: string;
+}
+
 interface Ride {
   id: string;
   passenger_id: string;
@@ -40,11 +46,8 @@ interface Ride {
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
-  profiles: {
-    id: string;
-    full_name: string;
-    user_type: string;
-  }[];
+  passenger_profiles: ProfileInfo | null;
+  driver_profiles: ProfileInfo | null;
 }
 
 const RideManagementPage: React.FC = () => {
@@ -75,7 +78,8 @@ const RideManagementPage: React.FC = () => {
         passengers_count,
         status,
         created_at,
-        profiles(id, full_name, user_type)
+        passenger_profiles:passenger_id(id, full_name, user_type),
+        driver_profiles:driver_id(id, full_name, user_type)
       `)
       .order('created_at', { ascending: false });
 
@@ -107,7 +111,7 @@ const RideManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'profiles'>) => {
+  const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles'>) => {
     if (selectedRide) {
       // Update existing ride
       const { id, ...updates } = rideData;
@@ -166,21 +170,18 @@ const RideManagementPage: React.FC = () => {
       return;
     }
 
-    const passengerProfile = ride.profiles.find(p => p.id === ride.passenger_id);
-    const driverProfile = ride.profiles.find(p => p.id === ride.driver_id);
-
     let otherUser: { id: string; name: string } | null = null;
 
-    if (currentUserId === passengerProfile?.id && driverProfile) {
-      otherUser = { id: driverProfile.id, name: driverProfile.full_name };
-    } else if (currentUserId === driverProfile?.id && passengerProfile) {
-      otherUser = { id: passengerProfile.id, name: passengerProfile.full_name };
-    } else if (currentUserId !== passengerProfile?.id && currentUserId !== driverProfile?.id) {
+    if (currentUserId === ride.passenger_id && ride.driver_profiles) {
+      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name };
+    } else if (currentUserId === ride.driver_id && ride.passenger_profiles) {
+      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
+    } else if (currentUserId !== ride.passenger_id && currentUserId !== ride.driver_id) {
       // Admin is initiating chat, choose passenger by default or prompt
-      if (passengerProfile) {
-        otherUser = { id: passengerProfile.id, name: passengerProfile.full_name };
-      } else if (driverProfile) {
-        otherUser = { id: driverProfile.id, name: driverProfile.full_name };
+      if (ride.passenger_profiles) {
+        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
+      } else if (ride.driver_profiles) {
+        otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name };
       }
     }
 
@@ -210,8 +211,8 @@ const RideManagementPage: React.FC = () => {
   };
 
   const filteredRides = rides.filter(ride => {
-    const passengerName = ride.profiles.find(p => p.id === ride.passenger_id)?.full_name || '';
-    const driverName = ride.profiles.find(p => p.id === ride.driver_id)?.full_name || '';
+    const passengerName = ride.passenger_profiles?.full_name || '';
+    const driverName = ride.driver_profiles?.full_name || '';
 
     return (
       ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -269,8 +270,8 @@ const RideManagementPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredRides.map((ride) => {
-                const passengerName = ride.profiles.find(p => p.id === ride.passenger_id)?.full_name || '';
-                const driverName = ride.profiles.find(p => p.id === ride.driver_id)?.full_name || '';
+                const passengerName = ride.passenger_profiles?.full_name || '';
+                const driverName = ride.driver_profiles?.full_name || '';
                 return (
                   <TableRow key={ride.id}>
                     <TableCell className="font-medium">{passengerName}</TableCell>

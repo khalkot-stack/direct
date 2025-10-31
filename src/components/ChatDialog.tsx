@@ -16,12 +16,17 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+interface ProfileName {
+  full_name: string;
+}
+
 interface Message {
   id: string;
   sender_id: string;
   content: string;
   created_at: string;
-  profiles: { full_name: string } | null;
+  sender_profiles: ProfileName | null;
+  receiver_profiles: ProfileName | null;
 }
 
 interface SupabaseJoinedMessageData {
@@ -29,7 +34,8 @@ interface SupabaseJoinedMessageData {
   sender_id: string;
   content: string;
   created_at: string;
-  profiles: Array<{ full_name: string }> | null;
+  sender_profiles: ProfileName | null;
+  receiver_profiles: ProfileName | null;
 }
 
 interface ChatDialogProps {
@@ -68,7 +74,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id,
         content,
         created_at,
-        profiles(full_name)
+        sender_profiles:sender_id(full_name),
+        receiver_profiles:receiver_id(full_name)
       `)
       .eq('ride_id', rideId)
       .order('created_at', { ascending: true });
@@ -82,7 +89,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id: msg.sender_id,
         content: msg.content,
         created_at: msg.created_at,
-        profiles: msg.profiles?.[0] || null,
+        sender_profiles: msg.sender_profiles,
+        receiver_profiles: msg.receiver_profiles,
       }));
       setMessages(formattedMessages);
     }
@@ -117,7 +125,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               sender_id,
               content,
               created_at,
-              profiles(full_name)
+              sender_profiles:sender_id(full_name),
+              receiver_profiles:receiver_id(full_name)
             `)
             .eq('id', payload.new.id)
             .single()
@@ -130,11 +139,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                   sender_id: data.sender_id,
                   content: data.content,
                   created_at: data.created_at,
-                  profiles: (data as SupabaseJoinedMessageData).profiles?.[0] || null,
+                  sender_profiles: (data as SupabaseJoinedMessageData).sender_profiles,
+                  receiver_profiles: (data as SupabaseJoinedMessageData).receiver_profiles,
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
-                  toast.info(`رسالة جديدة من ${formattedNewMessage.profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
+                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
                 }
               }
             });
@@ -205,7 +215,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                     )}
                   >
                     <p className="text-xs font-semibold mb-1">
-                      {msg.sender_id === currentUserId ? "أنت" : msg.profiles?.full_name || 'مستخدم'}
+                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.full_name || 'مستخدم'}
                     </p>
                     <p className="text-sm">{msg.content}</p>
                     <p className="text-xs text-gray-300 dark:text-gray-500 mt-1 text-left">
