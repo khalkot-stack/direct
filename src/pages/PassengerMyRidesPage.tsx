@@ -15,6 +15,7 @@ import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride and Rating types
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
+import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -176,21 +177,6 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: "pending" | "accepted" | "completed" | "cancelled") => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="secondary" className="bg-blue-500 hover:bg-blue-500/80">قيد الانتظار</Badge>;
-      case "accepted":
-        return <Badge variant="default" className="bg-green-500 hover:bg-green-500/80">مقبولة</Badge>;
-      case "completed":
-        return <Badge variant="default" className="bg-purple-500 hover:bg-purple-500/80">مكتملة</Badge>;
-      case "cancelled":
-        return <Badge variant="destructive">ملغاة</Badge>;
-      default:
-        return <Badge variant="outline">غير معروف</Badge>;
-    }
-  };
-
   if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -217,7 +203,7 @@ const PassengerMyRidesPage: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
-                  {getStatusBadge(ride.status)}
+                  <RideStatusBadge status={ride.status} />
                 </CardTitle>
                 <CardDescription>
                   السائق: {ride.driver_profiles?.full_name || 'لم يتم التعيين بعد'}

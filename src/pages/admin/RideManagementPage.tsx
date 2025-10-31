@@ -31,13 +31,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
-import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
-
-// Define a raw data interface to correctly type the joined profiles
-interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
-  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
-  driver_profiles: ProfileDetails[] | ProfileDetails | null;
-}
+import { ProfileDetails, Ride, RawRideData } from "@/types/supabase"; // Import shared types
+import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -202,21 +197,6 @@ const RideManagementPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: "pending" | "accepted" | "completed" | "cancelled") => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="secondary" className="bg-blue-500 hover:bg-blue-500/80">قيد الانتظار</Badge>;
-      case "accepted":
-        return <Badge variant="default" className="bg-green-500 hover:bg-green-500/80">مقبولة</Badge>;
-      case "completed":
-        return <Badge variant="default" className="bg-purple-500 hover:bg-purple-500/80">مكتملة</Badge>;
-      case "cancelled":
-        return <Badge variant="destructive">ملغاة</Badge>;
-      default:
-        return <Badge variant="outline">غير معروف</Badge>;
-    }
-  };
-
   const filteredRides = rides.filter(ride => {
     const passengerName = ride.passenger_profiles?.full_name || '';
     const driverName = ride.driver_profiles?.full_name || '';
@@ -290,7 +270,7 @@ const RideManagementPage: React.FC = () => {
                     <TableCell>{ride.pickup_location}</TableCell>
                     <TableCell>{ride.destination}</TableCell>
                     <TableCell>{ride.passengers_count}</TableCell>
-                    <TableCell>{getStatusBadge(ride.status)}</TableCell>
+                    <TableCell><RideStatusBadge status={ride.status} /></TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
