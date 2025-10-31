@@ -45,6 +45,9 @@ Since you've reset your database, you'll need to:
 
 *   `src/`: Contains all application source code.
     *   `src/pages/`: React components for different routes/pages.
+        *   **Passenger Pages:** `PassengerHome.tsx` (for requesting rides), `PassengerMyRidesPage.tsx` (for ride history).
+        *   **Driver Pages:** `DriverHome.tsx` (central page for available and current rides), `DriverAcceptedRidesPage.tsx` (for accepted ride history).
+        *   **Admin Pages:** `AdminDashboard.tsx` (main layout for admin), `OverviewPage.tsx`, `UserManagementPage.tsx`, `RideManagementPage.tsx`, `SettingsPage.tsx`.
     *   `src/components/`: Reusable UI components.
     *   `src/lib/`: Utility functions and configurations (e.g., `supabase.ts`).
     *   `src/hooks/`: Custom React hooks.
