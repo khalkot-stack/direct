@@ -54,9 +54,9 @@ const RequestRidePage: React.FC = () => {
     }
   }, [userLoading, user, navigate]);
 
-  const geocodeAddress = useCallback(async (address: string) => {
+  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-      toast.error("Google Maps API Key is not configured.");
+      toast.error("مفتاح Google Maps API غير مكوّن. الرجاء إضافة VITE_GOOGLE_MAPS_API_KEY إلى ملف .env الخاص بك.");
       return null;
     }
 
@@ -70,12 +70,12 @@ const RequestRidePage: React.FC = () => {
         const { lat, lng } = data.results[0].geometry.location;
         return { lat, lng };
       } else {
-        // toast.error(`لم يتم العثور على إحداثيات لـ: ${address}`); // Suppress frequent toasts for geocoding
+        toast.error(`لم يتم العثور على إحداثيات لـ ${type === 'pickup' ? 'موقع الانطلاق' : 'الوجهة'}: "${address}". الرجاء إدخال عنوان أكثر دقة.`);
         return null;
       }
     } catch (error) {
       console.error("Error geocoding address:", error);
-      // toast.error("فشل تحديد الموقع الجغرافي. الرجاء المحاولة مرة أخرى."); // Suppress frequent toasts
+      toast.error("فشل تحديد الموقع الجغرافي. الرجاء التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى.");
       return null;
     }
   }, []);
@@ -85,23 +85,27 @@ const RequestRidePage: React.FC = () => {
       const newMarkers = [];
       let newCenter = undefined;
 
+      // Geocode pickup location
+      let currentPickupCoords = null;
       if (pickupLocation) {
-        const coords = await geocodeAddress(pickupLocation);
-        setPickupCoords(coords);
-        if (coords) {
-          newMarkers.push({ id: 'pickup', lat: coords.lat, lng: coords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
-          newCenter = coords;
+        currentPickupCoords = await geocodeAddress(pickupLocation, 'pickup');
+        setPickupCoords(currentPickupCoords);
+        if (currentPickupCoords) {
+          newMarkers.push({ id: 'pickup', lat: currentPickupCoords.lat, lng: currentPickupCoords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
+          newCenter = currentPickupCoords;
         }
       } else {
         setPickupCoords(null);
       }
 
+      // Geocode destination
+      let currentDestinationCoords = null;
       if (destination) {
-        const coords = await geocodeAddress(destination);
-        setDestinationCoords(coords);
-        if (coords) {
-          newMarkers.push({ id: 'destination', lat: coords.lat, lng: coords.lng, title: 'الوجهة', iconColor: 'red' });
-          if (!newCenter) newCenter = coords;
+        currentDestinationCoords = await geocodeAddress(destination, 'destination');
+        setDestinationCoords(currentDestinationCoords);
+        if (currentDestinationCoords) {
+          newMarkers.push({ id: 'destination', lat: currentDestinationCoords.lat, lng: currentDestinationCoords.lng, title: 'الوجهة', iconColor: 'red' });
+          if (!newCenter) newCenter = currentDestinationCoords;
         }
       } else {
         setDestinationCoords(null);
@@ -127,8 +131,12 @@ const RequestRidePage: React.FC = () => {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
       return;
     }
-    if (!pickupCoords || !destinationCoords) {
-      toast.error("الرجاء تحديد موقع الانطلاق والوجهة بشكل صحيح على الخريطة.");
+    if (!pickupCoords) {
+      toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
+      return;
+    }
+    if (!destinationCoords) {
+      toast.error("الرجاء تحديد الوجهة بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
       return;
     }
 
