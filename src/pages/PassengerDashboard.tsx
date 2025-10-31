@@ -195,8 +195,8 @@ const PassengerDashboard: React.FC = () => {
   };
 
   const markers: MarkerLocation[] = currentRide ? [
-    { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' },
-    { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' },
+    { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' as const },
+    { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' as const },
   ] : [];
 
   if (userLoading || loadingRides) {

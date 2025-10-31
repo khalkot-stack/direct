@@ -131,10 +131,10 @@ const PassengerTrackingPage: React.FC = () => {
 
   const markers: MarkerLocation[] = [];
   if (ride) {
-    markers.push({ id: 'pickup', lat: ride.pickup_lat, lng: ride.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
-    markers.push({ id: 'destination', lat: ride.destination_lat, lng: ride.destination_lng, title: 'الوجهة', iconColor: 'red' });
+    markers.push({ id: 'pickup', lat: ride.pickup_lat, lng: ride.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' as const });
+    markers.push({ id: 'destination', lat: ride.destination_lat, lng: ride.destination_lng, title: 'الوجهة', iconColor: 'red' as const });
     if (ride.driver_current_lat && ride.driver_current_lng) {
-      markers.push({ id: 'driver', lat: ride.driver_current_lat, lng: ride.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' });
+      markers.push({ id: 'driver', lat: ride.driver_current_lat, lng: ride.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' as const });
     }
   }
 
