@@ -15,6 +15,8 @@ import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
+import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
+import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
 
 interface Ride {
   id: string;
@@ -89,10 +91,11 @@ const PassengerDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let rideChannel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchCurrentRide(user.id);
 
-      const rideChannel = supabase
+      rideChannel = supabase
         .channel('passenger_rides_channel')
         .on(
           'postgres_changes',
@@ -124,13 +127,15 @@ const PassengerDashboard: React.FC = () => {
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(rideChannel);
-      };
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
+
+    return () => {
+      if (rideChannel) {
+        supabase.removeChannel(rideChannel);
+      }
+    };
   }, [userLoading, user, fetchCurrentRide, navigate]);
 
   const handleOpenChat = () => {
@@ -189,7 +194,7 @@ const PassengerDashboard: React.FC = () => {
     }
   };
 
-  const markers = currentRide ? [
+  const markers: MarkerLocation[] = currentRide ? [
     { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' },
     { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' },
   ] : [];
@@ -304,7 +309,7 @@ const PassengerDashboard: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={user.id}
+          // currentUserId={user.id} // Removed
         />
       )}
 

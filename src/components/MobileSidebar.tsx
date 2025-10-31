@@ -7,10 +7,10 @@ import { Menu } from "lucide-react";
 import AdminSidebar from "./AdminSidebar";
 
 interface MobileSidebarProps {
-  className?: string;
+  // className?: string; // Removed unused prop
 }
 
-const MobileSidebar: React.FC<MobileSidebarProps> = ({ className }) => {
+const MobileSidebar: React.FC<MobileSidebarProps> = ({ /* className */ }) => {
   return (
     <Sheet>
       <SheetTrigger asChild>

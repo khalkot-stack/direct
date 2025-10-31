@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Removed useEffect, useState
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase"; // Removed unused import
 
 // Context
 import { UserProvider } from "@/context/UserContext";

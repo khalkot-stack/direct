@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react"; // Removed useEffect, useCallback
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { useUser } from "@/context/UserContext";
 
 const UserNav: React.FC = () => {
-  const { user, profile, loading: userLoading, fetchUserProfile } = useUser();
+  const { user, profile, loading: userLoading } = useUser(); // Removed fetchUserProfile
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 

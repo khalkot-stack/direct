@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import ChatDialog from "@/components/ChatDialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
+import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
+import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
 
 interface Ride {
   id: string;
@@ -75,10 +77,11 @@ const PassengerTrackingPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchRideDetails(user.id);
 
-      const channel = supabase
+      channel = supabase
         .channel('ride_tracking_channel')
         .on(
           'postgres_changes',
@@ -102,15 +105,17 @@ const PassengerTrackingPage: React.FC = () => {
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     } else if (!userLoading && !user) {
       // User is not logged in, redirect or show message
       toast.error("الرجاء تسجيل الدخول لتتبع رحلتك.");
       // navigate("/auth"); // Assuming ProtectedRoute handles this
     }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [userLoading, user, fetchRideDetails]);
 
   const handleOpenChat = () => {
@@ -124,7 +129,7 @@ const PassengerTrackingPage: React.FC = () => {
     setIsChatDialogOpen(true);
   };
 
-  const markers = [];
+  const markers: MarkerLocation[] = [];
   if (ride) {
     markers.push({ id: 'pickup', lat: ride.pickup_lat, lng: ride.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
     markers.push({ id: 'destination', lat: ride.destination_lat, lng: ride.destination_lng, title: 'الوجهة', iconColor: 'red' });
@@ -198,7 +203,7 @@ const PassengerTrackingPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={user.id}
+          // currentUserId={user.id} // Removed
         />
       )}
     </div>

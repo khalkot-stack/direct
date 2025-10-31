@@ -9,9 +9,9 @@ import React, {
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+// import { toast } from "sonner"; // Removed unused import
+// import { useNavigate } from "react-router-dom"; // Removed unused import
 
 interface Profile {
   id: string;
@@ -41,7 +41,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Removed unused variable
 
   const fetchUserProfile = useCallback(async (userId: string) => {
     const { data, error, status } = await supabase

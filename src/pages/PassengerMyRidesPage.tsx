@@ -13,6 +13,7 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
+import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 
 interface Ride {
   id: string;
@@ -77,10 +78,11 @@ const PassengerMyRidesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchMyRides(user.id);
 
-      const channel = supabase
+      channel = supabase
         .channel('passenger_my_rides_channel')
         .on(
           'postgres_changes',
@@ -108,14 +110,16 @@ const PassengerMyRidesPage: React.FC = () => {
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     } else if (!userLoading && !user) {
       toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
       // navigate("/auth"); // ProtectedRoute handles this
     }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [userLoading, user, fetchMyRides]);
 
   const handleOpenChat = (ride: Ride) => {
@@ -280,7 +284,7 @@ const PassengerMyRidesPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={user.id}
+          // currentUserId={user.id} // Removed
         />
       )}
 

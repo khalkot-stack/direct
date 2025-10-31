@@ -34,7 +34,7 @@ import { useUser } from "@/context/UserContext";
 
 interface ProfileInfo {
   id: string;
-  full_name: string;
+  full_name: string | null; // Changed to allow null
   user_type: string;
 }
 
@@ -47,8 +47,8 @@ interface Ride {
   passengers_count: number;
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
-  passenger_profiles: ProfileInfo | null;
-  driver_profiles: ProfileInfo | null;
+  passenger_profiles: ProfileInfo[] | null; // Changed to array
+  driver_profiles: ProfileInfo[] | null; // Changed to array
 }
 
 const RideManagementPage: React.FC = () => {
@@ -168,16 +168,16 @@ const RideManagementPage: React.FC = () => {
 
     let otherUser: { id: string; name: string } | null = null;
 
-    if (user.id === ride.passenger_id && ride.driver_profiles) {
-      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name };
-    } else if (user.id === ride.driver_id && ride.passenger_profiles) {
-      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
+    if (user.id === ride.passenger_id && ride.driver_profiles?.[0]) {
+      otherUser = { id: ride.driver_id!, name: ride.driver_profiles[0].full_name || 'السائق' };
+    } else if (user.id === ride.driver_id && ride.passenger_profiles?.[0]) {
+      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles[0].full_name || 'الراكب' };
     } else if (user.id !== ride.passenger_id && user.id !== ride.driver_id) {
       // Admin is initiating chat, choose passenger by default or prompt
-      if (ride.passenger_profiles) {
-        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
-      } else if (ride.driver_profiles) {
-        otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name };
+      if (ride.passenger_profiles?.[0]) {
+        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles[0].full_name || 'الراكب' };
+      } else if (ride.driver_profiles?.[0]) {
+        otherUser = { id: ride.driver_id!, name: ride.driver_profiles[0].full_name || 'السائق' };
       }
     }
 
@@ -207,8 +207,8 @@ const RideManagementPage: React.FC = () => {
   };
 
   const filteredRides = rides.filter(ride => {
-    const passengerName = ride.passenger_profiles?.full_name || '';
-    const driverName = ride.driver_profiles?.full_name || '';
+    const passengerName = ride.passenger_profiles?.[0]?.full_name || '';
+    const driverName = ride.driver_profiles?.[0]?.full_name || '';
 
     return (
       ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -270,8 +270,8 @@ const RideManagementPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredRides.map((ride) => {
-                const passengerName = ride.passenger_profiles?.full_name || '';
-                const driverName = ride.driver_profiles?.full_name || '';
+                const passengerName = ride.passenger_profiles?.[0]?.full_name || '';
+                const driverName = ride.driver_profiles?.[0]?.full_name || '';
                 return (
                   <TableRow key={ride.id}>
                     <TableCell className="font-medium">{passengerName}</TableCell>
@@ -359,7 +359,7 @@ const RideManagementPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={user.id}
+          // currentUserId={user.id} // Removed
         />
       )}
     </div>

@@ -15,8 +15,8 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { Badge } from "@/components/ui/badge"; // Added missing import
-import { useUser } from "@/context/UserContext"; // Added missing import
+import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 
 interface StatCardProps {
   title: string;
@@ -39,23 +39,27 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
+interface ProfileName {
+  full_name: string | null;
+}
+
 interface RecentRide {
   id: string;
   pickup_location: string;
   destination: string;
   status: string;
-  passenger_profiles: { full_name: string } | null;
-  driver_profiles: { full_name: string } | null;
+  passenger_profiles: ProfileName[] | null; // Changed to array
+  driver_profiles: ProfileName[] | null; // Changed to array
 }
 
 const OverviewPage: React.FC = () => {
-  const { user, loading: userLoading } = useUser(); // Use useUser hook
+  const { user, loading: userLoading } = useUser();
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [completedRides, setCompletedRides] = useState<number | null>(null);
-  const [totalRevenue, setTotalRevenue] = useState<number | null>(null); // Placeholder for now
+  const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [recentRides, setRecentRides] = useState<RecentRide[]>([]);
-  const [loadingData, setLoadingData] = useState(true); // Renamed to avoid conflict with userLoading
+  const [loadingData, setLoadingData] = useState(true);
 
   const fetchOverviewData = useCallback(async () => {
     setLoadingData(true);
@@ -114,12 +118,12 @@ const OverviewPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user) { // Ensure user is loaded before fetching data
+    if (!userLoading && user) {
       fetchOverviewData();
     } else if (!userLoading && !user) {
-      setLoadingData(false); // If no user, stop loading
+      setLoadingData(false);
     }
-  }, [userLoading, user, fetchOverviewData]); // Add user to dependency array
+  }, [userLoading, user, fetchOverviewData]);
 
   const revenueData = [
     { name: "يناير", total: 4000 },
@@ -131,7 +135,7 @@ const OverviewPage: React.FC = () => {
     { name: "يوليو", total: 7000 },
   ];
 
-  if (userLoading || loadingData) { // Use combined loading state
+  if (userLoading || loadingData) {
     return (
       <div className="container mx-auto p-4 flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -214,7 +218,7 @@ const OverviewPage: React.FC = () => {
                     <div className="ml-4 space-y-1">
                       <p className="text-sm font-medium leading-none">رحلة من {ride.pickup_location} إلى {ride.destination}</p>
                       <p className="text-sm text-muted-foreground">
-                        الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}، السائق: {ride.driver_profiles?.full_name || 'غير معروف'}
+                        الراكب: {ride.passenger_profiles?.[0]?.full_name || 'غير معروف'}، السائق: {ride.driver_profiles?.[0]?.full_name || 'غير معروف'}
                       </p>
                     </div>
                     <div className="ml-auto font-medium">

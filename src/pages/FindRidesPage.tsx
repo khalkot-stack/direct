@@ -12,6 +12,8 @@ import RideSearchDialog from "@/components/RideSearchDialog";
 import InteractiveMap from "@/components/InteractiveMap";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
+import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
+import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
 
 interface Ride {
   id: string;
@@ -83,10 +85,11 @@ const FindRidesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchAvailableRides(user.id, searchCriteria);
 
-      const channel = supabase
+      channel = supabase
         .channel('available_rides_channel')
         .on(
           'postgres_changes',
@@ -102,14 +105,16 @@ const FindRidesPage: React.FC = () => {
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     } else if (!userLoading && !user) {
       toast.error("الرجاء تسجيل الدخول للبحث عن رحلات.");
       // navigate("/auth"); // ProtectedRoute handles this
     }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [userLoading, user, fetchAvailableRides, searchCriteria]);
 
   const handleSearch = (criteria: RideSearchCriteria) => {
@@ -146,7 +151,7 @@ const FindRidesPage: React.FC = () => {
     }
   };
 
-  const markers = availableRides.flatMap(ride => [
+  const markers: MarkerLocation[] = availableRides.flatMap(ride => [
     { id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' },
     { id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' },
   ]);

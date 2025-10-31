@@ -16,9 +16,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
+import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 
 interface ProfileName {
-  full_name: string;
+  full_name: string | null;
 }
 
 interface Message {
@@ -26,8 +27,8 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
-  sender_profiles: ProfileName | null;
-  receiver_profiles: ProfileName | null;
+  sender_profiles: ProfileName[] | null; // Changed to array
+  receiver_profiles: ProfileName[] | null; // Changed to array
 }
 
 interface SupabaseJoinedMessageData {
@@ -35,8 +36,8 @@ interface SupabaseJoinedMessageData {
   sender_id: string;
   content: string;
   created_at: string;
-  sender_profiles: ProfileName | null;
-  receiver_profiles: ProfileName | null;
+  sender_profiles: ProfileName[] | null; // Changed to array
+  receiver_profiles: ProfileName[] | null; // Changed to array
 }
 
 interface ChatDialogProps {
@@ -115,9 +116,16 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   }, [messages, open]);
 
   useEffect(() => {
-    if (!open || !currentUserId) return;
+    let channel: RealtimeChannel | undefined; // Declare channel outside if block
+    if (!open || !currentUserId) {
+      return () => {
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+      };
+    }
 
-    const channel = supabase
+    channel = supabase
       .channel(`chat_ride_${rideId}`)
       .on(
         'postgres_changes',
@@ -149,7 +157,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
-                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
+                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.[0]?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
                 }
               }
             });
@@ -158,7 +166,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [open, rideId, currentUserId]);
 
@@ -235,7 +245,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                     )}
                   >
                     <p className="text-xs font-semibold mb-1">
-                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.full_name || 'مستخدم'}
+                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.[0]?.full_name || 'مستخدم'}
                     </p>
                     <p className="text-sm">{msg.content}</p>
                     <p className="text-xs text-gray-300 dark:text-gray-500 mt-1 text-left">
