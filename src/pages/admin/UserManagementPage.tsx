@@ -31,6 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { Profile } from "@/types/supabase"; // Import shared Profile type
+import UserStatusBadge from "@/components/UserStatusBadge"; // Import the new component
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -127,19 +128,6 @@ const UserManagementPage: React.FC = () => {
     user.user_type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status: "active" | "suspended" | "banned") => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default" className="bg-green-500 hover:bg-green-500/80">نشط</Badge>;
-      case "suspended":
-        return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-500/80">معلق</Badge>;
-      case "banned":
-        return <Badge variant="destructive">محظور</Badge>;
-      default:
-        return <Badge variant="outline">غير معروف</Badge>;
-    }
-  };
-
   if (userLoading || loadingUsers) { // Use combined loading state
     return (
       <div className="flex justify-center items-center h-64">
@@ -194,7 +182,7 @@ const UserManagementPage: React.FC = () => {
                   <TableCell className="font-medium">{user.full_name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.user_type === "passenger" ? "راكب" : user.user_type === "driver" ? "سائق" : "مدير"}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
+                  <TableCell><UserStatusBadge status={user.status} /></TableCell>
                   <TableCell>{user.phone_number || "N/A"}</TableCell>
                   <TableCell className="text-right">
                     <Button
