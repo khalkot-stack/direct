@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle, Search, Edit, Trash2, Loader2, MessageSquare, Car as CarIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RideFormDialog from "@/components/RideFormDialog";
 import EmptyState from "@/components/EmptyState";

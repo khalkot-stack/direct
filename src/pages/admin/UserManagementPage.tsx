@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle, Search, Edit, Trash2, Loader2, Users as UsersIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import UserFormDialog from "@/components/UserFormDialog";
 import EmptyState from "@/components/EmptyState";

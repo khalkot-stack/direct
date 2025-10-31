@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, MapPin, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";

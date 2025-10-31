@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, MapPin, Car, MessageSquare, XCircle, Search, LocateFixed } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";

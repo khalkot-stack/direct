@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, Car, DollarSign, Star, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   ResponsiveContainer,

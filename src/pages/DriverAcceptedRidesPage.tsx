@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";

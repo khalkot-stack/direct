@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import LogoutButton from "@/components/LogoutButton";
 import { useUser } from "@/context/UserContext";
