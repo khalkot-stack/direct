@@ -33,11 +33,6 @@ import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
 import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
 
-interface SupabaseRideManagementPageRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
-  passenger_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
-  driver_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
-}
-
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [rides, setRides] = useState<Ride[]>([]); // Changed to use Ride interface directly
@@ -55,7 +50,7 @@ const RideManagementPage: React.FC = () => {
 
   const fetchRides = useCallback(async () => {
     setLoadingRides(true);
-    const { data, error } = await supabase
+    const { data: ridesRaw, error } = await supabase
       .from('rides')
       .select(`
         id,
@@ -73,8 +68,8 @@ const RideManagementPage: React.FC = () => {
         destination_lng,
         driver_current_lat,
         driver_current_lng,
-        passenger_profiles:passenger_id(id, full_name, user_type, avatar_url),
-        driver_profiles:driver_id(id, full_name, user_type, avatar_url)
+        passenger_profiles:passenger_id(id, full_name, avatar_url),
+        driver_profiles:driver_id(id, full_name, avatar_url)
       `)
       .order('created_at', { ascending: false });
 
@@ -82,11 +77,16 @@ const RideManagementPage: React.FC = () => {
       toast.error(`فشل جلب الرحلات: ${error.message}`);
       console.error("Error fetching rides:", error);
     } else {
-      const formattedRides: Ride[] = (data as SupabaseRideManagementPageRide[]).map(ride => ({
+      // Map raw data to conform to the Ride interface
+      const formattedRides: Ride[] = (ridesRaw || []).map(ride => ({
         ...ride,
-        passenger_profiles: Array.isArray(ride.passenger_profiles) ? ride.passenger_profiles[0] : ride.passenger_profiles,
-        driver_profiles: Array.isArray(ride.driver_profiles) ? ride.driver_profiles[0] : ride.driver_profiles,
-      }));
+        passenger_profiles: Array.isArray(ride.passenger_profiles) && ride.passenger_profiles.length > 0
+          ? ride.passenger_profiles[0]
+          : (ride.passenger_profiles as ProfileDetails | null),
+        driver_profiles: Array.isArray(ride.driver_profiles) && ride.driver_profiles.length > 0
+          ? ride.driver_profiles[0]
+          : (ride.driver_profiles as ProfileDetails | null),
+      })) as Ride[]; // Cast to Ride[] after mapping
       setRides(formattedRides);
     }
     setLoadingRides(false);

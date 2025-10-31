@@ -40,23 +40,13 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
-interface SupabaseRecentRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
-  passenger_profiles: ProfileDetails[] | null;
-  driver_profiles: ProfileDetails[] | null;
-}
-
-interface RecentRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
-  passenger_profiles: ProfileDetails | null;
-  driver_profiles: ProfileDetails | null;
-}
-
 const OverviewPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [completedRides, setCompletedRides] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<number | null>(null);
-  const [recentRides, setRecentRides] = useState<RecentRide[]>([]);
+  const [recentRides, setRecentRides] = useState<Ride[]>([]); // Use shared Ride type directly
   const [loadingData, setLoadingData] = useState(true);
 
   const fetchOverviewData = useCallback(async () => {
@@ -90,7 +80,7 @@ const OverviewPage: React.FC = () => {
       }
 
       // Fetch recent rides
-      const { data: recentRidesData, error: recentRidesError } = await supabase
+      const { data: recentRidesRaw, error: recentRidesError } = await supabase
         .from('rides')
         .select(`
           id,
@@ -105,11 +95,16 @@ const OverviewPage: React.FC = () => {
         .limit(5);
       if (recentRidesError) throw recentRidesError;
 
-      const formattedRecentRides: RecentRide[] = (recentRidesData as SupabaseRecentRideData[]).map(ride => ({
+      // Map raw data to conform to the Ride interface
+      const formattedRecentRides: Ride[] = (recentRidesRaw || []).map(ride => ({
         ...ride,
-        passenger_profiles: Array.isArray(ride.passenger_profiles) ? ride.passenger_profiles[0] : ride.passenger_profiles,
-        driver_profiles: Array.isArray(ride.driver_profiles) ? ride.driver_profiles[0] : ride.driver_profiles,
-      }));
+        passenger_profiles: Array.isArray(ride.passenger_profiles) && ride.passenger_profiles.length > 0
+          ? ride.passenger_profiles[0]
+          : (ride.passenger_profiles as ProfileDetails | null),
+        driver_profiles: Array.isArray(ride.driver_profiles) && ride.driver_profiles.length > 0
+          ? ride.driver_profiles[0]
+          : (ride.driver_profiles as ProfileDetails | null),
+      })) as Ride[]; // Cast to Ride[] after mapping
       setRecentRides(formattedRecentRides);
 
       // Placeholder for revenue calculation (requires more complex logic, e.g., ride prices)
