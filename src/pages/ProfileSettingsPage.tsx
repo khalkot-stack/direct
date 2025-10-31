@@ -28,7 +28,7 @@ import { Profile } from "@/types/supabase"; // Import shared Profile type
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "الاسم الكامل مطلوب." }),
-  phone_number: z.string().optional(),
+  phone_number: z.string().nullable().optional(), // Allow null or undefined
   user_type: z.enum(["passenger", "driver", "admin"]),
 });
 
@@ -52,8 +52,8 @@ const ProfileSettingsPage: React.FC = () => {
     if (!userLoading && profile) {
       setLocalProfile(profile);
       form.reset({
-        full_name: profile.full_name,
-        phone_number: profile.phone_number || "",
+        full_name: profile.full_name || "", // Provide empty string if null
+        phone_number: profile.phone_number || "", // Provide empty string if null
         user_type: profile.user_type,
       });
     }
@@ -72,11 +72,13 @@ const ProfileSettingsPage: React.FC = () => {
     if (!localProfile || !user) return;
 
     setIsSaving(true);
+    const updatedPhoneNumber = values.phone_number === "" ? null : values.phone_number; // Convert empty string to null
+
     const { error } = await supabase
       .from('profiles')
       .update({
         full_name: values.full_name,
-        phone_number: values.phone_number,
+        phone_number: updatedPhoneNumber,
         user_type: values.user_type,
       })
       .eq('id', localProfile.id);
@@ -92,7 +94,7 @@ const ProfileSettingsPage: React.FC = () => {
         data: {
           full_name: values.full_name,
           user_type: values.user_type,
-          phone_number: values.phone_number,
+          phone_number: updatedPhoneNumber,
         }
       });
       fetchUserProfile(); // Re-fetch to update global context

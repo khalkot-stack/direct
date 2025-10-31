@@ -1,11 +1,11 @@
 export interface Profile {
   id: string;
-  full_name: string;
+  full_name: string | null; // Changed to allow null
   email: string;
   user_type: "passenger" | "driver" | "admin";
   status: "active" | "suspended" | "banned";
-  phone_number?: string | null;
-  avatar_url?: string | null;
+  phone_number: string | null; // Changed to allow null
+  avatar_url: string | null; // Changed to allow null
   created_at: string;
 }
 
@@ -13,7 +13,7 @@ export interface ProfileDetails {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  user_type?: "passenger" | "driver" | "admin";
+  // Removed user_type as it's not consistently selected in joins
 }
 
 export interface Ride {

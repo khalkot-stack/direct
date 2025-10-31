@@ -45,11 +45,11 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         setStatus("active");
         setPhoneNumber("");
       } else if (profile) {
-        setFullName(profile.full_name);
+        setFullName(profile.full_name || ""); // Handle null
         setEmail(profile.email);
         setUserType(profile.user_type);
         setStatus(profile.status);
-        setPhoneNumber(profile.phone_number || "");
+        setPhoneNumber(profile.phone_number || ""); // Handle null
         setPassword("");
       }
     }
@@ -71,13 +71,15 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         return;
       }
 
+      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
-            phone_number: phoneNumber,
+            phone_number: finalPhoneNumber,
             user_type: userType,
             status: status,
           },
@@ -91,7 +93,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
         onOpenChange(false);
         // Pass a dummy profile with minimal data for new user, actual data will be fetched by parent
-        await onSave({ id: data.user.id, full_name: fullName, email, user_type: userType, status, created_at: new Date().toISOString() });
+        await onSave({ id: data.user.id, full_name: fullName, email, user_type: userType, status, phone_number: finalPhoneNumber, avatar_url: null, created_at: new Date().toISOString() });
       }
     } else {
       if (!profile?.id || !fullName || !email || !userType || !status) {
@@ -100,13 +102,16 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         return;
       }
 
+      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
+
       const updatedProfile: Profile = {
         id: profile.id,
         full_name: fullName,
         email,
         user_type: userType,
         status,
-        phone_number: phoneNumber,
+        phone_number: finalPhoneNumber,
+        avatar_url: profile.avatar_url, // Keep existing avatar_url
         created_at: profile.created_at, // Ensure created_at is passed
       };
       await onSave(updatedProfile);
