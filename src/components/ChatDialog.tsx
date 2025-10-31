@@ -77,14 +77,24 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       toast.error(`فشل جلب الرسائل: ${error.message}`);
       console.error("Error fetching messages:", error);
     } else {
-      const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => ({
-        id: msg.id,
-        sender_id: msg.sender_id,
-        content: msg.content,
-        created_at: msg.created_at,
-        sender_profiles: Array.isArray(msg.sender_profiles) && msg.sender_profiles.length > 0 ? msg.sender_profiles[0] : (msg.sender_profiles as ProfileDetails | null),
-        receiver_profiles: Array.isArray(msg.receiver_profiles) && msg.receiver_profiles.length > 0 ? msg.receiver_profiles[0] : (msg.receiver_profiles as ProfileDetails | null),
-      }));
+      const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => {
+        const senderProfiles = Array.isArray(msg.sender_profiles) && msg.sender_profiles.length > 0
+          ? msg.sender_profiles[0]
+          : (msg.sender_profiles as ProfileDetails | null);
+        
+        const receiverProfiles = Array.isArray(msg.receiver_profiles) && msg.receiver_profiles.length > 0
+          ? msg.receiver_profiles[0]
+          : (msg.receiver_profiles as ProfileDetails | null);
+
+        return {
+          id: msg.id,
+          sender_id: msg.sender_id,
+          content: msg.content,
+          created_at: msg.created_at,
+          sender_profiles: senderProfiles,
+          receiver_profiles: receiverProfiles,
+        };
+      });
       setMessages(formattedMessages);
     }
     setLoadingMessages(false);
@@ -134,13 +144,23 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               if (error) {
                 console.error("Error fetching new message for realtime:", error);
               } else if (data) {
+                const rawSenderProfiles = (data as SupabaseJoinedMessageData).sender_profiles;
+                const senderProfiles = Array.isArray(rawSenderProfiles) && rawSenderProfiles.length > 0
+                  ? rawSenderProfiles[0]
+                  : (rawSenderProfiles as ProfileDetails | null);
+                
+                const rawReceiverProfiles = (data as SupabaseJoinedMessageData).receiver_profiles;
+                const receiverProfiles = Array.isArray(rawReceiverProfiles) && rawReceiverProfiles.length > 0
+                  ? rawReceiverProfiles[0]
+                  : (rawReceiverProfiles as ProfileDetails | null);
+
                 const formattedNewMessage: Message = {
                   id: data.id,
                   sender_id: data.sender_id,
                   content: data.content,
                   created_at: data.created_at,
-                  sender_profiles: Array.isArray((data as SupabaseJoinedMessageData).sender_profiles) && (data as SupabaseJoinedMessageData).sender_profiles?.length > 0 ? (data as SupabaseJoinedMessageData).sender_profiles[0] : ((data as SupabaseJoinedMessageData).sender_profiles as ProfileDetails | null),
-                  receiver_profiles: Array.isArray((data as SupabaseJoinedMessageData).receiver_profiles) && (data as SupabaseJoinedMessageData).receiver_profiles?.length > 0 ? (data as SupabaseJoinedMessageData).receiver_profiles[0] : ((data as SupabaseJoinedMessageData).receiver_profiles as ProfileDetails | null),
+                  sender_profiles: senderProfiles,
+                  receiver_profiles: receiverProfiles,
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
