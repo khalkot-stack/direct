@@ -29,8 +29,6 @@ import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
 
 // Driver Pages
 import DriverHome from "@/pages/DriverHome"; // Import the new DriverHome
-import DriverDashboard from "@/pages/DriverDashboard"; // Keep for now, will remove later
-import FindRidesPage from "@/pages/FindRidesPage"; // Keep for now, will remove later
 import DriverAcceptedRidesPage from "@/pages/DriverAcceptedRidesPage";
 
 // Admin Pages
@@ -65,8 +63,7 @@ function App() {
               <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerMyRidesPage /></ProtectedRoute>} />
 
               {/* Driver Routes */}
-              <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} /> {/* Use DriverHome here */}
-              <Route path="/driver-dashboard/find-rides" element={<ProtectedRoute allowedRoles={["driver"]}><FindRidesPage /></ProtectedRoute>} /> {/* Keep for now */}
+              <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} />
               <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAcceptedRidesPage /></ProtectedRoute>} />
             </Route>
 
