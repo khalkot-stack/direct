@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MapPin, Car, History, Settings } from 'lucide-react';
+import { Home, History, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/UserContext';
 

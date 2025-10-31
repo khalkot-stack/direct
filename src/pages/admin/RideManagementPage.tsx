@@ -28,10 +28,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
-import { ProfileDetails, Ride, RawRideData } from "@/types/supabase"; // Import shared types
+import { Ride, RawRideData } from "@/types/supabase"; // Import shared types
 import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
 
 const RideManagementPage: React.FC = () => {

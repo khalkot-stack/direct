@@ -28,7 +28,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { Profile } from "@/types/supabase"; // Import shared Profile type
 import UserStatusBadge from "@/components/UserStatusBadge"; // Import the new component

@@ -8,12 +8,11 @@ import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
-import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
-import { Ride, Rating, RawRideData, ProfileDetails } from "@/types/supabase"; // Import shared Ride and Rating types
+import { Ride, Rating, RawRideData } from "@/types/supabase"; // Import shared Ride and Rating types
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
 
