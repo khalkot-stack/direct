@@ -62,7 +62,7 @@ const PassengerHome: React.FC = () => {
     },
   });
 
-  const { watch, setValue, formState: { errors } = {} } = form; // Destructure errors with default empty object
+  const { watch, setValue, formState: { errors = {} } } = form; // Fixed: Added default empty object for errors
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
