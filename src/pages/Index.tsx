@@ -38,6 +38,9 @@ const Index: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-lg text-center">
         <CardHeader>
+          <div className="flex justify-center mb-4">
+            <img src="/دايركت.png" alt="DIRECT Logo" className="h-16 w-auto dark:invert" />
+          </div>
           <CardTitle className="text-4xl font-bold text-primary dark:text-primary-light mb-2">
             مرحبًا بك في DIRECT
           </CardTitle>

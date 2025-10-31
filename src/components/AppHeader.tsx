@@ -14,7 +14,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ className }) => {
     <header className={cn("sticky top-0 z-50 w-full bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-4 flex items-center justify-between shadow-sm", className)}>
       <div className="flex items-center gap-3">
         <Link to="/">
-          <span className="text-xl font-bold text-primary dark:text-primary-light">DIRECT</span>
+          <img src="/دايركت.png" alt="DIRECT Logo" className="h-8 w-auto dark:invert" />
         </Link>
       </div>
 
