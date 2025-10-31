@@ -33,14 +33,14 @@ import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
 import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
 
-interface RideManagementPageRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+interface SupabaseRideManagementPageRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
   passenger_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
   driver_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
 }
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
-  const [rides, setRides] = useState<RideManagementPageRide[]>([]);
+  const [rides, setRides] = useState<Ride[]>([]); // Changed to use Ride interface directly
   const [loadingRides, setLoadingRides] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -66,8 +66,15 @@ const RideManagementPage: React.FC = () => {
         passengers_count,
         status,
         created_at,
-        passenger_profiles:passenger_id(id, full_name, user_type),
-        driver_profiles:driver_id(id, full_name, user_type)
+        cancellation_reason,
+        pickup_lat,
+        pickup_lng,
+        destination_lat,
+        destination_lng,
+        driver_current_lat,
+        driver_current_lng,
+        passenger_profiles:passenger_id(id, full_name, user_type, avatar_url),
+        driver_profiles:driver_id(id, full_name, user_type, avatar_url)
       `)
       .order('created_at', { ascending: false });
 
@@ -75,7 +82,12 @@ const RideManagementPage: React.FC = () => {
       toast.error(`فشل جلب الرحلات: ${error.message}`);
       console.error("Error fetching rides:", error);
     } else {
-      setRides(data as RideManagementPageRide[]);
+      const formattedRides: Ride[] = (data as SupabaseRideManagementPageRide[]).map(ride => ({
+        ...ride,
+        passenger_profiles: Array.isArray(ride.passenger_profiles) ? ride.passenger_profiles[0] : ride.passenger_profiles,
+        driver_profiles: Array.isArray(ride.driver_profiles) ? ride.driver_profiles[0] : ride.driver_profiles,
+      }));
+      setRides(formattedRides);
     }
     setLoadingRides(false);
   }, []);
@@ -89,7 +101,7 @@ const RideManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleEditRide = (ride: Ride) => {
+  const handleEditRide = (ride: Ride) => { // Changed type to Ride
     setSelectedRide(ride);
     setIsFormDialogOpen(true);
   };
@@ -147,7 +159,7 @@ const RideManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenChat = (ride: RideManagementPageRide) => {
+  const handleOpenChat = (ride: Ride) => { // Changed type to Ride
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول للمحادثة.");
       return;
@@ -155,16 +167,16 @@ const RideManagementPage: React.FC = () => {
 
     let otherUser: { id: string; name: string } | null = null;
 
-    if (user.id === ride.passenger_id && ride.driver_profiles?.[0]) {
-      otherUser = { id: ride.driver_id!, name: ride.driver_profiles[0].full_name || 'السائق' };
-    } else if (user.id === ride.driver_id && ride.passenger_profiles?.[0]) {
-      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles[0].full_name || 'الراكب' };
+    if (user.id === ride.passenger_id && ride.driver_profiles) {
+      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
+    } else if (user.id === ride.driver_id && ride.passenger_profiles) {
+      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' };
     } else if (user.id !== ride.passenger_id && user.id !== ride.driver_id) {
       // Admin is initiating chat, choose passenger by default or prompt
-      if (ride.passenger_profiles?.[0]) {
-        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles[0].full_name || 'الراكب' };
-      } else if (ride.driver_profiles?.[0]) {
-        otherUser = { id: ride.driver_id!, name: ride.driver_profiles[0].full_name || 'السائق' };
+      if (ride.passenger_profiles) {
+        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' };
+      } else if (ride.driver_profiles) {
+        otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
       }
     }
 
@@ -194,8 +206,8 @@ const RideManagementPage: React.FC = () => {
   };
 
   const filteredRides = rides.filter(ride => {
-    const passengerName = ride.passenger_profiles?.[0]?.full_name || '';
-    const driverName = ride.driver_profiles?.[0]?.full_name || '';
+    const passengerName = ride.passenger_profiles?.full_name || '';
+    const driverName = ride.driver_profiles?.full_name || '';
 
     return (
       ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -257,8 +269,8 @@ const RideManagementPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredRides.map((ride) => {
-                const passengerName = ride.passenger_profiles?.[0]?.full_name || '';
-                const driverName = ride.driver_profiles?.[0]?.full_name || '';
+                const passengerName = ride.passenger_profiles?.full_name || '';
+                const driverName = ride.driver_profiles?.full_name || '';
                 return (
                   <TableRow key={ride.id}>
                     <TableCell className="font-medium">{passengerName}</TableCell>
@@ -294,7 +306,7 @@ const RideManagementPage: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
-                            onClick={() => setRideToDelete(ride)}
+                            onClick={() => setRideToDelete(ride)} // Changed type to Ride
                             title="حذف"
                           >
                             <Trash2 className="h-4 w-4" />

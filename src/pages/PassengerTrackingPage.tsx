@@ -132,6 +132,10 @@ const PassengerTrackingPage: React.FC = () => {
     );
   }
 
+  // Provide default values for lat/lng if they are null
+  const centerLat = ride.driver_current_lat ?? ride.pickup_lat ?? 31.9539; // Default to Amman if both are null
+  const centerLng = ride.driver_current_lng ?? ride.pickup_lng ?? 35.9106; // Default to Amman if both are null
+
   return (
     <div className="container mx-auto p-4">
       <PageHeader title="تتبع الرحلة" description="تتبع رحلتك الحالية في الوقت الفعلي." backPath="/passenger-dashboard" />
@@ -150,7 +154,7 @@ const PassengerTrackingPage: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="h-[400px] w-full rounded-md overflow-hidden">
-            <InteractiveMap markers={markers} center={{ lat: ride.driver_current_lat || ride.pickup_lat, lng: ride.driver_current_lng || ride.pickup_lng }} zoom={14} />
+            <InteractiveMap markers={markers} center={{ lat: centerLat, lng: centerLng }} zoom={14} />
           </div>
           <div className="flex justify-center mt-4">
             <Button onClick={handleOpenChat} variant="outline" className="w-full max-w-xs">

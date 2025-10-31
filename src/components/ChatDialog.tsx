@@ -24,8 +24,8 @@ interface SupabaseJoinedMessageData {
   sender_id: string;
   content: string;
   created_at: string;
-  sender_profiles: ProfileDetails | null;
-  receiver_profiles: ProfileDetails | null;
+  sender_profiles: ProfileDetails | ProfileDetails[] | null;
+  receiver_profiles: ProfileDetails | ProfileDetails[] | null;
 }
 
 interface ChatDialogProps {
@@ -67,8 +67,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id,
         content,
         created_at,
-        sender_profiles:sender_id(full_name),
-        receiver_profiles:receiver_id(full_name)
+        sender_profiles:sender_id(id, full_name, avatar_url),
+        receiver_profiles:receiver_id(id, full_name, avatar_url)
       `)
       .eq('ride_id', rideId)
       .order('created_at', { ascending: true });
@@ -82,8 +82,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id: msg.sender_id,
         content: msg.content,
         created_at: msg.created_at,
-        sender_profiles: msg.sender_profiles,
-        receiver_profiles: msg.receiver_profiles,
+        sender_profiles: Array.isArray(msg.sender_profiles) ? msg.sender_profiles[0] : msg.sender_profiles,
+        receiver_profiles: Array.isArray(msg.receiver_profiles) ? msg.receiver_profiles[0] : msg.receiver_profiles,
       }));
       setMessages(formattedMessages);
     }
@@ -125,8 +125,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               sender_id,
               content,
               created_at,
-              sender_profiles:sender_id(full_name),
-              receiver_profiles:receiver_id(full_name)
+              sender_profiles:sender_id(id, full_name, avatar_url),
+              receiver_profiles:receiver_id(id, full_name, avatar_url)
             `)
             .eq('id', payload.new.id)
             .single()
@@ -139,8 +139,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                   sender_id: data.sender_id,
                   content: data.content,
                   created_at: data.created_at,
-                  sender_profiles: (data as SupabaseJoinedMessageData).sender_profiles,
-                  receiver_profiles: (data as SupabaseJoinedMessageData).receiver_profiles,
+                  sender_profiles: Array.isArray((data as SupabaseJoinedMessageData).sender_profiles) ? (data as SupabaseJoinedMessageData).sender_profiles[0] : (data as SupabaseJoinedMessageData).sender_profiles,
+                  receiver_profiles: Array.isArray((data as SupabaseJoinedMessageData).receiver_profiles) ? (data as SupabaseJoinedMessageData).receiver_profiles[0] : (data as SupabaseJoinedMessageData).receiver_profiles,
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {

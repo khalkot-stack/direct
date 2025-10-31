@@ -40,6 +40,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
+interface SupabaseRecentRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails[] | null;
+  driver_profiles: ProfileDetails[] | null;
+}
+
 interface RecentRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
   passenger_profiles: ProfileDetails | null;
   driver_profiles: ProfileDetails | null;
@@ -92,13 +97,20 @@ const OverviewPage: React.FC = () => {
           pickup_location,
           destination,
           status,
-          passenger_profiles:passenger_id(full_name),
-          driver_profiles:driver_id(full_name)
+          created_at,
+          passenger_profiles:passenger_id(id, full_name, avatar_url),
+          driver_profiles:driver_id(id, full_name, avatar_url)
         `)
         .order('created_at', { ascending: false })
         .limit(5);
       if (recentRidesError) throw recentRidesError;
-      setRecentRides(recentRidesData as RecentRide[]);
+
+      const formattedRecentRides: RecentRide[] = (recentRidesData as SupabaseRecentRideData[]).map(ride => ({
+        ...ride,
+        passenger_profiles: Array.isArray(ride.passenger_profiles) ? ride.passenger_profiles[0] : ride.passenger_profiles,
+        driver_profiles: Array.isArray(ride.driver_profiles) ? ride.driver_profiles[0] : ride.driver_profiles,
+      }));
+      setRecentRides(formattedRecentRides);
 
       // Placeholder for revenue calculation (requires more complex logic, e.g., ride prices)
       setTotalRevenue(0); // For now, set to 0 or implement actual calculation

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload, RealtimePostgresChangesFilter } from '@supabase/supabase-js';
 
 interface RealtimeOptions {
   event: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
@@ -9,7 +9,7 @@ interface RealtimeOptions {
   filter?: string;
 }
 
-type RealtimeCallback = (payload: any) => void;
+type RealtimeCallback = (payload: RealtimePostgresChangesPayload<any>) => void;
 
 export function useSupabaseRealtime(
   channelName: string,
@@ -40,13 +40,17 @@ export function useSupabaseRealtime(
 
     const currentChannel = channelRef.current;
 
+    const filter: RealtimePostgresChangesFilter<any> = {
+      event: options.event,
+      schema: options.schema,
+      table: options.table,
+    };
+    if (options.filter) {
+      filter.filter = options.filter;
+    }
+
     currentChannel
-      .on('postgres_changes', {
-        event: options.event,
-        schema: options.schema,
-        table: options.table,
-        filter: options.filter,
-      }, (payload) => {
+      .on('postgres_changes', filter, (payload) => {
         callbackRef.current(payload);
       })
       .subscribe();
