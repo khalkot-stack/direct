@@ -96,15 +96,20 @@ const OverviewPage: React.FC = () => {
       if (recentRidesError) throw recentRidesError;
 
       // Map raw data to conform to the Ride interface
-      const formattedRecentRides: Ride[] = (recentRidesRaw || []).map(ride => ({
-        ...ride,
-        passenger_profiles: Array.isArray(ride.passenger_profiles) && ride.passenger_profiles.length > 0
-          ? ride.passenger_profiles[0]
-          : (ride.passenger_profiles as ProfileDetails | null),
-        driver_profiles: Array.isArray(ride.driver_profiles) && ride.driver_profiles.length > 0
-          ? ride.driver_profiles[0]
-          : (ride.driver_profiles as ProfileDetails | null),
-      })) as Ride[]; // Cast to Ride[] after mapping
+      const formattedRecentRides: Ride[] = (recentRidesRaw || []).map(ride => {
+        const rawPassengerProfiles = ride.passenger_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+        const rawDriverProfiles = ride.driver_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+
+        return {
+          ...ride,
+          passenger_profiles: Array.isArray(rawPassengerProfiles)
+            ? rawPassengerProfiles[0] || null
+            : rawPassengerProfiles,
+          driver_profiles: Array.isArray(rawDriverProfiles)
+            ? rawDriverProfiles[0] || null
+            : rawDriverProfiles,
+        };
+      }) as Ride[]; // Cast to Ride[] after mapping
       setRecentRides(formattedRecentRides);
 
       // Placeholder for revenue calculation (requires more complex logic, e.g., ride prices)

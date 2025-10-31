@@ -78,15 +78,20 @@ const RideManagementPage: React.FC = () => {
       console.error("Error fetching rides:", error);
     } else {
       // Map raw data to conform to the Ride interface
-      const formattedRides: Ride[] = (ridesRaw || []).map(ride => ({
-        ...ride,
-        passenger_profiles: Array.isArray(ride.passenger_profiles) && ride.passenger_profiles.length > 0
-          ? ride.passenger_profiles[0]
-          : (ride.passenger_profiles as ProfileDetails | null),
-        driver_profiles: Array.isArray(ride.driver_profiles) && ride.driver_profiles.length > 0
-          ? ride.driver_profiles[0]
-          : (ride.driver_profiles as ProfileDetails | null),
-      })) as Ride[]; // Cast to Ride[] after mapping
+      const formattedRides: Ride[] = (ridesRaw || []).map(ride => {
+        const rawPassengerProfiles = ride.passenger_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+        const rawDriverProfiles = ride.driver_profiles as unknown as ProfileDetails | ProfileDetails[] | null;
+
+        return {
+          ...ride,
+          passenger_profiles: Array.isArray(rawPassengerProfiles)
+            ? rawPassengerProfiles[0] || null
+            : rawPassengerProfiles,
+          driver_profiles: Array.isArray(rawDriverProfiles)
+            ? rawDriverProfiles[0] || null
+            : rawDriverProfiles,
+        };
+      }) as Ride[]; // Cast to Ride[] after mapping
       setRides(formattedRides);
     }
     setLoadingRides(false);
