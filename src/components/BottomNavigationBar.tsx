@@ -23,14 +23,13 @@ const BottomNavigationBar = () => {
     }
     if (userRole === 'passenger') {
       return [
-        { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' }, // Points to PassengerHome
+        { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     } else if (userRole === 'driver') {
       return [
-        { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
-        { name: 'البحث عن ركاب', icon: Car, path: '/driver-dashboard/find-rides' },
+        { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' }, // Points to DriverHome
         { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
