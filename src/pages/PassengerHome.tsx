@@ -62,7 +62,7 @@ const PassengerHome: React.FC = () => {
     },
   });
 
-  const { watch, setValue, formState: { errors } } = form;
+  const { watch, setValue, formState: { errors } = {} } = form; // Destructure errors with default empty object
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
@@ -231,7 +231,7 @@ const PassengerHome: React.FC = () => {
     const destinationCoords = await geocodeAddress(values.destination, 'destination');
 
     if (!pickupCoords) {
-      toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة.");
+      // toast.error("الرجاء تحديد موقع الانطلاق بشكل صحيح. تأكد من أن العنوان صالح ويظهر على الخريطة."); // Commented out
       return;
     }
     if (!destinationCoords) {
