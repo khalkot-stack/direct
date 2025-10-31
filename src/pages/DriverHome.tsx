@@ -449,7 +449,7 @@ const DriverHome: React.FC = () => {
               <DrawerDescription>
                 {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
               </DrawerDescription>
-            </CardHeader>
+            </DrawerHeader>
             <ScrollArea className="flex-1 p-4">
               {availableRides.length === 0 ? (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
