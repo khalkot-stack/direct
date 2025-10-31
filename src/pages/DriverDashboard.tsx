@@ -14,35 +14,9 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  pickup_lat: number;
-  pickup_lng: number;
-  destination_lat: number;
-  destination_lng: number;
-  driver_current_lat: number | null;
-  driver_current_lng: number | null;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-  driver_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride, Rating } from "@/types/supabase"; // Import shared Ride and Rating types
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 const DriverDashboard: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -89,63 +63,49 @@ const DriverDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let rideChannel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchCurrentRide(user.id);
-
-      rideChannel = supabase
-        .channel('driver_rides_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'rides',
-            filter: `driver_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('Change received!', payload);
-            fetchCurrentRide(user.id); // Re-fetch data on any ride change
-            if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
-              toast.success("تم إكمال الرحلة بنجاح!");
-              // Prompt driver to rate passenger
-              const completedRide = payload.new as Ride;
-              if (completedRide.passenger_profiles) {
-                setRideToRate(completedRide);
-                setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
-                setIsRatingDialogOpen(true);
-              }
-              setIsTrackingLocation(false); // Stop tracking when ride is completed
-            }
-            if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-              toast.warning(`تم إلغاء الرحلة. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-              setIsTrackingLocation(false); // Stop tracking when ride is cancelled
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        if (rideChannel) {
-          supabase.removeChannel(rideChannel);
-        }
-        if (locationIntervalRef.current) {
-          clearInterval(locationIntervalRef.current);
-        }
-      };
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
-
     return () => {
-      if (rideChannel) {
-        supabase.removeChannel(rideChannel);
-      }
       if (locationIntervalRef.current) {
         clearInterval(locationIntervalRef.current);
       }
     };
   }, [userLoading, user, fetchCurrentRide, navigate]);
+
+  useSupabaseRealtime(
+    'driver_rides_channel',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'rides',
+      filter: `driver_id=eq.${user?.id}`,
+    },
+    (payload) => {
+      console.log('Change received!', payload);
+      if (user) {
+        fetchCurrentRide(user.id); // Re-fetch data on any ride change
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+        toast.success("تم إكمال الرحلة بنجاح!");
+        // Prompt driver to rate passenger
+        const completedRide = payload.new as Ride;
+        if (completedRide.passenger_profiles) {
+          setRideToRate(completedRide);
+          setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
+          setIsRatingDialogOpen(true);
+        }
+        setIsTrackingLocation(false); // Stop tracking when ride is completed
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+        toast.warning(`تم إلغاء الرحلة. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+        setIsTrackingLocation(false); // Stop tracking when ride is cancelled
+      }
+    },
+    !!user // Only enable if user is logged in
+  );
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
@@ -156,8 +116,8 @@ const DriverDashboard: React.FC = () => {
     const destLat = currentRide.destination_lat;
     const destLng = currentRide.destination_lng;
 
-    const newLat = currentLat + (destLat - currentLat) * 0.01; // Move 1% towards destination
-    const newLng = currentLng + (destLng - currentLng) * 0.01;
+    const newLat = (currentLat || 0) + ((destLat || 0) - (currentLat || 0)) * 0.01; // Move 1% towards destination
+    const newLng = (currentLng || 0) + ((destLng || 0) - (currentLng || 0)) * 0.01;
 
     const { error } = await supabase
       .from('rides')
@@ -229,7 +189,7 @@ const DriverDashboard: React.FC = () => {
       rated_user_id: ratingTargetUser.id,
       rating,
       comment,
-    });
+    } as Omit<Rating, 'id' | 'created_at'>);
 
     if (error) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
@@ -240,8 +200,8 @@ const DriverDashboard: React.FC = () => {
   };
 
   const markers: MarkerLocation[] = currentRide ? [
-    { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' as const },
-    { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' as const },
+    { id: 'pickup', lat: currentRide.pickup_lat!, lng: currentRide.pickup_lng!, title: 'موقع الانطلاق', iconColor: 'green' as const },
+    { id: 'destination', lat: currentRide.destination_lat!, lng: currentRide.destination_lng!, title: 'الوجهة', iconColor: 'red' as const },
     ...(currentRide.driver_current_lat && currentRide.driver_current_lng
       ? [{ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' as const }]
       : [])
@@ -367,7 +327,6 @@ const DriverDashboard: React.FC = () => {
           rideId={currentRide.id}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
 

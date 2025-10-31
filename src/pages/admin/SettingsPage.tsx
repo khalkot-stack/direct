@@ -10,16 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-
-interface Setting {
-  id: string;
-  key: string;
-  value: string;
-  description?: string;
-}
+import { SystemSetting } from "@/types/supabase"; // Import shared SystemSetting type
 
 const AdminSettingsPage: React.FC = () => {
-  const [settings, setSettings] = useState<Setting[]>([]);
+  const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -33,7 +27,7 @@ const AdminSettingsPage: React.FC = () => {
       toast.error(`فشل جلب الإعدادات: ${error.message}`);
       console.error("Error fetching settings:", error);
     } else {
-      setSettings(data as Setting[]);
+      setSettings(data as SystemSetting[]);
     }
     setLoading(false);
   }, []);

@@ -13,29 +13,8 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  cancellation_reason: string | null;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-  driver_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride, Rating } from "@/types/supabase"; // Import shared Ride and Rating types
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -78,49 +57,41 @@ const PassengerMyRidesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchMyRides(user.id);
-
-      channel = supabase
-        .channel('passenger_my_rides_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'rides',
-            filter: `passenger_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('Change received in my rides!', payload);
-            fetchMyRides(user.id); // Re-fetch data on any ride change
-            if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
-              toast.success("تم إكمال رحلتك بنجاح!");
-              const completedRide = payload.new as Ride;
-              if (completedRide.driver_profiles) {
-                setRideToRate(completedRide);
-                setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
-                setIsRatingDialogOpen(true);
-              }
-            }
-            if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-              toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-            }
-          }
-        )
-        .subscribe();
     } else if (!userLoading && !user) {
       toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
-      // navigate("/auth"); // ProtectedRoute handles this
     }
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
   }, [userLoading, user, fetchMyRides]);
+
+  useSupabaseRealtime(
+    'passenger_my_rides_channel',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'rides',
+      filter: `passenger_id=eq.${user?.id}`,
+    },
+    (payload) => {
+      console.log('Change received in my rides!', payload);
+      if (user) {
+        fetchMyRides(user.id); // Re-fetch data on any ride change
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+        toast.success("تم إكمال رحلتك بنجاح!");
+        const completedRide = payload.new as Ride;
+        if (completedRide.driver_profiles) {
+          setRideToRate(completedRide);
+          setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
+          setIsRatingDialogOpen(true);
+        }
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+        toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+      }
+    },
+    !!user // Only enable if user is logged in
+  );
 
   const handleOpenChat = (ride: Ride) => {
     if (!user || !ride.driver_id || !ride.driver_profiles) {
@@ -152,7 +123,7 @@ const PassengerMyRidesPage: React.FC = () => {
       rated_user_id: ratingTargetUser.id,
       rating,
       comment,
-    });
+    } as Omit<Rating, 'id' | 'created_at'>);
 
     if (error) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
@@ -284,7 +255,6 @@ const PassengerMyRidesPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
 

@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useUser } from "@/context/UserContext";
+import { Ride } from "@/types/supabase"; // Import shared Ride type
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -151,7 +152,7 @@ const RequestRidePage: React.FC = () => {
       pickup_lng: pickupCoords.lng,
       destination_lat: destinationCoords.lat,
       destination_lng: destinationCoords.lng,
-    });
+    } as Omit<Ride, 'id' | 'created_at' | 'cancellation_reason' | 'driver_id' | 'passenger_profiles' | 'driver_profiles' | 'driver_current_lat' | 'driver_current_lng'>);
     setLoading(false);
 
     if (error) {

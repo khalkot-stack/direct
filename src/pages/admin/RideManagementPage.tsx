@@ -31,29 +31,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
+import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
 
-interface ProfileInfo {
-  id: string;
-  full_name: string | null; // Changed to allow null
-  user_type: string;
-}
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  passenger_profiles: ProfileInfo[] | null; // Changed to array
-  driver_profiles: ProfileInfo[] | null; // Changed to array
+interface RideManagementPageRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
+  driver_profiles: ProfileDetails[] | null; // Supabase returns array for joined tables
 }
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
-  const [rides, setRides] = useState<Ride[]>([]);
+  const [rides, setRides] = useState<RideManagementPageRide[]>([]);
   const [loadingRides, setLoadingRides] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -88,7 +75,7 @@ const RideManagementPage: React.FC = () => {
       toast.error(`فشل جلب الرحلات: ${error.message}`);
       console.error("Error fetching rides:", error);
     } else {
-      setRides(data as Ride[]);
+      setRides(data as RideManagementPageRide[]);
     }
     setLoadingRides(false);
   }, []);
@@ -107,7 +94,7 @@ const RideManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles'>) => {
+  const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>) => {
     if (selectedRide) {
       // Update existing ride
       const { id, ...updates } = rideData;
@@ -160,7 +147,7 @@ const RideManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenChat = (ride: Ride) => {
+  const handleOpenChat = (ride: RideManagementPageRide) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول للمحادثة.");
       return;
@@ -359,7 +346,6 @@ const RideManagementPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
     </div>

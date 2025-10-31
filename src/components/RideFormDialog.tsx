@@ -16,30 +16,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
-
-interface Profile {
-  id: string;
-  full_name: string;
-  user_type: "passenger" | "driver" | "admin";
-}
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  passenger_name?: string;
-  driver_name?: string;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-}
+import { Profile, Ride } from "@/types/supabase"; // Import shared types
 
 interface RideFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ride?: Ride;
-  onSave: (ride: Ride) => void;
+  onSave: (ride: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>) => void;
 }
 
 const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, ride, onSave }) => {
@@ -98,7 +81,7 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
       return;
     }
 
-    const newRide: Ride = {
+    const newRide: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'> = {
       id: ride?.id || "",
       passenger_id: passengerId,
       driver_id: driverId,

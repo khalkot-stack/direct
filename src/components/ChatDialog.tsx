@@ -17,27 +17,15 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-
-interface ProfileName {
-  full_name: string | null;
-}
-
-interface Message {
-  id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-  sender_profiles: ProfileName[] | null; // Changed to array
-  receiver_profiles: ProfileName[] | null; // Changed to array
-}
+import { Message, ProfileDetails } from "@/types/supabase"; // Import shared types
 
 interface SupabaseJoinedMessageData {
   id: string;
   sender_id: string;
   content: string;
   created_at: string;
-  sender_profiles: ProfileName[] | null; // Changed to array
-  receiver_profiles: ProfileName[] | null; // Changed to array
+  sender_profiles: ProfileDetails | null;
+  receiver_profiles: ProfileDetails | null;
 }
 
 interface ChatDialogProps {
@@ -46,7 +34,6 @@ interface ChatDialogProps {
   rideId: string;
   otherUserId: string;
   otherUserName: string;
-  // currentUserId: string; // Removed as it will be fetched from context
 }
 
 const ChatDialog: React.FC<ChatDialogProps> = ({
@@ -116,7 +103,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   }, [messages, open]);
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined; // Declare channel outside if block
+    let channel: RealtimeChannel | undefined;
     if (!open || !currentUserId) {
       return () => {
         if (channel) {
@@ -157,7 +144,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                 };
                 setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
                 if (payload.new.sender_id !== currentUserId) {
-                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.[0]?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
+                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
                 }
               }
             });
@@ -245,7 +232,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                     )}
                   >
                     <p className="text-xs font-semibold mb-1">
-                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.[0]?.full_name || 'مستخدم'}
+                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.full_name || 'مستخدم'}
                     </p>
                     <p className="text-sm">{msg.content}</p>
                     <p className="text-xs text-gray-300 dark:text-gray-500 mt-1 text-left">

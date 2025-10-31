@@ -11,33 +11,9 @@ import { Button } from "@/components/ui/button";
 import ChatDialog from "@/components/ChatDialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  pickup_lat: number;
-  pickup_lng: number;
-  destination_lat: number;
-  destination_lng: number;
-  driver_current_lat: number | null;
-  driver_current_lng: number | null;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-  driver_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride } from "@/types/supabase"; // Import shared Ride type
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 const PassengerTrackingPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -77,46 +53,35 @@ const PassengerTrackingPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchRideDetails(user.id);
-
-      channel = supabase
-        .channel('ride_tracking_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'rides',
-            filter: `passenger_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('Ride update received!', payload);
-            if (payload.new.status === 'completed') {
-              toast.success("لقد وصلت رحلتك إلى وجهتها!");
-              setRide(null); // Clear ride from state
-            } else if (payload.new.status === 'cancelled') {
-              toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-              setRide(null); // Clear ride from state
-            } else {
-              setRide(payload.new as Ride);
-            }
-          }
-        )
-        .subscribe();
     } else if (!userLoading && !user) {
-      // User is not logged in, redirect or show message
       toast.error("الرجاء تسجيل الدخول لتتبع رحلتك.");
-      // navigate("/auth"); // Assuming ProtectedRoute handles this
     }
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
   }, [userLoading, user, fetchRideDetails]);
+
+  useSupabaseRealtime(
+    'ride_tracking_channel',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rides',
+      filter: `passenger_id=eq.${user?.id}`,
+    },
+    (payload) => {
+      console.log('Ride update received!', payload);
+      if (payload.new.status === 'completed') {
+        toast.success("لقد وصلت رحلتك إلى وجهتها!");
+        setRide(null); // Clear ride from state
+      } else if (payload.new.status === 'cancelled') {
+        toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+        setRide(null); // Clear ride from state
+      } else {
+        setRide(payload.new as Ride);
+      }
+    },
+    !!user // Only enable if user is logged in
+  );
 
   const handleOpenChat = () => {
     if (!user || !ride || !ride.driver_id || !ride.driver_profiles) {
@@ -131,8 +96,8 @@ const PassengerTrackingPage: React.FC = () => {
 
   const markers: MarkerLocation[] = [];
   if (ride) {
-    markers.push({ id: 'pickup', lat: ride.pickup_lat, lng: ride.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' as const });
-    markers.push({ id: 'destination', lat: ride.destination_lat, lng: ride.destination_lng, title: 'الوجهة', iconColor: 'red' as const });
+    markers.push({ id: 'pickup', lat: ride.pickup_lat!, lng: ride.pickup_lng!, title: 'موقع الانطلاق', iconColor: 'green' as const });
+    markers.push({ id: 'destination', lat: ride.destination_lat!, lng: ride.destination_lng!, title: 'الوجهة', iconColor: 'red' as const });
     if (ride.driver_current_lat && ride.driver_current_lng) {
       markers.push({ id: 'driver', lat: ride.driver_current_lat, lng: ride.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' as const });
     }
@@ -203,7 +168,6 @@ const PassengerTrackingPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
     </div>

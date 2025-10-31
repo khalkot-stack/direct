@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
+import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
 
 interface StatCardProps {
   title: string;
@@ -39,17 +40,9 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
-interface ProfileName {
-  full_name: string | null;
-}
-
-interface RecentRide {
-  id: string;
-  pickup_location: string;
-  destination: string;
-  status: string;
-  passenger_profiles: ProfileName[] | null; // Changed to array
-  driver_profiles: ProfileName[] | null; // Changed to array
+interface RecentRide extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
+  passenger_profiles: ProfileDetails | null;
+  driver_profiles: ProfileDetails | null;
 }
 
 const OverviewPage: React.FC = () => {
@@ -218,7 +211,7 @@ const OverviewPage: React.FC = () => {
                     <div className="ml-4 space-y-1">
                       <p className="text-sm font-medium leading-none">رحلة من {ride.pickup_location} إلى {ride.destination}</p>
                       <p className="text-sm text-muted-foreground">
-                        الراكب: {ride.passenger_profiles?.[0]?.full_name || 'غير معروف'}، السائق: {ride.driver_profiles?.[0]?.full_name || 'غير معروف'}
+                        الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}، السائق: {ride.driver_profiles?.full_name || 'غير معروف'}
                       </p>
                     </div>
                     <div className="ml-auto font-medium">

@@ -12,14 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useTheme } from "next-themes";
 import LogoutButton from "@/components/LogoutButton";
 import { useUser } from "@/context/UserContext";
-
-interface UserSettings {
-  id: string;
-  user_id: string;
-  theme: string;
-  notifications_enabled: boolean;
-  language: string;
-}
+import { UserSettings } from "@/types/supabase"; // Import shared UserSettings type
 
 const AppSettingsPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();

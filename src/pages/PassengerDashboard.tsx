@@ -17,32 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  pickup_lat: number;
-  pickup_lng: number;
-  destination_lat: number;
-  destination_lng: number;
-  cancellation_reason: string | null;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-  driver_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride } from "@/types/supabase"; // Import shared Ride type
 
 const PassengerDashboard: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -91,7 +66,7 @@ const PassengerDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let rideChannel: RealtimeChannel | undefined; // Declare channel outside if block
+    let rideChannel: RealtimeChannel | undefined;
     if (!userLoading && user) {
       fetchCurrentRide(user.id);
 
@@ -195,8 +170,8 @@ const PassengerDashboard: React.FC = () => {
   };
 
   const markers: MarkerLocation[] = currentRide ? [
-    { id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' as const },
-    { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' as const },
+    { id: 'pickup', lat: currentRide.pickup_lat!, lng: currentRide.pickup_lng!, title: 'موقع الانطلاق', iconColor: 'green' as const },
+    { id: 'destination', lat: currentRide.destination_lat!, lng: currentRide.destination_lng!, title: 'الوجهة', iconColor: 'red' as const },
   ] : [];
 
   if (userLoading || loadingRides) {
@@ -309,7 +284,6 @@ const PassengerDashboard: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
 

@@ -12,27 +12,9 @@ import RideSearchDialog from "@/components/RideSearchDialog";
 import InteractiveMap from "@/components/InteractiveMap";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { MarkerLocation } from "@/components/InteractiveMap"; // Import MarkerLocation
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  pickup_lat: number;
-  pickup_lng: number;
-  destination_lat: number;
-  destination_lng: number;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride } from "@/types/supabase"; // Import shared Ride type
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
 
 interface RideSearchCriteria {
   pickupLocation?: string;
@@ -85,37 +67,29 @@ const FindRidesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined; // Declare channel outside if block
     if (!userLoading && user) {
       fetchAvailableRides(user.id, searchCriteria);
-
-      channel = supabase
-        .channel('available_rides_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'rides',
-            filter: `status=eq.pending`,
-          },
-          (payload) => {
-            console.log('Change received in available rides!', payload);
-            fetchAvailableRides(user.id, searchCriteria); // Re-fetch data on any ride change
-          }
-        )
-        .subscribe();
     } else if (!userLoading && !user) {
       toast.error("الرجاء تسجيل الدخول للبحث عن رحلات.");
-      // navigate("/auth"); // ProtectedRoute handles this
     }
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
   }, [userLoading, user, fetchAvailableRides, searchCriteria]);
+
+  useSupabaseRealtime(
+    'available_rides_channel',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'rides',
+      filter: `status=eq.pending`,
+    },
+    (payload) => {
+      console.log('Change received in available rides!', payload);
+      if (user) {
+        fetchAvailableRides(user.id, searchCriteria); // Re-fetch data on any ride change
+      }
+    },
+    !!user // Only enable if user is logged in
+  );
 
   const handleSearch = (criteria: RideSearchCriteria) => {
     setSearchCriteria(criteria);
@@ -152,8 +126,8 @@ const FindRidesPage: React.FC = () => {
   };
 
   const markers: MarkerLocation[] = availableRides.flatMap(ride => [
-    { id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' as const },
-    { id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' as const },
+    { id: `${ride.id}-pickup`, lat: ride.pickup_lat!, lng: ride.pickup_lng!, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' as const },
+    { id: `${ride.id}-destination`, lat: ride.destination_lat!, lng: ride.destination_lng!, title: `وجهة: ${ride.destination}`, iconColor: 'red' as const },
   ]);
 
   if (userLoading || loadingRides) {

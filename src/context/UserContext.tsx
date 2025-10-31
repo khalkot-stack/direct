@@ -10,19 +10,7 @@ import React, {
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
-// import { toast } from "sonner"; // Removed unused import
-// import { useNavigate } from "react-router-dom"; // Removed unused import
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned";
-  phone_number?: string | null;
-  avatar_url?: string | null;
-  created_at: string;
-}
+import { Profile } from "@/types/supabase"; // Import shared Profile type
 
 interface UserContextType {
   user: SupabaseUser | null;
@@ -41,7 +29,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  // const navigate = useNavigate(); // Removed unused variable
 
   const fetchUserProfile = useCallback(async (userId: string) => {
     const { data, error, status } = await supabase

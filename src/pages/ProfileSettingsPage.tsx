@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react"; // Removed useCallback
+import React, { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -24,17 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useUser } from "@/context/UserContext";
-
-interface ProfileData {
-  id: string;
-  full_name: string;
-  email: string;
-  user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned";
-  phone_number?: string | null;
-  avatar_url?: string | null;
-  created_at: string;
-}
+import { Profile } from "@/types/supabase"; // Import shared Profile type
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "الاسم الكامل مطلوب." }),
@@ -47,7 +37,7 @@ type ProfileFormInputs = z.infer<typeof profileSchema>;
 const ProfileSettingsPage: React.FC = () => {
   const { user, profile, loading: userLoading, fetchUserProfile } = useUser();
   const [isSaving, setIsSaving] = useState(false);
-  const [localProfile, setLocalProfile] = useState<ProfileData | null>(null);
+  const [localProfile, setLocalProfile] = useState<Profile | null>(null); // Use shared Profile type
 
   const form = useForm<ProfileFormInputs>({
     resolver: zodResolver(profileSchema),

@@ -14,28 +14,7 @@ import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-
-interface Ride {
-  id: string;
-  passenger_id: string;
-  driver_id: string | null;
-  pickup_location: string;
-  destination: string;
-  passengers_count: number;
-  status: "pending" | "accepted" | "completed" | "cancelled";
-  created_at: string;
-  cancellation_reason: string | null;
-  passenger_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-  driver_profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-  } | null;
-}
+import { Ride, Rating } from "@/types/supabase"; // Import shared Ride and Rating types
 
 const DriverAcceptedRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -79,7 +58,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined; // Declare channel outside if block
+    let channel: RealtimeChannel | undefined;
     if (!userLoading && user) {
       fetchAcceptedRides(user.id);
 
@@ -110,7 +89,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
         .subscribe();
     } else if (!userLoading && !user) {
       toast.error("الرجاء تسجيل الدخول لعرض الرحلات المقبولة.");
-      // navigate("/auth"); // ProtectedRoute handles this
     }
 
     return () => {
@@ -150,7 +128,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
       rated_user_id: ratingTargetUser.id,
       rating,
       comment,
-    });
+    } as Omit<Rating, 'id' | 'created_at'>);
 
     if (error) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
@@ -280,7 +258,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          // currentUserId={user.id} // Removed
         />
       )}
 

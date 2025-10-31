@@ -30,16 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned";
-  phone_number?: string;
-  created_at: string;
-}
+import { Profile } from "@/types/supabase"; // Import shared Profile type
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -88,7 +79,7 @@ const UserManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleSaveUser = async (profileData: Omit<Profile, 'created_at'>) => {
+  const handleSaveUser = async (profileData: Profile) => {
     if (isNewUser) {
       // User creation is handled within UserFormDialog via supabase.auth.signUp
       // We just need to refetch users to show the new one

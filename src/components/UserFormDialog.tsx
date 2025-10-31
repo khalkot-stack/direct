@@ -16,16 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned";
-  phone_number?: string;
-  created_at?: string; // Added created_at as optional
-}
+import { Profile } from "@/types/supabase"; // Import shared Profile type
 
 interface UserFormDialogProps {
   open: boolean;
