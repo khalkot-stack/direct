@@ -4,42 +4,21 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, MapPin, Car, History, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
+import { useUser } from '@/context/UserContext';
 
 const BottomNavigationBar = () => {
   const location = useLocation();
+  const { profile, loading: userLoading } = useUser();
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserRole(user.user_metadata?.user_type as string || null);
-      } else {
-        setUserRole(null);
-      }
-      setLoading(false);
-    };
-
-    fetchUserRole();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUserRole(session.user.user_metadata?.user_type as string || null);
-      } else {
-        setUserRole(null);
-      }
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
+    if (!userLoading) {
+      setUserRole(profile?.user_type || null);
+    }
+  }, [userLoading, profile]);
 
   const getNavItems = () => {
-    if (loading) {
+    if (userLoading) {
       return [];
     }
     if (userRole === 'passenger') {

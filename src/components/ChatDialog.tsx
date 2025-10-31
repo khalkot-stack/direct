@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/context/UserContext";
 
 interface ProfileName {
   full_name: string;
@@ -44,7 +45,7 @@ interface ChatDialogProps {
   rideId: string;
   otherUserId: string;
   otherUserName: string;
-  currentUserId: string;
+  // currentUserId: string; // Removed as it will be fetched from context
 }
 
 const ChatDialog: React.FC<ChatDialogProps> = ({
@@ -53,20 +54,24 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   rideId,
   otherUserId,
   otherUserName,
-  currentUserId,
 }) => {
+  const { user, loading: userLoading } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentUserId = user?.id; // Get current user ID from context
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const fetchMessages = useCallback(async () => {
-    setLoading(true);
+    if (!currentUserId) return;
+
+    setLoadingMessages(true);
     const { data, error } = await supabase
       .from('messages')
       .select(`
@@ -94,14 +99,14 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       }));
       setMessages(formattedMessages);
     }
-    setLoading(false);
-  }, [rideId]);
+    setLoadingMessages(false);
+  }, [rideId, currentUserId]);
 
   useEffect(() => {
-    if (open) {
+    if (open && currentUserId) {
       fetchMessages();
     }
-  }, [open, fetchMessages]);
+  }, [open, fetchMessages, currentUserId]);
 
   useEffect(() => {
     if (open) {
@@ -110,7 +115,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   }, [messages, open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !currentUserId) return;
 
     const channel = supabase
       .channel(`chat_ride_${rideId}`)
@@ -159,7 +164,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentUserId) return;
 
     setIsSending(true);
     const { error } = await supabase.from('messages').insert({
@@ -178,6 +183,21 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     }
   };
 
+  if (userLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px] flex flex-col h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>جاري تحميل الدردشة...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] flex flex-col h-[80vh]">
@@ -188,7 +208,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800 mb-4">
-          {loading ? (
+          {loadingMessages ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>

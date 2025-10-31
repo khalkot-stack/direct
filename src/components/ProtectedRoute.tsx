@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/context/UserContext";
 
 interface ProtectedRouteProps {
   allowedRoles: ("passenger" | "driver" | "admin")[];
@@ -13,47 +13,43 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children }) => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const { user, profile, loading } = useUser();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+    if (loading) return;
 
-      if (error) {
-        toast.error(`خطأ في التحقق من الجلسة: ${error.message}`);
-        navigate("/auth");
-        return;
-      }
+    if (!user) {
+      toast.warning("الرجاء تسجيل الدخول للوصول إلى هذه الصفحة.");
+      navigate("/auth");
+      return;
+    }
 
-      if (!session) {
-        toast.warning("الرجاء تسجيل الدخول للوصول إلى هذه الصفحة.");
-        navigate("/auth");
-        return;
-      }
+    if (!profile) {
+      // This case should ideally not happen if profile creation in UserProvider works,
+      // but as a fallback, we can assume a default role or redirect.
+      // For now, let's assume if user exists but no profile, it's an issue.
+      toast.error("فشل جلب معلومات الملف الشخصي. الرجاء المحاولة مرة أخرى.");
+      navigate("/auth");
+      return;
+    }
 
-      const user = session.user;
-      const userRole = user?.user_metadata?.user_type;
+    const userRole = profile.user_type;
 
-      if (userRole && allowedRoles.includes(userRole)) {
-        setIsAuthorized(true);
+    if (userRole && allowedRoles.includes(userRole)) {
+      // User is authorized, do nothing
+    } else {
+      toast.error("ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة.");
+      if (userRole === "passenger") {
+        navigate("/passenger-dashboard");
+      } else if (userRole === "driver") {
+        navigate("/driver-dashboard");
+      } else if (userRole === "admin") {
+        navigate("/admin-dashboard");
       } else {
-        toast.error("ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة.");
-        if (userRole === "passenger") {
-          navigate("/passenger-dashboard");
-        } else if (userRole === "driver") {
-          navigate("/driver-dashboard");
-        } else if (userRole === "admin") {
-          navigate("/admin-dashboard");
-        } else {
-          navigate("/");
-        }
+        navigate("/");
       }
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [allowedRoles, navigate]);
+    }
+  }, [loading, user, profile, allowedRoles, navigate]);
 
   if (loading) {
     return (
@@ -64,7 +60,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
     );
   }
 
-  return isAuthorized ? <>{children}</> : null;
+  // Only render children if user is loaded, exists, has a profile, and is authorized
+  if (user && profile && allowedRoles.includes(profile.user_type)) {
+    return <>{children}</>;
+  }
+
+  return null; // Or a fallback UI if not authorized/loading
 };
 
 export default ProtectedRoute;

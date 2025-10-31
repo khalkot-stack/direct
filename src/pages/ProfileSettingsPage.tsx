@@ -23,8 +23,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useUser } from "@/context/UserContext";
 
-interface Profile {
+interface ProfileData {
   id: string;
   full_name: string;
   email: string;
@@ -44,9 +45,9 @@ const profileSchema = z.object({
 type ProfileFormInputs = z.infer<typeof profileSchema>;
 
 const ProfileSettingsPage: React.FC = () => {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, loading: userLoading, fetchUserProfile } = useUser();
   const [isSaving, setIsSaving] = useState(false);
+  const [localProfile, setLocalProfile] = useState<ProfileData | null>(null);
 
   const form = useForm<ProfileFormInputs>({
     resolver: zodResolver(profileSchema),
@@ -57,84 +58,28 @@ const ProfileSettingsPage: React.FC = () => {
     },
   });
 
-  const fetchUserProfile = useCallback(async () => {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error("الرجاء تسجيل الدخول لعرض ملفك الشخصي.");
-      setLoading(false);
-      return;
-    }
-
-    const { data, error, status } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, user_type, status, phone_number, avatar_url, created_at')
-      .eq('id', user.id)
-      .single();
-
-    if (error && status !== 406) { // 406 means no rows found, which is fine if profile doesn't exist yet
-      toast.error(`فشل جلب الملف الشخصي: ${error.message}`);
-      console.error("Error fetching profile:", error);
-      setProfile(null);
-    } else if (data) {
-      setProfile(data as Profile);
-      form.reset({
-        full_name: data.full_name,
-        phone_number: data.phone_number || "",
-        user_type: data.user_type,
-      });
-    } else {
-      // If no profile found, create a basic one
-      const defaultFullName = user.user_metadata.full_name || user.email?.split('@')[0] || 'مستخدم جديد';
-      const defaultUserType = user.user_metadata.user_type || 'passenger';
-      const defaultStatus = user.user_metadata.status || 'active';
-      const defaultPhoneNumber = user.user_metadata.phone_number || null;
-      const defaultAvatarUrl = user.user_metadata.avatar_url || null;
-
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          full_name: defaultFullName,
-          email: user.email,
-          user_type: defaultUserType,
-          status: defaultStatus,
-          phone_number: defaultPhoneNumber,
-          avatar_url: defaultAvatarUrl,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        toast.error(`فشل إنشاء الملف الشخصي الافتراضي: ${insertError.message}`);
-        console.error("Error creating default profile:", insertError);
-      } else {
-        setProfile(newProfile as Profile);
-        form.reset({
-          full_name: newProfile.full_name,
-          phone_number: newProfile.phone_number || "",
-          user_type: newProfile.user_type,
-        });
-      }
-    }
-    setLoading(false);
-  }, [form]);
-
   useEffect(() => {
-    fetchUserProfile();
-  }, [fetchUserProfile]);
+    if (!userLoading && profile) {
+      setLocalProfile(profile);
+      form.reset({
+        full_name: profile.full_name,
+        phone_number: profile.phone_number || "",
+        user_type: profile.user_type,
+      });
+    }
+  }, [userLoading, profile, form]);
 
   const handleAvatarUploadSuccess = (newUrl: string) => {
-    if (profile) {
-      setProfile(prev => prev ? { ...prev, avatar_url: newUrl } : null);
+    if (localProfile) {
+      setLocalProfile(prev => prev ? { ...prev, avatar_url: newUrl } : null);
       // Also update auth.user metadata
       supabase.auth.updateUser({ data: { avatar_url: newUrl } });
+      fetchUserProfile(); // Re-fetch to update global context
     }
   };
 
   const handleSaveChanges = async (values: ProfileFormInputs) => {
-    if (!profile) return;
+    if (!localProfile || !user) return;
 
     setIsSaving(true);
     const { error } = await supabase
@@ -144,7 +89,7 @@ const ProfileSettingsPage: React.FC = () => {
         phone_number: values.phone_number,
         user_type: values.user_type,
       })
-      .eq('id', profile.id);
+      .eq('id', localProfile.id);
     setIsSaving(false);
 
     if (error) {
@@ -160,11 +105,11 @@ const ProfileSettingsPage: React.FC = () => {
           phone_number: values.phone_number,
         }
       });
-      setProfile(prev => prev ? { ...prev, ...values } : null); // Update local state
+      fetchUserProfile(); // Re-fetch to update global context
     }
   };
 
-  if (loading) {
+  if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -173,11 +118,11 @@ const ProfileSettingsPage: React.FC = () => {
     );
   }
 
-  if (!profile) {
+  if (!user || !localProfile) {
     return (
       <div className="container mx-auto p-4 text-center">
         <PageHeader title="إعدادات الملف الشخصي" description="إدارة معلومات ملفك الشخصي." backPath="/" />
-        <p className="text-red-500 dark:text-red-400">فشل تحميل الملف الشخصي.</p>
+        <p className="text-red-500 dark:text-red-400">فشل تحميل الملف الشخصي. الرجاء تسجيل الدخول.</p>
       </div>
     );
   }
@@ -192,10 +137,10 @@ const ProfileSettingsPage: React.FC = () => {
           <CardDescription>قم بتحميل صورة شخصية جديدة.</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
-          {profile.id && (
+          {localProfile.id && (
             <AvatarUpload
-              userId={profile.id}
-              initialAvatarUrl={profile.avatar_url || null}
+              userId={localProfile.id}
+              initialAvatarUrl={localProfile.avatar_url || null}
               onUploadSuccess={handleAvatarUploadSuccess}
             />
           )}
@@ -225,7 +170,7 @@ const ProfileSettingsPage: React.FC = () => {
               />
               <div className="grid gap-2">
                 <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input id="email" value={profile.email} disabled className="bg-gray-100 dark:bg-gray-800" />
+                <Input id="email" value={localProfile.email} disabled className="bg-gray-100 dark:bg-gray-800" />
               </div>
               <FormField
                 control={form.control}
@@ -255,7 +200,7 @@ const ProfileSettingsPage: React.FC = () => {
                       <SelectContent>
                         <SelectItem value="passenger">راكب</SelectItem>
                         <SelectItem value="driver">سائق</SelectItem>
-                        {profile.user_type === 'admin' && <SelectItem value="admin">مدير</SelectItem>}
+                        {localProfile.user_type === 'admin' && <SelectItem value="admin">مدير</SelectItem>}
                       </SelectContent>
                     </Select>
                     <FormMessage />

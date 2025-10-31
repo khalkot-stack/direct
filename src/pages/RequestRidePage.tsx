@@ -14,6 +14,7 @@ import InteractiveMap from "@/components/InteractiveMap";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useUser } from "@/context/UserContext";
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -24,8 +25,8 @@ const rideRequestSchema = z.object({
 type RideRequestInputs = z.infer<typeof rideRequestSchema>;
 
 const RequestRidePage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -47,17 +48,11 @@ const RequestRidePage: React.FC = () => {
   const destination = watch("destination");
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
-        navigate("/auth");
-      }
-    };
-    fetchUser();
-  }, [navigate]);
+    if (!userLoading && !user) {
+      toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
+      navigate("/auth");
+    }
+  }, [userLoading, user, navigate]);
 
   const geocodeAddress = useCallback(async (address: string) => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
@@ -128,7 +123,7 @@ const RequestRidePage: React.FC = () => {
   }, [pickupLocation, destination, geocodeAddress]);
 
   const handleSubmit = async (values: RideRequestInputs) => {
-    if (!userId) {
+    if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
       return;
     }
@@ -139,7 +134,7 @@ const RequestRidePage: React.FC = () => {
 
     setLoading(true);
     const { error } = await supabase.from('rides').insert({
-      passenger_id: userId,
+      passenger_id: user.id,
       pickup_location: values.pickupLocation,
       destination: values.destination,
       passengers_count: values.passengersCount,
@@ -159,6 +154,15 @@ const RequestRidePage: React.FC = () => {
       navigate("/passenger-dashboard");
     }
   };
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">جاري التحميل...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4">

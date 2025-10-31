@@ -11,6 +11,7 @@ import EmptyState from "@/components/EmptyState";
 import RideSearchDialog from "@/components/RideSearchDialog";
 import InteractiveMap from "@/components/InteractiveMap";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 
 interface Ride {
   id: string;
@@ -38,23 +39,15 @@ interface RideSearchCriteria {
 }
 
 const FindRidesPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [availableRides, setAvailableRides] = useState<Ride[]>([] as Ride[]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loadingRides, setLoadingRides] = useState(true);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
   const [isAcceptingRide, setIsAcceptingRide] = useState<string | null>(null);
 
-  const fetchAvailableRides = useCallback(async (criteria: RideSearchCriteria = {}) => {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error("الرجاء تسجيل الدخول للبحث عن رحلات.");
-      setLoading(false);
-      return;
-    }
-    setCurrentUserId(user.id);
+  const fetchAvailableRides = useCallback(async (userId: string, criteria: RideSearchCriteria = {}) => {
+    setLoadingRides(true);
 
     let query = supabase
       .from('rides')
@@ -64,7 +57,7 @@ const FindRidesPage: React.FC = () => {
       `)
       .eq('status', 'pending')
       .is('driver_id', null)
-      .neq('passenger_id', user.id) // Drivers cannot accept their own rides
+      .neq('passenger_id', userId) // Drivers cannot accept their own rides
       .order('created_at', { ascending: false });
 
     if (criteria.pickupLocation) {
@@ -86,41 +79,48 @@ const FindRidesPage: React.FC = () => {
     } else {
       setAvailableRides(data as Ride[]);
     }
-    setLoading(false);
+    setLoadingRides(false);
   }, []);
 
   useEffect(() => {
-    fetchAvailableRides(searchCriteria);
+    if (!userLoading && user) {
+      fetchAvailableRides(user.id, searchCriteria);
 
-    const channel = supabase
-      .channel('available_rides_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rides',
-          filter: `status=eq.pending`,
-        },
-        (payload) => {
-          console.log('Change received in available rides!', payload);
-          fetchAvailableRides(searchCriteria); // Re-fetch data on any ride change
-        }
-      )
-      .subscribe();
+      const channel = supabase
+        .channel('available_rides_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'rides',
+            filter: `status=eq.pending`,
+          },
+          (payload) => {
+            console.log('Change received in available rides!', payload);
+            fetchAvailableRides(user.id, searchCriteria); // Re-fetch data on any ride change
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchAvailableRides, searchCriteria]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else if (!userLoading && !user) {
+      toast.error("الرجاء تسجيل الدخول للبحث عن رحلات.");
+      // navigate("/auth"); // ProtectedRoute handles this
+    }
+  }, [userLoading, user, fetchAvailableRides, searchCriteria]);
 
   const handleSearch = (criteria: RideSearchCriteria) => {
     setSearchCriteria(criteria);
-    fetchAvailableRides(criteria);
+    if (user) {
+      fetchAvailableRides(user.id, criteria);
+    }
   };
 
   const handleAcceptRide = async (rideId: string) => {
-    if (!currentUserId) {
+    if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لقبول الرحلة.");
       return;
     }
@@ -128,7 +128,7 @@ const FindRidesPage: React.FC = () => {
     setIsAcceptingRide(rideId);
     const { error } = await supabase
       .from('rides')
-      .update({ driver_id: currentUserId, status: 'accepted' })
+      .update({ driver_id: user.id, status: 'accepted' })
       .eq('id', rideId)
       .eq('status', 'pending') // Ensure it's still pending
       .is('driver_id', null); // Ensure no other driver accepted it
@@ -140,7 +140,9 @@ const FindRidesPage: React.FC = () => {
       console.error("Error accepting ride:", error);
     } else {
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في لوحة التحكم الخاصة بك.");
-      fetchAvailableRides(searchCriteria); // Refresh the list
+      if (user) {
+        fetchAvailableRides(user.id, searchCriteria); // Refresh the list
+      }
     }
   };
 
@@ -149,7 +151,7 @@ const FindRidesPage: React.FC = () => {
     { id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' },
   ]);
 
-  if (loading) {
+  if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

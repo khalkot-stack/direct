@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 
 interface Profile {
   id: string;
@@ -41,8 +42,9 @@ interface Profile {
 }
 
 const UserManagementPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [users, setUsers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | undefined>(undefined);
@@ -51,7 +53,7 @@ const UserManagementPage: React.FC = () => {
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
 
   const fetchUsers = useCallback(async () => {
-    setLoading(true);
+    setLoadingUsers(true);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -63,12 +65,16 @@ const UserManagementPage: React.FC = () => {
     } else {
       setUsers(data as Profile[]);
     }
-    setLoading(false);
+    setLoadingUsers(false);
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (!userLoading && user) {
+      fetchUsers();
+    } else if (!userLoading && !user) {
+      setLoadingUsers(false); // No user, no users to fetch
+    }
+  }, [userLoading, user, fetchUsers]);
 
   const handleAddUser = () => {
     setSelectedUser(undefined);
@@ -143,6 +149,14 @@ const UserManagementPage: React.FC = () => {
     }
   };
 
+  if (userLoading || loadingUsers) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين في النظام." showBackButton={false} />
@@ -164,11 +178,7 @@ const UserManagementPage: React.FC = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredUsers.length === 0 ? (
+      {filteredUsers.length === 0 ? (
         <EmptyState
           icon={UsersIcon}
           title="لا يوجد مستخدمون"

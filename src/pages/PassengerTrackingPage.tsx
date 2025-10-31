@@ -10,6 +10,7 @@ import InteractiveMap from "@/components/InteractiveMap";
 import { Button } from "@/components/ui/button";
 import ChatDialog from "@/components/ChatDialog";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 
 interface Ride {
   id: string;
@@ -37,25 +38,16 @@ interface Ride {
 }
 
 const PassengerTrackingPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [ride, setRide] = useState<Ride | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loadingRideDetails, setLoadingRideDetails] = useState(true);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  const fetchRideDetails = useCallback(async () => {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error("الرجاء تسجيل الدخول لتتبع رحلتك.");
-      setLoading(false);
-      return;
-    }
-    setCurrentUserId(user.id);
-
+  const fetchRideDetails = useCallback(async (userId: string) => {
+    setLoadingRideDetails(true);
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -63,7 +55,7 @@ const PassengerTrackingPage: React.FC = () => {
         passenger_profiles:passenger_id(id, full_name, avatar_url),
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
-      .eq('passenger_id', user.id)
+      .eq('passenger_id', userId)
       .in('status', ['accepted']) // Only track accepted rides
       .order('created_at', { ascending: false })
       .limit(1)
@@ -79,44 +71,50 @@ const PassengerTrackingPage: React.FC = () => {
     } else {
       setRide(data as Ride);
     }
-    setLoading(false);
+    setLoadingRideDetails(false);
   }, []);
 
   useEffect(() => {
-    fetchRideDetails();
+    if (!userLoading && user) {
+      fetchRideDetails(user.id);
 
-    const channel = supabase
-      .channel('ride_tracking_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rides',
-          filter: `passenger_id=eq.${currentUserId}`,
-        },
-        (payload) => {
-          console.log('Ride update received!', payload);
-          if (payload.new.status === 'completed') {
-            toast.success("لقد وصلت رحلتك إلى وجهتها!");
-            setRide(null); // Clear ride from state
-          } else if (payload.new.status === 'cancelled') {
-            toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-            setRide(null); // Clear ride from state
-          } else {
-            setRide(payload.new as Ride);
+      const channel = supabase
+        .channel('ride_tracking_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rides',
+            filter: `passenger_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Ride update received!', payload);
+            if (payload.new.status === 'completed') {
+              toast.success("لقد وصلت رحلتك إلى وجهتها!");
+              setRide(null); // Clear ride from state
+            } else if (payload.new.status === 'cancelled') {
+              toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+              setRide(null); // Clear ride from state
+            } else {
+              setRide(payload.new as Ride);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchRideDetails, currentUserId]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else if (!userLoading && !user) {
+      // User is not logged in, redirect or show message
+      toast.error("الرجاء تسجيل الدخول لتتبع رحلتك.");
+      // navigate("/auth"); // Assuming ProtectedRoute handles this
+    }
+  }, [userLoading, user, fetchRideDetails]);
 
   const handleOpenChat = () => {
-    if (!currentUserId || !ride || !ride.driver_id || !ride.driver_profiles) {
+    if (!user || !ride || !ride.driver_id || !ride.driver_profiles) {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
@@ -135,7 +133,7 @@ const PassengerTrackingPage: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (userLoading || loadingRideDetails) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -193,14 +191,14 @@ const PassengerTrackingPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {currentUserId && ride.driver_id && (
+      {user && ride.driver_id && (
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={currentUserId}
+          currentUserId={user.id}
         />
       )}
     </div>

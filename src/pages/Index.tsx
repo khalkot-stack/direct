@@ -1,52 +1,29 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
-import { Loader2, Users, Settings, Shield } from "lucide-react"; // Added Shield icon
+import { Loader2, Users, Settings, Shield } from "lucide-react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useUser } from "@/context/UserContext";
 
 const Index: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  const { user, profile, loading } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkUser = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Redirect authenticated users to their respective dashboards
-        if (user.user_metadata?.user_type === "passenger") {
-          navigate("/passenger-dashboard");
-        } else if (user.user_metadata?.user_type === "driver") {
-          navigate("/driver-dashboard");
-        } else if (user.user_metadata?.user_type === "admin") {
-          navigate("/admin-dashboard");
-        }
+    if (!loading && user && profile) {
+      // Redirect authenticated users to their respective dashboards
+      if (profile.user_type === "passenger") {
+        navigate("/passenger-dashboard");
+      } else if (profile.user_type === "driver") {
+        navigate("/driver-dashboard");
+      } else if (profile.user_type === "admin") {
+        navigate("/admin-dashboard");
       }
-      setLoading(false);
-    };
-
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        if (session.user.user_metadata?.user_type === "passenger") {
-          navigate("/passenger-dashboard");
-        } else if (session.user.user_metadata?.user_type === "driver") {
-          navigate("/driver-dashboard");
-        } else if (session.user.user_metadata?.user_type === "admin") {
-          navigate("/admin-dashboard");
-        }
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate]);
+    }
+  }, [loading, user, profile, navigate]);
 
   if (loading) {
     return (

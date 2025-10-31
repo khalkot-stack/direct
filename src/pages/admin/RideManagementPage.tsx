@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
+import { useUser } from "@/context/UserContext";
 
 interface ProfileInfo {
   id: string;
@@ -51,8 +52,9 @@ interface Ride {
 }
 
 const RideManagementPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [rides, setRides] = useState<Ride[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingRides, setLoadingRides] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | undefined>(undefined);
@@ -63,10 +65,9 @@ const RideManagementPage: React.FC = () => {
   const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const fetchRides = useCallback(async () => {
-    setLoading(true);
+    setLoadingRides(true);
     const { data, error } = await supabase
       .from('rides')
       .select(`
@@ -89,16 +90,11 @@ const RideManagementPage: React.FC = () => {
     } else {
       setRides(data as Ride[]);
     }
-    setLoading(false);
+    setLoadingRides(false);
   }, []);
 
   useEffect(() => {
     fetchRides();
-    const fetchCurrentUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-    };
-    fetchCurrentUserId();
   }, [fetchRides]);
 
   const handleAddRide = () => {
@@ -165,18 +161,18 @@ const RideManagementPage: React.FC = () => {
   };
 
   const handleOpenChat = (ride: Ride) => {
-    if (!currentUserId) {
+    if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول للمحادثة.");
       return;
     }
 
     let otherUser: { id: string; name: string } | null = null;
 
-    if (currentUserId === ride.passenger_id && ride.driver_profiles) {
+    if (user.id === ride.passenger_id && ride.driver_profiles) {
       otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name };
-    } else if (currentUserId === ride.driver_id && ride.passenger_profiles) {
+    } else if (user.id === ride.driver_id && ride.passenger_profiles) {
       otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
-    } else if (currentUserId !== ride.passenger_id && currentUserId !== ride.driver_id) {
+    } else if (user.id !== ride.passenger_id && user.id !== ride.driver_id) {
       // Admin is initiating chat, choose passenger by default or prompt
       if (ride.passenger_profiles) {
         otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name };
@@ -223,6 +219,14 @@ const RideManagementPage: React.FC = () => {
     );
   });
 
+  if (userLoading || loadingRides) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <PageHeader title="إدارة الرحلات" description="عرض وإدارة جميع الرحلات في النظام." showBackButton={false} />
@@ -244,11 +248,7 @@ const RideManagementPage: React.FC = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredRides.length === 0 ? (
+      {filteredRides.length === 0 ? (
         <EmptyState
           icon={CarIcon}
           title="لا توجد رحلات"
@@ -352,14 +352,14 @@ const RideManagementPage: React.FC = () => {
         onSave={handleSaveRide}
       />
 
-      {currentUserId && (
+      {user && (
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={currentUserId}
+          currentUserId={user.id}
         />
       )}
     </div>

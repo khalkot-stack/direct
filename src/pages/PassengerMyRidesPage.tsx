@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
+import { useUser } from "@/context/UserContext";
 
 interface Ride {
   id: string;
@@ -36,9 +37,9 @@ interface Ride {
 }
 
 const PassengerMyRidesPage: React.FC = () => {
+  const { user, loading: userLoading } = useUser();
   const [rides, setRides] = useState<Ride[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loadingRides, setLoadingRides] = useState(true);
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatRideId, setChatRideId] = useState("");
@@ -53,16 +54,8 @@ const PassengerMyRidesPage: React.FC = () => {
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const fetchMyRides = useCallback(async () => {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
-      setLoading(false);
-      return;
-    }
-    setCurrentUserId(user.id);
+  const fetchMyRides = useCallback(async (userId: string) => {
+    setLoadingRides(true);
 
     const { data, error } = await supabase
       .from('rides')
@@ -71,7 +64,7 @@ const PassengerMyRidesPage: React.FC = () => {
         passenger_profiles:passenger_id(id, full_name, avatar_url),
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
-      .eq('passenger_id', user.id)
+      .eq('passenger_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -80,48 +73,53 @@ const PassengerMyRidesPage: React.FC = () => {
     } else {
       setRides(data as Ride[]);
     }
-    setLoading(false);
+    setLoadingRides(false);
   }, []);
 
   useEffect(() => {
-    fetchMyRides();
+    if (!userLoading && user) {
+      fetchMyRides(user.id);
 
-    const channel = supabase
-      .channel('passenger_my_rides_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rides',
-          filter: `passenger_id=eq.${currentUserId}`,
-        },
-        (payload) => {
-          console.log('Change received in my rides!', payload);
-          fetchMyRides(); // Re-fetch data on any ride change
-          if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
-            toast.success("تم إكمال رحلتك بنجاح!");
-            const completedRide = payload.new as Ride;
-            if (completedRide.driver_profiles) {
-              setRideToRate(completedRide);
-              setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
-              setIsRatingDialogOpen(true);
+      const channel = supabase
+        .channel('passenger_my_rides_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'rides',
+            filter: `passenger_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Change received in my rides!', payload);
+            fetchMyRides(user.id); // Re-fetch data on any ride change
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+              toast.success("تم إكمال رحلتك بنجاح!");
+              const completedRide = payload.new as Ride;
+              if (completedRide.driver_profiles) {
+                setRideToRate(completedRide);
+                setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
+                setIsRatingDialogOpen(true);
+              }
+            }
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+              toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
             }
           }
-          if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-            toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-          }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchMyRides, currentUserId]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else if (!userLoading && !user) {
+      toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
+      // navigate("/auth"); // ProtectedRoute handles this
+    }
+  }, [userLoading, user, fetchMyRides]);
 
   const handleOpenChat = (ride: Ride) => {
-    if (!currentUserId || !ride.driver_id || !ride.driver_profiles) {
+    if (!user || !ride.driver_id || !ride.driver_profiles) {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
@@ -132,7 +130,7 @@ const PassengerMyRidesPage: React.FC = () => {
   };
 
   const handleOpenRatingDialog = (ride: Ride) => {
-    if (!currentUserId || !ride.driver_id || !ride.driver_profiles) {
+    if (!user || !ride.driver_id || !ride.driver_profiles) {
       toast.error("لا يمكن تقييم السائق. معلومات السائق أو الرحلة غير متوفرة.");
       return;
     }
@@ -142,11 +140,11 @@ const PassengerMyRidesPage: React.FC = () => {
   };
 
   const handleSaveRating = async (rating: number, comment: string) => {
-    if (!currentUserId || !rideToRate || !ratingTargetUser) return;
+    if (!user || !rideToRate || !ratingTargetUser) return;
 
     const { error } = await supabase.from('ratings').insert({
       ride_id: rideToRate.id,
-      rater_id: currentUserId,
+      rater_id: user.id,
       rated_user_id: ratingTargetUser.id,
       rating,
       comment,
@@ -182,7 +180,9 @@ const PassengerMyRidesPage: React.FC = () => {
       console.error("Error cancelling ride:", error);
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
-      fetchMyRides();
+      if (user) {
+        fetchMyRides(user.id);
+      }
     }
   };
 
@@ -201,7 +201,7 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -273,18 +273,18 @@ const PassengerMyRidesPage: React.FC = () => {
         </div>
       )}
 
-      {currentUserId && (
+      {user && (
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
-          currentUserId={currentUserId}
+          currentUserId={user.id}
         />
       )}
 
-      {currentUserId && rideToRate && ratingTargetUser && (
+      {user && rideToRate && ratingTargetUser && (
         <RatingDialog
           open={isRatingDialogOpen}
           onOpenChange={setIsRatingDialogOpen}

@@ -14,6 +14,7 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/context/UserContext";
 
 interface Ride {
   id: string;
@@ -42,8 +43,8 @@ interface Ride {
 }
 
 const PassengerDashboard: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading: userLoading } = useUser();
+  const [loadingRides, setLoadingRides] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatRideId, setChatRideId] = useState("");
@@ -60,18 +61,8 @@ const PassengerDashboard: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const fetchUserDataAndCurrentRide = useCallback(async () => {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error("الرجاء تسجيل الدخول للوصول إلى لوحة التحكم.");
-      navigate("/auth");
-      setLoading(false);
-      return;
-    }
-    setUser(user);
-
+  const fetchCurrentRide = useCallback(async (userId: string) => {
+    setLoadingRides(true);
     // Fetch current active ride for the passenger
     const { data: ridesData, error: ridesError } = await supabase
       .from('rides')
@@ -80,7 +71,7 @@ const PassengerDashboard: React.FC = () => {
         passenger_profiles:passenger_id(id, full_name, avatar_url),
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
-      .eq('passenger_id', user.id)
+      .eq('passenger_id', userId)
       .in('status', ['pending', 'accepted'])
       .order('created_at', { ascending: false })
       .limit(1);
@@ -94,61 +85,53 @@ const PassengerDashboard: React.FC = () => {
     } else {
       setCurrentRide(null);
     }
-    setLoading(false);
-  }, [navigate]);
+    setLoadingRides(false);
+  }, []);
 
   useEffect(() => {
-    fetchUserDataAndCurrentRide();
+    if (!userLoading && user) {
+      fetchCurrentRide(user.id);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchUserDataAndCurrentRide();
-      } else {
-        setUser(null);
-        setCurrentRide(null);
-        navigate("/auth");
-      }
-    });
-
-    const rideChannel = supabase
-      .channel('passenger_rides_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'rides',
-          filter: `passenger_id=eq.${user?.id}`,
-        },
-        (payload) => {
-          console.log('Change received!', payload);
-          fetchUserDataAndCurrentRide(); // Re-fetch data on any ride change
-          if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
-            toast.success("تم قبول رحلتك من قبل سائق!");
-          }
-          if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
-            toast.success("تم إكمال رحلتك بنجاح!");
-            // Prompt passenger to rate driver
-            const completedRide = payload.new as Ride;
-            if (completedRide.driver_profiles) {
-              setRideToRate(completedRide);
-              setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
-              setIsRatingDialogOpen(true);
+      const rideChannel = supabase
+        .channel('passenger_rides_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'rides',
+            filter: `passenger_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Change received!', payload);
+            fetchCurrentRide(user.id); // Re-fetch data on any ride change
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
+              toast.success("تم قبول رحلتك من قبل سائق!");
+            }
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+              toast.success("تم إكمال رحلتك بنجاح!");
+              // Prompt passenger to rate driver
+              const completedRide = payload.new as Ride;
+              if (completedRide.driver_profiles) {
+                setRideToRate(completedRide);
+                setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
+                setIsRatingDialogOpen(true);
+              }
+            }
+            if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+              toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
             }
           }
-          if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-            toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-          }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      authListener.subscription.unsubscribe();
-      supabase.removeChannel(rideChannel);
-    };
-  }, [fetchUserDataAndCurrentRide, user?.id, navigate]);
+      return () => {
+        supabase.removeChannel(rideChannel);
+      };
+    } else if (!userLoading && !user) {
+      navigate("/auth");
+    }
+  }, [userLoading, user, fetchCurrentRide, navigate]);
 
   const handleOpenChat = () => {
     if (!user || !currentRide || !currentRide.driver_profiles) {
@@ -211,7 +194,7 @@ const PassengerDashboard: React.FC = () => {
     { id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' },
   ] : [];
 
-  if (loading) {
+  if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
