@@ -136,7 +136,7 @@ const DriverHome: React.FC = () => {
             driver_profiles: driverProfile,
           };
         }) as Ride[];
-        setAvailableRides(formattedAvailableAvailableRides);
+        setAvailableRides(formattedAvailableRides);
       }
     }
     setLoadingRideData(false);
@@ -230,7 +230,7 @@ const DriverHome: React.FC = () => {
         availableRides.forEach(ride => {
           if (ride.pickup_lat && ride.pickup_lng) {
             newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
-            bounds.extend({ lat: ride.pickup_lat, lng: ride.lng });
+            bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
           }
           if (ride.destination_lat && ride.destination_lng) {
             newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
