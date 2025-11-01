@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Uncommented
+import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -17,6 +17,7 @@ import { Ride, RawRideData, Rating } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import EmptyState from "@/components/EmptyState"; // Import EmptyState
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -25,9 +26,9 @@ const DriverHome: React.FC = () => {
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]); // Uncommented
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined); // Uncommented
-  const [mapZoom, setMapZoom] = useState<number>(12); // Uncommented
+  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [mapZoom, setMapZoom] = useState<number>(12);
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -179,7 +180,7 @@ const DriverHome: React.FC = () => {
   );
 
   useEffect(() => {
-    const updateMapMarkers = () => { // Uncommented
+    const updateMapMarkers = () => {
       const newMarkers: MarkerLocation[] = [];
       let currentCenter = undefined;
       let currentZoom = 12;
@@ -223,7 +224,7 @@ const DriverHome: React.FC = () => {
       setMapZoom(currentZoom);
     };
 
-    updateMapMarkers(); // Uncommented
+    updateMapMarkers();
   }, [currentRide, availableRides]);
 
   const updateDriverLocation = useCallback(async () => {
@@ -388,8 +389,8 @@ const DriverHome: React.FC = () => {
   }
 
   return (
-    <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} /> {/* Uncommented */}
+    <div className="relative flex flex-col h-[calc(100vh-64px)]">
+      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} />
 
       {currentRide ? (
         // Active Ride Card for Driver
@@ -440,10 +441,10 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : (
+      ) : availableRides.length > 0 ? (
         // Available Rides Drawer for Driver
         <Drawer open={availableRides.length > 0} onOpenChange={() => { /* Keep open if rides available */ }}>
-          <DrawerContent className="max-h-[60vh]"> {/* Reduced max height */}
+          <DrawerContent className="max-h-[60vh]">
             <DrawerHeader className="text-right">
               <DrawerTitle>الرحلات المتاحة</DrawerTitle>
               <DrawerDescription>
@@ -509,13 +510,22 @@ const DriverHome: React.FC = () => {
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
+      ) : (
+        // Empty State when no current or available rides
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
+          <EmptyState
+            icon={Car}
+            title="لا توجد رحلات حاليًا"
+            description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
+          />
+        </div>
       )}
 
       {user && (currentRide || availableRides.length > 0) && (
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
-          rideId={currentRide?.id || availableRides[0]?.id || ""} // Use current ride or first available ride for chat context
+          rideId={currentRide?.id || availableRides[0]?.id || ""}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
         />
