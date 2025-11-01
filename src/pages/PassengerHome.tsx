@@ -18,7 +18,7 @@ import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { useForm } from "react-hook-form";
+import { useForm } from "react-hook-form"; // Re-added useForm
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
@@ -61,6 +61,8 @@ const PassengerHome: React.FC = () => {
       passengersCount: 1,
     },
   });
+
+  const { errors } = form.formState; // Destructure errors from formState
 
   // Removed googleMapsApiKey and geocodeAddress function
 
