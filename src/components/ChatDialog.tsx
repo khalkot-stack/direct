@@ -34,11 +34,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   otherUserId,
   otherUserName,
 }) => {
-  const { user, loading: userLoading } = useUser();
+  const { user, profile: currentUserProfile, loading: userLoading } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [otherUserProfile, setOtherUserProfile] = useState<ProfileDetails | null>(null); // State for other user's profile
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentUserId = user?.id; // Get current user ID from context
@@ -46,6 +47,26 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Fetch other user's profile once when dialog opens
+  useEffect(() => {
+    const fetchOtherProfile = async () => {
+      if (open && otherUserId) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', otherUserId)
+          .single();
+        if (error) {
+          console.error("Error fetching other user profile:", error);
+          setOtherUserProfile(null);
+        } else {
+          setOtherUserProfile(data);
+        }
+      }
+    };
+    fetchOtherProfile();
+  }, [open, otherUserId]);
 
   const fetchMessages = useCallback(async () => {
     if (!currentUserId) return;
@@ -119,46 +140,37 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
         (payload) => {
-          supabase
-            .from('messages')
-            .select(`
-              id,
-              sender_id,
-              content,
-              created_at,
-              sender_profiles:sender_id(id, full_name, avatar_url),
-              receiver_profiles:receiver_id(id, full_name, avatar_url)
-            `)
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (error) {
-                console.error("Error fetching new message for realtime:", error);
-              } else if (data) {
-                const rawSenderProfiles = (data as SupabaseJoinedMessageData).sender_profiles;
-                const senderProfiles = Array.isArray(rawSenderProfiles) && rawSenderProfiles.length > 0
-                  ? rawSenderProfiles[0]
-                  : (rawSenderProfiles as ProfileDetails | null);
-                
-                const rawReceiverProfiles = (data as SupabaseJoinedMessageData).receiver_profiles;
-                const receiverProfiles = Array.isArray(rawReceiverProfiles) && rawReceiverProfiles.length > 0
-                  ? rawReceiverProfiles[0]
-                  : (rawReceiverProfiles as ProfileDetails | null);
+          const newMsgPayload = payload.new;
+          let senderProfiles: ProfileDetails | null = null;
+          let receiverProfiles: ProfileDetails | null = null;
 
-                const formattedNewMessage: Message = {
-                  id: data.id,
-                  sender_id: data.sender_id,
-                  content: data.content,
-                  created_at: data.created_at,
-                  sender_profiles: senderProfiles,
-                  receiver_profiles: receiverProfiles,
-                };
-                setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
-                if (payload.new.sender_id !== currentUserId) {
-                  toast.info(`رسالة جديدة من ${formattedNewMessage.sender_profiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
-                }
-              }
-            });
+          if (newMsgPayload.sender_id === currentUserId) {
+            senderProfiles = currentUserProfile;
+            receiverProfiles = otherUserProfile;
+          } else if (newMsgPayload.sender_id === otherUserId) {
+            senderProfiles = otherUserProfile;
+            receiverProfiles = currentUserProfile;
+          }
+          // Fallback if profiles are not found (shouldn't happen in 1-on-1 chat)
+          if (!senderProfiles) {
+            senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null };
+          }
+          if (!receiverProfiles) {
+            receiverProfiles = { id: newMsgPayload.receiver_id, full_name: 'مستخدم غير معروف', avatar_url: null };
+          }
+
+          const formattedNewMessage: Message = {
+            id: newMsgPayload.id,
+            sender_id: newMsgPayload.sender_id,
+            content: newMsgPayload.content,
+            created_at: newMsgPayload.created_at,
+            sender_profiles: senderProfiles,
+            receiver_profiles: receiverProfiles,
+          };
+          setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
+          if (newMsgPayload.sender_id !== currentUserId) {
+            toast.info(`رسالة جديدة من ${senderProfiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
+          }
         }
       )
       .subscribe();
@@ -168,7 +180,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [open, rideId, currentUserId]);
+  }, [open, rideId, currentUserId, currentUserProfile, otherUserId, otherUserProfile]); // Added profile dependencies
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

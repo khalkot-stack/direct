@@ -58,6 +58,7 @@ const DriverHome: React.FC = () => {
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => { // Modified to accept criteria
+    console.log("fetchDriverRides: Called with userId:", userId, "criteria:", criteria);
     setLoadingRideData(true);
     // Fetch current active ride for the driver
     const { data: currentRideRaw, error: currentRideError } = await supabase
@@ -74,9 +75,10 @@ const DriverHome: React.FC = () => {
 
     if (currentRideError) {
       toast.error(`فشل جلب الرحلة الحالية: ${currentRideError.message}`);
-      console.error("Error fetching current ride:", currentRideError);
+      console.error("fetchDriverRides: Error fetching current ride:", currentRideError);
       setCurrentRide(null);
     } else if (currentRideRaw && currentRideRaw.length > 0) {
+      console.log("fetchDriverRides: Current ride data found:", currentRideRaw[0]);
       const ride = currentRideRaw[0] as RawRideData;
       const passengerProfile = Array.isArray(ride.passenger_profiles)
         ? ride.passenger_profiles[0] || null
@@ -93,6 +95,7 @@ const DriverHome: React.FC = () => {
       } as Ride);
       setAvailableRides([]); // Clear available rides if there's a current one
     } else {
+      console.log("fetchDriverRides: No current ride found. Fetching available rides.");
       setCurrentRide(null);
       // If no current ride, fetch available rides with criteria
       let query = supabase
@@ -120,9 +123,10 @@ const DriverHome: React.FC = () => {
 
       if (availableRidesError) {
         toast.error(`فشل جلب الرحلات المتاحة: ${availableRidesError.message}`);
-        console.error("Error fetching available rides:", availableRidesError);
+        console.error("fetchDriverRides: Error fetching available rides:", availableRidesError);
         setAvailableRides([]);
       } else {
+        console.log("fetchDriverRides: Available rides data found:", availableRidesRaw);
         const formattedAvailableRides: Ride[] = (availableRidesRaw as RawRideData[] || []).map(ride => {
           const passengerProfile = Array.isArray(ride.passenger_profiles)
             ? ride.passenger_profiles[0] || null
@@ -140,6 +144,7 @@ const DriverHome: React.FC = () => {
       }
     }
     setLoadingRideData(false);
+    console.log("fetchDriverRides: Finished.");
   }, []);
 
   useEffect(() => {
@@ -164,7 +169,7 @@ const DriverHome: React.FC = () => {
       filter: `driver_id=eq.${user?.id}`, // Listen for changes on driver's own rides
     },
     (payload) => {
-      console.log('Change received in driver home!', payload);
+      console.log('Realtime: Change received in driver home!', payload);
       if (user) {
         fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
       }
@@ -195,7 +200,7 @@ const DriverHome: React.FC = () => {
       filter: `status=eq.pending`, // Listen for new pending rides
     },
     (payload) => {
-      console.log('Change received in available rides!', payload);
+      console.log('Realtime: Change received in available rides!', payload);
       if (user && !currentRide) { // Only update available rides if no current ride
         fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
       }
