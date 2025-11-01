@@ -17,7 +17,7 @@ import { Ride, RawRideData, Rating } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import EmptyState from "@/components/EmptyState"; // Import EmptyState
+import EmptyState from "@/components/EmptyState";
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -44,6 +44,8 @@ const DriverHome: React.FC = () => {
 
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const locationIntervalRef = useRef<number | null>(null);
+
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Get API key
 
   const fetchDriverRides = useCallback(async (userId: string) => {
     setLoadingRideData(true);
@@ -384,6 +386,23 @@ const DriverHome: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل التطبيق...</span>
+      </div>
+    );
+  }
+
+  // Check for Google Maps API Key
+  if (!googleMapsApiKey) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4 text-center">
+        <Car className="h-16 w-16 text-red-500 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+          خطأ في إعداد الخريطة
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 max-w-sm">
+          الرجاء إضافة مفتاح Google Maps API الخاص بك إلى ملف .env الخاص بالمشروع.
+          (VITE_GOOGLE_MAPS_API_KEY)
+        </p>
+        <Button onClick={() => navigate("/")} className="mt-4">العودة للصفحة الرئيسية</Button>
       </div>
     );
   }

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Car, MessageSquare, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Uncommented
+import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -36,8 +36,8 @@ const PassengerHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]); // Uncommented
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined); // Uncommented
+  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
 
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
@@ -66,18 +66,20 @@ const PassengerHome: React.FC = () => {
   const pickupLocationInput = watch("pickupLocation");
   const destinationInput = watch("destination");
 
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Get API key
+
   const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
-    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+    if (!googleMapsApiKey) {
       toast.error("مفتاح Google Maps API غير مكوّن. الرجاء إضافة VITE_GOOGLE_MAPS_API_KEY إلى ملف .env الخاص بك.");
       return null;
     }
 
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`
       );
       const data = await response.json();
-      console.log(`Google Maps Geocoding API response for ${type} (${address}):`, data); // Added console.log
+      console.log(`Google Maps Geocoding API response for ${type} (${address}):`, data);
 
       if (data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location;
@@ -91,7 +93,7 @@ const PassengerHome: React.FC = () => {
       toast.error("فشل تحديد الموقع الجغرافي. الرجاء التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى.");
       return null;
     }
-  }, []);
+  }, [googleMapsApiKey]);
 
   const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRideData(true);
@@ -173,7 +175,7 @@ const PassengerHome: React.FC = () => {
   );
 
   useEffect(() => {
-    const updateMapMarkers = async () => { // Uncommented
+    const updateMapMarkers = async () => {
       const newMarkers: MarkerLocation[] = [];
       let currentCenter = undefined;
 
@@ -231,10 +233,6 @@ const PassengerHome: React.FC = () => {
     const pickupCoords = await geocodeAddress(values.pickupLocation, 'pickup');
     const destinationCoords = await geocodeAddress(values.destination, 'destination');
 
-    // Removed the conditional checks for pickupCoords and destinationCoords
-    // The ride request will now proceed even if geocoding fails,
-    // passing null for coordinates if they couldn't be determined.
-
     setLoadingRideData(true);
     const { error } = await supabase.from('rides').insert({
       passenger_id: user.id,
@@ -242,10 +240,10 @@ const PassengerHome: React.FC = () => {
       destination: values.destination,
       passengers_count: values.passengersCount,
       status: 'pending',
-      pickup_lat: pickupCoords?.lat || null, // Pass null if geocoding failed
-      pickup_lng: pickupCoords?.lng || null, // Pass null if geocoding failed
-      destination_lat: destinationCoords?.lat || null, // Pass null if geocoding failed
-      destination_lng: destinationCoords?.lng || null, // Pass null if geocoding failed
+      pickup_lat: pickupCoords?.lat || null,
+      pickup_lng: pickupCoords?.lng || null,
+      destination_lat: destinationCoords?.lat || null,
+      destination_lng: destinationCoords?.lng || null,
     } as Omit<Ride, 'id' | 'created_at' | 'cancellation_reason' | 'driver_id' | 'passenger_profiles' | 'driver_profiles' | 'driver_current_lat' | 'driver_current_lng'>);
     setLoadingRideData(false);
 
@@ -332,9 +330,26 @@ const PassengerHome: React.FC = () => {
     );
   }
 
+  // Check for Google Maps API Key
+  if (!googleMapsApiKey) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4 text-center">
+        <Car className="h-16 w-16 text-red-500 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+          خطأ في إعداد الخريطة
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 max-w-sm">
+          الرجاء إضافة مفتاح Google Maps API الخاص بك إلى ملف .env الخاص بالمشروع.
+          (VITE_GOOGLE_MAPS_API_KEY)
+        </p>
+        <Button onClick={() => navigate("/")} className="mt-4">العودة للصفحة الرئيسية</Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height for header and bottom nav */}
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} /> {/* Uncommented */}
+    <div className="relative flex flex-col h-[calc(100vh-64px)]">
+      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} />
 
       {currentRide ? (
         // Active Ride Card (similar to Uber's bottom card for active rides)
@@ -390,7 +405,7 @@ const PassengerHome: React.FC = () => {
 
       {/* Request Ride Drawer */}
       <Drawer open={isRequestDrawerOpen} onOpenChange={setIsRequestDrawerOpen}>
-        <DrawerContent className="max-h-[60vh]"> {/* Reduced max height */}
+        <DrawerContent className="max-h-[60vh]">
           <DrawerHeader className="text-right">
             <DrawerTitle>طلب رحلة جديدة</DrawerTitle>
             <DrawerDescription>أدخل تفاصيل رحلتك وسنبحث عن سائق لك.</DrawerDescription>
