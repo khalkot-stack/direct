@@ -145,8 +145,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       if (authListenerSubscription) {
         authListenerSubscription.unsubscribe();
       }
-      // Reset ref on cleanup for potential future real unmount/mount
-      isInitialLoadHandled.current = false;
+      // Removed: isInitialLoadHandled.current = false; to prevent re-running in StrictMode
     };
   }, [fetchUserProfile]); // fetchUserProfile is a dependency because it's called inside setupAuth
 

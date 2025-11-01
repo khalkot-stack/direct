@@ -129,10 +129,11 @@ const RideManagementPage: React.FC = () => {
         fetchRides();
       }
     } else {
-      // Create new ride
+      // Create new ride: Omit the 'id' field as it's auto-generated
+      const { id, ...insertData } = rideData; // Destructure to remove 'id'
       const { error } = await supabase
         .from('rides')
-        .insert(rideData);
+        .insert(insertData); // Insert without 'id'
 
       if (error) {
         toast.error(`فشل إضافة الرحلة: ${error.message}`);

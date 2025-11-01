@@ -81,8 +81,7 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
       return;
     }
 
-    const newRide: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'> = {
-      id: ride?.id || "",
+    const baseRideData = {
       passenger_id: passengerId,
       driver_id: driverId,
       pickup_location: pickupLocation,
@@ -90,7 +89,11 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
       passengers_count: parseInt(passengersCount),
       status: status,
     };
-    onSave(newRide);
+
+    // Conditionally add 'id' only if it's an existing ride
+    const newRide = ride ? { ...baseRideData, id: ride.id } : baseRideData;
+    
+    onSave(newRide as Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>);
   };
 
   if (loading) {
