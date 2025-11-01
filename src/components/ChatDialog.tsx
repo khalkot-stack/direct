@@ -60,24 +60,25 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const fetchOtherProfile = async () => {
-      if (open && otherUserId) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .eq('id', otherUserId)
-          .single();
-        if (error) {
-          console.error("Error fetching other user profile:", error);
-          setOtherUserProfile(null);
-        } else {
-          setOtherUserProfile(data);
-        }
+  const fetchOtherProfile = useCallback(async () => {
+    if (open && otherUserId) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', otherUserId)
+        .single();
+      if (error) {
+        console.error("Error fetching other user profile:", error);
+        setOtherUserProfile(null);
+      } else {
+        setOtherUserProfile(data);
       }
-    };
-    fetchOtherProfile();
+    }
   }, [open, otherUserId]);
+
+  useEffect(() => {
+    fetchOtherProfile();
+  }, [fetchOtherProfile]);
 
   const fetchMessages = useCallback(async () => {
     if (!currentUserId) return;
@@ -150,23 +151,37 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
-        (payload) => {
+        async (payload) => { // Made callback async
           const newMsgPayload = payload.new;
-          // Access current values from refs
-          const currentSenderProfile = currentUserProfileRef.current;
-          const currentOtherUserProfile = otherUserProfileRef.current;
-
+          
           let senderProfiles: ProfileDetails | null = null;
           let receiverProfiles: ProfileDetails | null = null;
 
+          // Try to get profiles from refs first
           if (newMsgPayload.sender_id === currentUserId) {
-            senderProfiles = currentSenderProfile;
-            receiverProfiles = currentOtherUserProfile;
+            senderProfiles = currentUserProfileRef.current;
+            receiverProfiles = otherUserProfileRef.current;
           } else if (newMsgPayload.sender_id === otherUserId) {
-            senderProfiles = currentOtherUserProfile;
-            receiverProfiles = currentSenderProfile;
+            senderProfiles = otherUserProfileRef.current;
+            receiverProfiles = currentUserProfileRef.current;
           }
-          // Fallback if profiles are not found (shouldn't happen in 1-on-1 chat)
+
+          // If profiles are still null, fetch them
+          if (!senderProfiles || !receiverProfiles) {
+            const { data: profilesData, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', [newMsgPayload.sender_id, newMsgPayload.receiver_id]);
+
+            if (profilesError) {
+              console.error("Error fetching profiles for new message:", profilesError);
+            } else if (profilesData) {
+              senderProfiles = profilesData.find(p => p.id === newMsgPayload.sender_id) || null;
+              receiverProfiles = profilesData.find(p => p.id === newMsgPayload.receiver_id) || null;
+            }
+          }
+          
+          // Fallback if profiles are not found
           if (!senderProfiles) {
             senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null };
           }

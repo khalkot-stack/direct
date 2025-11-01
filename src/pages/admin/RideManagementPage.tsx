@@ -32,6 +32,7 @@ import ChatDialog from "@/components/ChatDialog";
 import { useUser } from "@/context/UserContext";
 import { Ride, RawRideData } from "@/types/supabase"; // Import shared types
 import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import useSupabaseRealtime
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -102,6 +103,21 @@ const RideManagementPage: React.FC = () => {
     fetchRides();
   }, [fetchRides]);
 
+  // Realtime subscription for rides
+  useSupabaseRealtime(
+    'admin_rides_channel',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'rides',
+    },
+    (payload) => {
+      console.log('Realtime ride change received:', payload);
+      fetchRides(); // Re-fetch all rides on any change
+    },
+    !!user // Only enable if user is logged in
+  );
+
   const handleAddRide = () => {
     setSelectedRide(undefined);
     setIsFormDialogOpen(true);
@@ -126,7 +142,7 @@ const RideManagementPage: React.FC = () => {
         console.error("Error updating ride:", error);
       } else {
         toast.success("تم تحديث الرحلة بنجاح!");
-        fetchRides();
+        // fetchRides(); // Realtime will handle this
       }
     } else {
       // Create new ride: Omit the 'id' field as it's auto-generated
@@ -140,7 +156,7 @@ const RideManagementPage: React.FC = () => {
         console.error("Error adding ride:", error);
       } else {
         toast.success("تم إضافة الرحلة بنجاح!");
-        fetchRides();
+        // fetchRides(); // Realtime will handle this
       }
     }
     setIsFormDialogOpen(false);
@@ -162,7 +178,7 @@ const RideManagementPage: React.FC = () => {
       console.error("Error deleting ride:", error);
     } else {
       toast.success("تم حذف الرحلة بنجاح!");
-      fetchRides();
+      // fetchRides(); // Realtime will handle this
     }
   };
 
