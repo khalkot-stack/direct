@@ -6,11 +6,12 @@ import React, {
   useEffect,
   useContext,
   useCallback,
+  useRef, // Import useRef
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
-import { Profile } from "@/types/supabase"; // Import shared Profile type
+import { Profile } from "@/types/supabase";
 
 interface UserContextType {
   user: SupabaseUser | null;
@@ -28,7 +29,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true); // Initial state is true
+  const [loading, setLoading] = useState(true);
+  const isInitialLoadHandled = useRef(false); // To prevent double-handling in Strict Mode
 
   console.log("UserProvider: Initializing, loading =", loading);
 
@@ -87,11 +89,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
     console.log("fetchUserProfile: Finished.");
-  }, []); // fetchUserProfile is stable
+  }, []);
 
   useEffect(() => {
+    // This ref ensures the effect runs only once per "real" mount, ignoring Strict Mode double-invocations
+    if (isInitialLoadHandled.current) {
+      return;
+    }
+    isInitialLoadHandled.current = true;
+
     console.log("UserProvider useEffect: Setting up auth listener.");
-    let authListenerSubscription: any; // To hold the subscription object
+    let authListenerSubscription: { unsubscribe: () => void } | null = null;
 
     const setupAuth = async () => {
       // 1. Get initial session
@@ -137,6 +145,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       if (authListenerSubscription) {
         authListenerSubscription.unsubscribe();
       }
+      // Reset ref on cleanup for potential future real unmount/mount
+      isInitialLoadHandled.current = false;
     };
   }, [fetchUserProfile]); // fetchUserProfile is a dependency because it's called inside setupAuth
 
