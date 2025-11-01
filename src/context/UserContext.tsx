@@ -102,8 +102,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           setProfile(null);
         }
-        console.log("onAuthStateChange: Setting loading to false.");
-        setLoading(false); // This is called after auth state change
+        // Removed setLoading(false) from here. It should only be set by getInitialSession.
+        console.log("onAuthStateChange: User/profile updated, loading state remains as is.");
       }
     );
 
@@ -125,7 +125,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error("getInitialSession: Unexpected error during session fetch:", e.message);
       } finally {
         console.log("getInitialSession: Setting loading to false.");
-        setLoading(false); // This is called after initial session check
+        setLoading(false); // This is the definitive place to set loading to false
       }
     };
 
