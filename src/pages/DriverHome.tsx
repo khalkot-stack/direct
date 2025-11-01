@@ -227,9 +227,9 @@ const DriverHome: React.FC = () => {
 
   useEffect(() => {
     const updateMapMarkers = () => {
-      // Only proceed if the map API is ready
-      if (!isMapReady) {
-        console.log("Map not ready yet, skipping marker update.");
+      // Only proceed if the map API is ready AND window.google.maps is available
+      if (!isMapReady || !window.google || !window.google.maps || !window.google.maps.LatLngBounds) {
+        console.log("Google Maps API or LatLngBounds not fully ready, skipping marker update.");
         return;
       }
 
@@ -253,22 +253,28 @@ const DriverHome: React.FC = () => {
           currentZoom = 14; // Zoom in on driver's current location
         }
       } else if (availableRides.length > 0) {
-        // Available rides markers
-        // Now we are sure window.google.maps.LatLngBounds exists
         const bounds = new window.google.maps.LatLngBounds();
+        let hasValidCoords = false; // Flag to track if any valid coordinates were added
+
         availableRides.forEach(ride => {
           if (ride.pickup_lat && ride.pickup_lng) {
             newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
             bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
+            hasValidCoords = true;
           }
           if (ride.destination_lat && ride.destination_lng) {
             newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
             bounds.extend({ lat: ride.destination_lat, lng: ride.destination_lng });
+            hasValidCoords = true;
           }
         });
-        if (!bounds.isEmpty()) {
-          // Calculate center and zoom to fit all markers
-          currentCenter = bounds.getCenter().toJSON();
+
+        // Only try to get center if bounds actually contain points
+        if (hasValidCoords) {
+          const centerCoords = bounds.getCenter();
+          if (centerCoords) { // Ensure getCenter() returned a valid LatLng object
+            currentCenter = centerCoords.toJSON();
+          }
           // No specific zoom, let map fit bounds
         }
       }
@@ -516,8 +522,8 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : availableRides.length > 0 ? (
-        // Available Rides Drawer for Driver
+      ) : (
+        // Available Rides Drawer for Driver or Empty State
         <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
           <DrawerContent className="max-h-[60vh]">
             <DrawerHeader className="text-right">
