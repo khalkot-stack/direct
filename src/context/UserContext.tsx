@@ -28,7 +28,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial state is true
 
   console.log("UserProvider: Initializing, loading =", loading);
 
@@ -50,7 +50,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfile(data as Profile);
     } else {
       console.log("fetchUserProfile: No profile found, attempting to create default.");
-      // If no profile found, create a basic one
       const { data: userData } = await supabase.auth.getUser();
       const currentUser = userData.user;
 
@@ -88,54 +87,58 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
     console.log("fetchUserProfile: Finished.");
-  }, []);
+  }, []); // fetchUserProfile is stable
 
   useEffect(() => {
     console.log("UserProvider useEffect: Setting up auth listener.");
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
-        console.log("onAuthStateChange: Event received, _event =", _event, "currentSession =", currentSession);
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-        if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-        }
-        // Removed setLoading(false) from here. It should only be set by getInitialSession.
-        console.log("onAuthStateChange: User/profile updated, loading state remains as is.");
-      }
-    );
+    let authListenerSubscription: any; // To hold the subscription object
 
-    // Initial session check
-    const getInitialSession = async () => {
-      console.log("getInitialSession: Starting initial session check.");
-      try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("getInitialSession: Error fetching initial session:", error);
-        }
-        console.log("getInitialSession: Initial session data =", initialSession);
-        setSession(initialSession);
-        setUser(initialSession?.user || null);
-        if (initialSession?.user) {
-          await fetchUserProfile(initialSession.user.id);
-        }
-      } catch (e: any) {
-        console.error("getInitialSession: Unexpected error during session fetch:", e.message);
-      } finally {
-        console.log("getInitialSession: Setting loading to false.");
-        setLoading(false); // This is the definitive place to set loading to false
+    const setupAuth = async () => {
+      // 1. Get initial session
+      console.log("setupAuth: Getting initial session.");
+      const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("setupAuth: Error fetching initial session:", sessionError);
       }
+      console.log("setupAuth: Initial session data =", initialSession);
+      setSession(initialSession);
+      setUser(initialSession?.user || null);
+
+      if (initialSession?.user) {
+        await fetchUserProfile(initialSession.user.id);
+      } else {
+        setProfile(null);
+      }
+      setLoading(false); // Set loading to false after initial load
+
+      // 2. Set up auth state change listener
+      console.log("setupAuth: Setting up onAuthStateChange listener.");
+      const { data } = supabase.auth.onAuthStateChange(
+        async (_event, currentSession) => {
+          console.log("onAuthStateChange: Event received, _event =", _event, "currentSession =", currentSession);
+          setSession(currentSession);
+          setUser(currentSession?.user || null);
+          if (currentSession?.user) {
+            await fetchUserProfile(currentSession.user.id);
+          } else {
+            setProfile(null);
+          }
+          // No need to set loading here, it's already false after initial load
+          console.log("onAuthStateChange: User/profile updated.");
+        }
+      );
+      authListenerSubscription = data.subscription;
     };
 
-    getInitialSession();
+    setupAuth();
 
     return () => {
       console.log("UserProvider useEffect: Cleaning up auth listener.");
-      authListener.subscription.unsubscribe();
+      if (authListenerSubscription) {
+        authListenerSubscription.unsubscribe();
+      }
     };
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile]); // fetchUserProfile is a dependency because it's called inside setupAuth
 
   if (loading) {
     console.log("UserProvider: Rendering loading spinner.");
