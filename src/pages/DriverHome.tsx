@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
+import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History, Search } from "lucide-react"; // Added Search icon
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
@@ -18,6 +18,13 @@ import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EmptyState from "@/components/EmptyState";
+import RideSearchDialog from "@/components/RideSearchDialog"; // Import RideSearchDialog
+
+interface RideSearchCriteria {
+  pickupLocation?: string;
+  destination?: string;
+  passengersCount?: number;
+}
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -45,9 +52,12 @@ const DriverHome: React.FC = () => {
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const locationIntervalRef = useRef<number | null>(null);
 
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Get API key
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false); // New state for search dialog
+  const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({}); // New state for search criteria
 
-  const fetchDriverRides = useCallback(async (userId: string) => {
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => { // Modified to accept criteria
     setLoadingRideData(true);
     // Fetch current active ride for the driver
     const { data: currentRideRaw, error: currentRideError } = await supabase
@@ -84,8 +94,8 @@ const DriverHome: React.FC = () => {
       setAvailableRides([]); // Clear available rides if there's a current one
     } else {
       setCurrentRide(null);
-      // If no current ride, fetch available rides
-      const { data: availableRidesRaw, error: availableRidesError } = await supabase
+      // If no current ride, fetch available rides with criteria
+      let query = supabase
         .from('rides')
         .select(`
           *,
@@ -95,6 +105,18 @@ const DriverHome: React.FC = () => {
         .is('driver_id', null)
         .neq('passenger_id', userId) // Drivers cannot accept their own rides
         .order('created_at', { ascending: false });
+
+      if (criteria?.pickupLocation) {
+        query = query.ilike('pickup_location', `%${criteria.pickupLocation}%`);
+      }
+      if (criteria?.destination) {
+        query = query.ilike('destination', `%${criteria.destination}%`);
+      }
+      if (criteria?.passengersCount) {
+        query = query.eq('passengers_count', criteria.passengersCount);
+      }
+
+      const { data: availableRidesRaw, error: availableRidesError } = await query;
 
       if (availableRidesError) {
         toast.error(`فشل جلب الرحلات المتاحة: ${availableRidesError.message}`);
@@ -114,7 +136,7 @@ const DriverHome: React.FC = () => {
             driver_profiles: driverProfile,
           };
         }) as Ride[];
-        setAvailableRides(formattedAvailableRides);
+        setAvailableRides(formattedAvailableAvailableRides);
       }
     }
     setLoadingRideData(false);
@@ -122,7 +144,7 @@ const DriverHome: React.FC = () => {
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchDriverRides(user.id);
+      fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria here
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
@@ -131,7 +153,7 @@ const DriverHome: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [userLoading, user, fetchDriverRides, navigate]);
+  }, [userLoading, user, fetchDriverRides, navigate, searchCriteria]); // Added searchCriteria to dependencies
 
   useSupabaseRealtime(
     'driver_home_rides_channel',
@@ -144,7 +166,7 @@ const DriverHome: React.FC = () => {
     (payload) => {
       console.log('Change received in driver home!', payload);
       if (user) {
-        fetchDriverRides(user.id); // Re-fetch data on any ride change
+        fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
       }
       if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
@@ -175,7 +197,7 @@ const DriverHome: React.FC = () => {
     (payload) => {
       console.log('Change received in available rides!', payload);
       if (user && !currentRide) { // Only update available rides if no current ride
-        fetchDriverRides(user.id);
+        fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
       }
     },
     !!user && !currentRide // Only enable if user is logged in and has no current ride
@@ -208,7 +230,7 @@ const DriverHome: React.FC = () => {
         availableRides.forEach(ride => {
           if (ride.pickup_lat && ride.pickup_lng) {
             newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
-            bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
+            bounds.extend({ lat: ride.pickup_lat, lng: ride.lng });
           }
           if (ride.destination_lat && ride.destination_lng) {
             newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
@@ -319,7 +341,7 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في لوحة التحكم الخاصة بك.");
       if (user) {
-        fetchDriverRides(user.id); // Refresh the list
+        fetchDriverRides(user.id, searchCriteria); // Refresh the list with current search criteria
       }
     }
   };
@@ -376,9 +398,14 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
-        fetchDriverRides(user.id);
+        fetchDriverRides(user.id, searchCriteria); // Refresh with current search criteria
       }
     }
+  };
+
+  const handleSearch = (criteria: RideSearchCriteria) => {
+    setSearchCriteria(criteria);
+    setIsSearchDialogOpen(false);
   };
 
   if (userLoading || loadingRideData) {
@@ -521,22 +548,36 @@ const DriverHome: React.FC = () => {
                 </div>
               )}
             </ScrollArea>
-            <DrawerFooter>
+            <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
               <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
                 <History className="h-4 w-4 ml-2 rtl:mr-2" />
                 عرض رحلاتي المقبولة
+              </Button>
+              <Button
+                onClick={() => setIsSearchDialogOpen(true)}
+                className="bg-primary hover:bg-primary-dark text-primary-foreground"
+              >
+                <Search className="h-4 w-4 ml-2 rtl:mr-2" />
+                بحث عن رحلات
               </Button>
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
       ) : (
         // Empty State when no current or available rides
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
           <EmptyState
             icon={Car}
             title="لا توجد رحلات حاليًا"
             description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
           />
+          <Button
+            onClick={() => setIsSearchDialogOpen(true)}
+            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
+          >
+            <Search className="h-5 w-5 ml-2 rtl:mr-2" />
+            بحث عن رحلات
+          </Button>
         </div>
       )}
 
@@ -564,6 +605,13 @@ const DriverHome: React.FC = () => {
         onOpenChange={setIsCancellationDialogOpen}
         onConfirm={confirmCancelRide}
         isSubmitting={isCancelling}
+      />
+
+      <RideSearchDialog
+        open={isSearchDialogOpen}
+        onOpenChange={setIsSearchDialogOpen}
+        onSearch={handleSearch}
+        initialCriteria={searchCriteria}
       />
     </div>
   );
