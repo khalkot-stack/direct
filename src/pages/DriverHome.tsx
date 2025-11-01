@@ -32,7 +32,6 @@ const DriverHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  const [availableRides, setAvailableRides] = useState<Ride[]>([]);
   // Removed map-related states: mapMarkers, mapCenter, mapZoom, isMapReady
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
