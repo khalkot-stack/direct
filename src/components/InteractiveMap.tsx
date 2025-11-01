@@ -15,6 +15,9 @@ const defaultCenter = {
   lng: 35.9106,
 };
 
+// Define libraries as a static constant outside the component
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+
 export interface MarkerLocation { // Exporting the interface
   id: string;
   lat: number;
@@ -39,7 +42,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
+    libraries, // Use the static constant here
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);

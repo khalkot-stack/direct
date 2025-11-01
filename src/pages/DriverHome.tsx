@@ -54,6 +54,7 @@ const DriverHome: React.FC = () => {
 
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false); // New state for search dialog
   const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({}); // New state for search criteria
+  const [isAvailableRidesDrawerOpen, setIsAvailableRidesDrawerOpen] = useState(false); // New state for controlling the drawer
 
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -159,6 +160,15 @@ const DriverHome: React.FC = () => {
       }
     };
   }, [userLoading, user, fetchDriverRides, navigate, searchCriteria]); // Added searchCriteria to dependencies
+
+  // Effect to control the available rides drawer
+  useEffect(() => {
+    if (!currentRide && availableRides.length > 0) {
+      setIsAvailableRidesDrawerOpen(true);
+    } else {
+      setIsAvailableRidesDrawerOpen(false);
+    }
+  }, [currentRide, availableRides]);
 
   useSupabaseRealtime(
     'driver_home_rides_channel',
@@ -494,7 +504,7 @@ const DriverHome: React.FC = () => {
         </Card>
       ) : availableRides.length > 0 ? (
         // Available Rides Drawer for Driver
-        <Drawer open={availableRides.length > 0} onOpenChange={() => { /* Keep open if rides available */ }}>
+        <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
           <DrawerContent className="max-h-[60vh]">
             <DrawerHeader className="text-right">
               <DrawerTitle>الرحلات المتاحة</DrawerTitle>
