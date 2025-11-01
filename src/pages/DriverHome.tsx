@@ -36,6 +36,7 @@ const DriverHome: React.FC = () => {
   const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [mapZoom, setMapZoom] = useState<number>(12);
+  const [isMapReady, setIsMapReady] = useState(false); // New state to track map readiness
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -218,8 +219,20 @@ const DriverHome: React.FC = () => {
     !!user && !currentRide // Only enable if user is logged in and has no current ride
   );
 
+  // Callback for when the map is ready
+  const handleMapReady = useCallback(() => {
+    setIsMapReady(true);
+    console.log("Google Maps API is ready!");
+  }, []);
+
   useEffect(() => {
     const updateMapMarkers = () => {
+      // Only proceed if the map API is ready
+      if (!isMapReady) {
+        console.log("Map not ready yet, skipping marker update.");
+        return;
+      }
+
       const newMarkers: MarkerLocation[] = [];
       let currentCenter = undefined;
       let currentZoom = 12;
@@ -241,6 +254,7 @@ const DriverHome: React.FC = () => {
         }
       } else if (availableRides.length > 0) {
         // Available rides markers
+        // Now we are sure window.google.maps.LatLngBounds exists
         const bounds = new window.google.maps.LatLngBounds();
         availableRides.forEach(ride => {
           if (ride.pickup_lat && ride.pickup_lng) {
@@ -264,7 +278,7 @@ const DriverHome: React.FC = () => {
     };
 
     updateMapMarkers();
-  }, [currentRide, availableRides]);
+  }, [currentRide, availableRides, isMapReady]); // Add isMapReady to dependencies
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
@@ -451,7 +465,7 @@ const DriverHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} />
+      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} onMapReady={handleMapReady} />
 
       {currentRide ? (
         // Active Ride Card for Driver
@@ -502,8 +516,8 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        // Available Rides Drawer for Driver or Empty State
+      ) : availableRides.length > 0 ? (
+        // Available Rides Drawer for Driver
         <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
           <DrawerContent className="max-h-[60vh]">
             <DrawerHeader className="text-right">
@@ -578,6 +592,22 @@ const DriverHome: React.FC = () => {
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
+      ) : (
+        // Empty State when no current or available rides
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
+          <EmptyState
+            icon={Car}
+            title="لا توجد رحلات حاليًا"
+            description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
+          />
+          <Button
+            onClick={() => setIsSearchDialogOpen(true)}
+            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
+          >
+            <Search className="h-5 w-5 ml-2 rtl:mr-2" />
+            بحث عن رحلات
+          </Button>
+        </div>
       )}
 
       {user && (currentRide || availableRides.length > 0) && (

@@ -16,7 +16,7 @@ const defaultCenter = {
 };
 
 // Define libraries as a static constant outside the component
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places", "geometry"]; // Added "geometry"
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places", "geometry"];
 
 export interface MarkerLocation { // Exporting the interface
   id: string;
@@ -32,6 +32,7 @@ interface InteractiveMapProps {
   onMarkerClick?: (marker: MarkerLocation) => void;
   center?: { lat: number; lng: number };
   zoom?: number;
+  onMapReady?: () => void; // New prop: Callback when map API is loaded
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -39,6 +40,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onMarkerClick,
   center = defaultCenter,
   zoom = 12,
+  onMapReady, // Destructure new prop
 }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -50,22 +52,36 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapZoom, setMapZoom] = useState(zoom);
 
   useEffect(() => {
-    if (markers.length > 0 && mapRef.current) {
-      const bounds = new window.google.maps.LatLngBounds();
-      markers.forEach(marker => {
-        bounds.extend({ lat: marker.lat, lng: marker.lng });
-      });
-      mapRef.current.fitBounds(bounds);
-      if (markers.length === 1) {
-        mapRef.current.setZoom(14);
-      }
-    } else if (mapRef.current) {
-      mapRef.current.setCenter(defaultCenter);
+    if (isLoaded && onMapReady) {
+      onMapReady(); // Call callback when map is loaded
+    }
+    // Update map center and zoom when props change
+    if (mapRef.current) {
+      mapRef.current.setCenter(center);
       mapRef.current.setZoom(zoom);
     }
     setMapCenter(center);
     setMapZoom(zoom);
-  }, [markers, center, zoom]);
+  }, [isLoaded, onMapReady, center, zoom]); // Added isLoaded and onMapReady to dependencies
+
+  useEffect(() => {
+    if (isLoaded && mapRef.current) {
+      if (markers.length > 0) {
+        const bounds = new window.google.maps.LatLngBounds();
+        markers.forEach(marker => {
+          bounds.extend({ lat: marker.lat, lng: marker.lng });
+        });
+        mapRef.current.fitBounds(bounds);
+        if (markers.length === 1) {
+          mapRef.current.setZoom(14);
+        }
+      } else {
+        mapRef.current.setCenter(defaultCenter);
+        mapRef.current.setZoom(zoom);
+      }
+    }
+  }, [isLoaded, markers, zoom]);
+
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
