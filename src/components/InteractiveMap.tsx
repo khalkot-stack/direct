@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useEffect, useState } from "react";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, Libraries } from "@react-google-maps/api"; // Added Libraries import
 import { Loader2 } from "lucide-react";
 
 const containerStyle = {
@@ -16,7 +16,7 @@ const defaultCenter = {
 };
 
 // Define libraries as a static constant outside the component
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places", "geometry"];
+const libraries: Libraries = ["places", "geometry"]; // Explicitly typed as Libraries
 
 export interface MarkerLocation { // Exporting the interface
   id: string;

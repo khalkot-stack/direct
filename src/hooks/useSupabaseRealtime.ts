@@ -53,8 +53,8 @@ export function useSupabaseRealtime(
       .on('postgres_changes', filter, (payload) => {
         callbackRef.current(payload);
       })
-      .subscribe((status) => {
-        // console.log(`[Realtime Hook] Channel ${channelName} subscription status: ${status}`); // Removed log
+      .subscribe((_status) => { // Changed status to _status
+        // console.log(`[Realtime Hook] Channel ${channelName} subscription status: ${_status}`); // Removed log
       });
 
     return () => {
