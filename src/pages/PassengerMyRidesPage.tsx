@@ -36,8 +36,6 @@ const PassengerMyRidesPage: React.FC = () => {
 
   const fetchMyRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
-    console.log("[PassengerMyRidesPage] Fetching my rides for user:", userId);
-
     const { data: ridesRaw, error } = await supabase
       .from('rides')
       .select(`
@@ -68,7 +66,6 @@ const PassengerMyRidesPage: React.FC = () => {
         };
       }) as Ride[];
       setRides(formattedRides);
-      console.log("[PassengerMyRidesPage] My rides fetched:", formattedRides);
     }
     setLoadingRides(false);
   }, []);
@@ -90,7 +87,6 @@ const PassengerMyRidesPage: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('[PassengerMyRidesPage] Realtime change received!', payload);
       if (user) {
         fetchMyRides(user.id); // Re-fetch data on any ride change
       }

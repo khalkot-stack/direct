@@ -28,7 +28,6 @@ export function useSupabaseRealtime(
   useEffect(() => {
     if (!enabled) {
       if (channelRef.current) {
-        console.log(`[Realtime Hook] Removing channel: ${channelName}`);
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
@@ -37,7 +36,6 @@ export function useSupabaseRealtime(
 
     if (!channelRef.current) {
       channelRef.current = supabase.channel(channelName);
-      console.log(`[Realtime Hook] Creating new channel: ${channelName}`);
     }
 
     const currentChannel = channelRef.current;
@@ -51,19 +49,16 @@ export function useSupabaseRealtime(
       filter.filter = options.filter;
     }
 
-    console.log(`[Realtime Hook] Subscribing channel: ${channelName} with filter:`, filter);
     currentChannel
       .on('postgres_changes', filter, (payload) => {
-        console.log(`[Realtime Hook] Payload received on channel ${channelName}:`, payload);
         callbackRef.current(payload);
       })
       .subscribe((status) => {
-        console.log(`[Realtime Hook] Channel ${channelName} subscription status: ${status}`);
+        // console.log(`[Realtime Hook] Channel ${channelName} subscription status: ${status}`); // Removed log
       });
 
     return () => {
       if (currentChannel) {
-        console.log(`[Realtime Hook] Unsubscribing and removing channel: ${channelName}`);
         supabase.removeChannel(currentChannel);
         channelRef.current = null;
       }

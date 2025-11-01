@@ -61,7 +61,6 @@ const DriverHome: React.FC = () => {
 
   const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => {
     setLoadingRideData(true);
-    console.log("[DriverHome] Fetching driver rides for user:", userId, "with criteria:", criteria);
 
     const { data: currentRideRaw, error: currentRideError } = await supabase
       .from('rides')
@@ -77,7 +76,7 @@ const DriverHome: React.FC = () => {
 
     if (currentRideError) {
       toast.error(`فشل جلب الرحلة الحالية: ${currentRideError.message}`);
-      console.error("[DriverHome] Error fetching current ride:", currentRideError);
+      console.error("Error fetching current ride:", currentRideError);
       setCurrentRide(null);
     } else if (currentRideRaw && currentRideRaw.length > 0) {
       const ride = currentRideRaw[0] as RawRideData;
@@ -95,7 +94,6 @@ const DriverHome: React.FC = () => {
         driver_profiles: driverProfile,
       } as Ride);
       setAvailableRides([]);
-      console.log("[DriverHome] Current ride found:", ride);
     } else {
       setCurrentRide(null);
       let query = supabase
@@ -123,7 +121,7 @@ const DriverHome: React.FC = () => {
 
       if (availableRidesError) {
         toast.error(`فشل جلب الرحلات المتاحة: ${availableRidesError.message}`);
-        console.error("[DriverHome] Error fetching available rides:", availableRidesError);
+        console.error("Error fetching available rides:", availableRidesError);
         setAvailableRides([]);
       } else {
         const formattedAvailableRides: Ride[] = (availableRidesRaw as RawRideData[] || []).map(ride => {
@@ -140,7 +138,6 @@ const DriverHome: React.FC = () => {
           };
         }) as Ride[];
         setAvailableRides(formattedAvailableRides);
-        console.log("[DriverHome] Available rides fetched:", formattedAvailableRides);
       }
     }
     setLoadingRideData(false);
@@ -176,7 +173,6 @@ const DriverHome: React.FC = () => {
       filter: `driver_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('[DriverHome] Realtime change received on driver_home_rides_channel!', payload);
       if (user) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -207,7 +203,6 @@ const DriverHome: React.FC = () => {
       filter: `status=eq.pending`,
     },
     (payload) => {
-      console.log('[DriverHome] Realtime change received on driver_available_rides_channel!', payload);
       if (user && !currentRide) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -284,7 +279,7 @@ const DriverHome: React.FC = () => {
     const destLng = currentRide.destination_lng;
 
     if (currentLat === null || currentLng === null || destLat === null || destLng === null) {
-      console.warn("[DriverHome] Missing coordinates for location update.");
+      console.warn("Missing coordinates for location update.");
       return;
     }
 
@@ -297,10 +292,8 @@ const DriverHome: React.FC = () => {
       .eq('id', currentRide.id);
 
     if (error) {
-      console.error("[DriverHome] Error updating driver location:", error);
+      console.error("Error updating driver location:", error);
       toast.error("فشل تحديث موقع السائق.");
-    } else {
-      console.log(`[DriverHome] Driver location updated for ride ${currentRide.id} to lat: ${newLat}, lng: ${newLng}`);
     }
   }, [currentRide, user]);
 
@@ -312,7 +305,6 @@ const DriverHome: React.FC = () => {
     setIsTrackingLocation(true);
     toast.info("بدء تتبع موقعك.");
     locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
-    console.log("[DriverHome] Started location tracking.");
   };
 
   const handleStopTracking = () => {
@@ -322,14 +314,12 @@ const DriverHome: React.FC = () => {
     }
     setIsTrackingLocation(false);
     toast.info("تم إيقاف تتبع موقعك.");
-    console.log("[DriverHome] Stopped location tracking.");
   };
 
   const handleCompleteRide = async () => {
     if (!currentRide) return;
 
     setLoadingRideData(true);
-    console.log(`[DriverHome] Attempting to complete ride: ${currentRide.id}`);
     const { error } = await supabase
       .from('rides')
       .update({ status: 'completed' })
@@ -338,9 +328,8 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل إكمال الرحلة: ${error.message}`);
-      console.error("[DriverHome] Error completing ride:", error);
+      console.error("Error completing ride:", error);
     } else {
-      console.log(`[DriverHome] Ride ${currentRide.id} marked as completed.`);
       setCurrentRide(null);
       handleStopTracking();
     }
@@ -353,7 +342,6 @@ const DriverHome: React.FC = () => {
     }
 
     setLoadingRideData(true);
-    console.log(`[DriverHome] Attempting to accept ride: ${rideId} by driver: ${user.id}`);
     const { error } = await supabase
       .from('rides')
       .update({ driver_id: user.id, status: 'accepted' })
@@ -365,10 +353,9 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل قبول الرحلة: ${error.message}`);
-      console.error("[DriverHome] Error accepting ride:", error);
+      console.error("Error accepting ride:", error);
     } else {
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في لوحة التحكم الخاصة بك.");
-      console.log(`[DriverHome] Ride ${rideId} accepted by driver ${user.id}.`);
       if (user) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -383,13 +370,11 @@ const DriverHome: React.FC = () => {
     setChatOtherUserId(ride.passenger_id);
     setChatOtherUserName(ride.passenger_profiles.full_name || 'الراكب');
     setIsChatDialogOpen(true);
-    console.log(`[DriverHome] Opening chat for ride ${ride.id} with passenger ${ride.passenger_id}`);
   };
 
   const handleSaveRating = async (rating: number, comment: string) => {
     if (!user || !rideToRate || !ratingTargetUser) return;
 
-    console.log(`[DriverHome] Saving rating for user ${ratingTargetUser.id} on ride ${rideToRate.id}`);
     const { error } = await supabase.from('ratings').insert({
       ride_id: rideToRate.id,
       rater_id: user.id,
@@ -400,24 +385,21 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
-      console.error("[DriverHome] Error saving rating:", error);
+      console.error("Error saving rating:", error);
     } else {
       toast.success("تم حفظ التقييم بنجاح!");
-      console.log(`[DriverHome] Rating saved successfully for user ${ratingTargetUser.id}`);
     }
   };
 
   const handleCancelRide = (ride: Ride) => {
     setRideToCancel(ride);
     setIsCancellationDialogOpen(true);
-    console.log(`[DriverHome] Opening cancellation dialog for ride ${ride.id}`);
   };
 
   const confirmCancelRide = async (reason: string) => {
     if (!rideToCancel) return;
 
     setIsCancelling(true);
-    console.log(`[DriverHome] Confirming cancellation for ride ${rideToCancel.id} with reason: ${reason}`);
     const { error } = await supabase
       .from('rides')
       .update({ status: 'cancelled', cancellation_reason: reason })
@@ -428,10 +410,9 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل إلغاء الرحلة: ${error.message}`);
-      console.error("[DriverHome] Error cancelling ride:", error);
+      console.error("Error cancelling ride:", error);
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
-      console.log(`[DriverHome] Ride ${rideToCancel.id} cancelled successfully.`);
       if (user) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -441,7 +422,6 @@ const DriverHome: React.FC = () => {
   const handleSearch = (criteria: RideSearchCriteria) => {
     setSearchCriteria(criteria);
     setIsSearchDialogOpen(false);
-    console.log("[DriverHome] Search criteria updated:", criteria);
   };
 
   if (userLoading || loadingRideData) {

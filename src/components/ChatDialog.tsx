@@ -125,10 +125,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   useEffect(() => {
     if (open && currentUserId) {
-      console.log("[ChatDialog] Fetching initial messages for ride:", rideId);
       fetchMessages();
     }
-  }, [open, fetchMessages, currentUserId, rideId]); // Added rideId to dependencies
+  }, [open, fetchMessages, currentUserId]);
 
   useEffect(() => {
     if (open) {
@@ -139,7 +138,6 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   useEffect(() => {
     let channel: RealtimeChannel | undefined;
     if (!open || !currentUserId) {
-      console.log("[ChatDialog] Realtime disabled or no user. Cleaning up channel if exists.");
       return () => {
         if (channel) {
           supabase.removeChannel(channel);
@@ -147,14 +145,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       };
     }
 
-    console.log(`[ChatDialog] Subscribing to chat_ride_${rideId} for user ${currentUserId}`);
     channel = supabase
       .channel(`chat_ride_${rideId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
         (payload) => {
-          console.log(`[ChatDialog] Realtime message INSERT payload received for ride ${rideId}:`, payload);
           const newMsgPayload = payload.new;
           // Access current values from refs
           const currentSenderProfile = currentUserProfileRef.current;
@@ -192,13 +188,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           }
         }
       )
-      .subscribe((status) => {
-        console.log(`[ChatDialog] Realtime channel chat_ride_${rideId} subscription status: ${status}`);
-      });
+      .subscribe();
 
     return () => {
       if (channel) {
-        console.log(`[ChatDialog] Unsubscribing from chat_ride_${rideId}`);
         supabase.removeChannel(channel);
       }
     };
