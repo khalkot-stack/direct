@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History, Search } from "lucide-react"; // Added Search icon
+import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
@@ -18,7 +18,7 @@ import RideStatusBadge from "@/components/RideStatusBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EmptyState from "@/components/EmptyState";
-import RideSearchDialog from "@/components/RideSearchDialog"; // Import RideSearchDialog
+import RideSearchDialog from "@/components/RideSearchDialog";
 
 interface RideSearchCriteria {
   pickupLocation?: string;
@@ -36,7 +36,7 @@ const DriverHome: React.FC = () => {
   const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [mapZoom, setMapZoom] = useState<number>(12);
-  const [isMapReady, setIsMapReady] = useState(false); // New state to track map readiness
+  const [isMapReady, setIsMapReady] = useState(false);
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -53,16 +53,14 @@ const DriverHome: React.FC = () => {
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const locationIntervalRef = useRef<number | null>(null);
 
-  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false); // New state for search dialog
-  const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({}); // New state for search criteria
-  const [isAvailableRidesDrawerOpen, setIsAvailableRidesDrawerOpen] = useState(false); // New state for controlling the drawer
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
+  const [isAvailableRidesDrawerOpen, setIsAvailableRidesDrawerOpen] = useState(false);
 
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => { // Modified to accept criteria
-    console.log("fetchDriverRides: Called with userId:", userId, "criteria:", criteria);
+  const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => {
     setLoadingRideData(true);
-    // Fetch current active ride for the driver
     const { data: currentRideRaw, error: currentRideError } = await supabase
       .from('rides')
       .select(`
@@ -80,7 +78,6 @@ const DriverHome: React.FC = () => {
       console.error("fetchDriverRides: Error fetching current ride:", currentRideError);
       setCurrentRide(null);
     } else if (currentRideRaw && currentRideRaw.length > 0) {
-      console.log("fetchDriverRides: Current ride data found:", currentRideRaw[0]);
       const ride = currentRideRaw[0] as RawRideData;
       const passengerProfile = Array.isArray(ride.passenger_profiles)
         ? ride.passenger_profiles[0] || null
@@ -95,11 +92,9 @@ const DriverHome: React.FC = () => {
         passenger_profiles: passengerProfile,
         driver_profiles: driverProfile,
       } as Ride);
-      setAvailableRides([]); // Clear available rides if there's a current one
+      setAvailableRides([]);
     } else {
-      console.log("fetchDriverRides: No current ride found. Fetching available rides.");
       setCurrentRide(null);
-      // If no current ride, fetch available rides with criteria
       let query = supabase
         .from('rides')
         .select(`
@@ -108,7 +103,7 @@ const DriverHome: React.FC = () => {
         `)
         .eq('status', 'pending')
         .is('driver_id', null)
-        .neq('passenger_id', userId) // Drivers cannot accept their own rides
+        .neq('passenger_id', userId)
         .order('created_at', { ascending: false });
 
       if (criteria?.pickupLocation) {
@@ -128,13 +123,12 @@ const DriverHome: React.FC = () => {
         console.error("fetchDriverRides: Error fetching available rides:", availableRidesError);
         setAvailableRides([]);
       } else {
-        console.log("fetchDriverRides: Available rides data found:", availableRidesRaw);
         const formattedAvailableRides: Ride[] = (availableRidesRaw as RawRideData[] || []).map(ride => {
           const passengerProfile = Array.isArray(ride.passenger_profiles)
             ? ride.passenger_profiles[0] || null
             : ride.passenger_profiles;
           
-          const driverProfile = null; // No driver assigned yet
+          const driverProfile = null;
 
           return {
             ...ride,
@@ -146,12 +140,11 @@ const DriverHome: React.FC = () => {
       }
     }
     setLoadingRideData(false);
-    console.log("fetchDriverRides: Finished.");
   }, []);
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria here
+      fetchDriverRides(user.id, searchCriteria);
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
@@ -160,9 +153,8 @@ const DriverHome: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [userLoading, user, fetchDriverRides, navigate, searchCriteria]); // Added searchCriteria to dependencies
+  }, [userLoading, user, fetchDriverRides, navigate, searchCriteria]);
 
-  // Effect to control the available rides drawer
   useEffect(() => {
     if (!currentRide && availableRides.length > 0) {
       setIsAvailableRidesDrawerOpen(true);
@@ -177,12 +169,11 @@ const DriverHome: React.FC = () => {
       event: '*',
       schema: 'public',
       table: 'rides',
-      filter: `driver_id=eq.${user?.id}`, // Listen for changes on driver's own rides
+      filter: `driver_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('Realtime: Change received in driver home!', payload);
       if (user) {
-        fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
+        fetchDriverRides(user.id, searchCriteria);
       }
       if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
@@ -192,14 +183,14 @@ const DriverHome: React.FC = () => {
           setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
           setIsRatingDialogOpen(true);
         }
-        setIsTrackingLocation(false); // Stop tracking when ride is completed
+        setIsTrackingLocation(false);
       }
       if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
         toast.warning(`تم إلغاء الرحلة. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
-        setIsTrackingLocation(false); // Stop tracking when ride is cancelled
+        setIsTrackingLocation(false);
       }
     },
-    !!user // Only enable if user is logged in
+    !!user
   );
 
   useSupabaseRealtime(
@@ -208,28 +199,23 @@ const DriverHome: React.FC = () => {
       event: '*',
       schema: 'public',
       table: 'rides',
-      filter: `status=eq.pending`, // Listen for new pending rides
+      filter: `status=eq.pending`,
     },
     (payload) => {
-      console.log('Realtime: Change received in available rides!', payload);
-      if (user && !currentRide) { // Only update available rides if no current ride
-        fetchDriverRides(user.id, searchCriteria); // Pass searchCriteria
+      if (user && !currentRide) {
+        fetchDriverRides(user.id, searchCriteria);
       }
     },
-    !!user && !currentRide // Only enable if user is logged in and has no current ride
+    !!user && !currentRide
   );
 
-  // Callback for when the map is ready
   const handleMapReady = useCallback(() => {
     setIsMapReady(true);
-    console.log("Google Maps API is ready!");
   }, []);
 
   useEffect(() => {
     const updateMapMarkers = () => {
-      // Only proceed if the map API is ready AND window.google.maps is available
       if (!isMapReady || !window.google || !window.google.maps || !window.google.maps.LatLngBounds) {
-        console.log("Google Maps API or LatLngBounds not fully ready, skipping marker update.");
         return;
       }
 
@@ -238,7 +224,6 @@ const DriverHome: React.FC = () => {
       let currentZoom = 12;
 
       if (currentRide) {
-        // Active ride markers
         if (currentRide.pickup_lat && currentRide.pickup_lng) {
           newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
           currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
@@ -250,11 +235,11 @@ const DriverHome: React.FC = () => {
         if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
           newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' });
           currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
-          currentZoom = 14; // Zoom in on driver's current location
+          currentZoom = 14;
         }
       } else if (availableRides.length > 0) {
         const bounds = new window.google.maps.LatLngBounds();
-        let hasValidCoords = false; // Flag to track if any valid coordinates were added
+        let hasValidCoords = false;
 
         availableRides.forEach(ride => {
           if (ride.pickup_lat && ride.pickup_lng) {
@@ -269,13 +254,11 @@ const DriverHome: React.FC = () => {
           }
         });
 
-        // Only try to get center if bounds actually contain points
         if (hasValidCoords) {
           const centerCoords = bounds.getCenter();
-          if (centerCoords) { // Ensure getCenter() returned a valid LatLng object
+          if (centerCoords) {
             currentCenter = centerCoords.toJSON();
           }
-          // No specific zoom, let map fit bounds
         }
       }
       setMapMarkers(newMarkers);
@@ -284,12 +267,11 @@ const DriverHome: React.FC = () => {
     };
 
     updateMapMarkers();
-  }, [currentRide, availableRides, isMapReady]); // Add isMapReady to dependencies
+  }, [currentRide, availableRides, isMapReady]);
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
 
-    // Simulate location change (e.g., move slightly towards destination)
     const currentLat = currentRide.driver_current_lat || currentRide.pickup_lat;
     const currentLng = currentRide.driver_current_lng || currentRide.pickup_lng;
     const destLat = currentRide.destination_lat;
@@ -300,7 +282,7 @@ const DriverHome: React.FC = () => {
       return;
     }
 
-    const newLat = currentLat + (destLat - currentLat) * 0.01; // Move 1% towards destination
+    const newLat = currentLat + (destLat - currentLat) * 0.01;
     const newLng = currentLng + (destLng - currentLng) * 0.01;
 
     const { error } = await supabase
@@ -321,7 +303,6 @@ const DriverHome: React.FC = () => {
     }
     setIsTrackingLocation(true);
     toast.info("بدء تتبع موقعك.");
-    // Start updating location every 5 seconds
     locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
   };
 
@@ -348,9 +329,8 @@ const DriverHome: React.FC = () => {
       toast.error(`فشل إكمال الرحلة: ${error.message}`);
       console.error("Error completing ride:", error);
     } else {
-      // The realtime listener will handle the toast and rating dialog
-      setCurrentRide(null); // Clear current ride from state immediately
-      handleStopTracking(); // Stop tracking when ride is completed
+      setCurrentRide(null);
+      handleStopTracking();
     }
   };
 
@@ -360,13 +340,13 @@ const DriverHome: React.FC = () => {
       return;
     }
 
-    setLoadingRideData(true); // Use general loading for accepting
+    setLoadingRideData(true);
     const { error } = await supabase
       .from('rides')
       .update({ driver_id: user.id, status: 'accepted' })
       .eq('id', rideId)
-      .eq('status', 'pending') // Ensure it's still pending
-      .is('driver_id', null); // Ensure no other driver accepted it
+      .eq('status', 'pending')
+      .is('driver_id', null);
 
     setLoadingRideData(false);
 
@@ -376,7 +356,7 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في لوحة التحكم الخاصة بك.");
       if (user) {
-        fetchDriverRides(user.id, searchCriteria); // Refresh the list with current search criteria
+        fetchDriverRides(user.id, searchCriteria);
       }
     }
   };
@@ -433,7 +413,7 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
-        fetchDriverRides(user.id, searchCriteria); // Refresh with current search criteria
+        fetchDriverRides(user.id, searchCriteria);
       }
     }
   };
@@ -452,7 +432,6 @@ const DriverHome: React.FC = () => {
     );
   }
 
-  // Check for Google Maps API Key
   if (!googleMapsApiKey) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4 text-center">
@@ -474,7 +453,6 @@ const DriverHome: React.FC = () => {
       <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} onMapReady={handleMapReady} />
 
       {currentRide ? (
-        // Active Ride Card for Driver
         <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -522,8 +500,7 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        // Available Rides Drawer for Driver or Empty State
+      ) : availableRides.length > 0 ? (
         <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
           <DrawerContent className="max-h-[60vh]">
             <DrawerHeader className="text-right">
@@ -599,7 +576,6 @@ const DriverHome: React.FC = () => {
           </DrawerContent>
         </Drawer>
       ) : (
-        // Empty State when no current or available rides
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
           <EmptyState
             icon={Car}
