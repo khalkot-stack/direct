@@ -12,9 +12,9 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
-import { Ride, Rating, RawRideData } from "@/types/supabase"; // Import shared Ride and Rating types
-import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import the new hook
-import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
+import { Ride, Rating, RawRideData } from "@/types/supabase";
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
+import RideStatusBadge from "@/components/RideStatusBadge";
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -36,6 +36,7 @@ const PassengerMyRidesPage: React.FC = () => {
 
   const fetchMyRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
+    console.log("[PassengerMyRidesPage] Fetching my rides for user:", userId);
 
     const { data: ridesRaw, error } = await supabase
       .from('rides')
@@ -49,7 +50,7 @@ const PassengerMyRidesPage: React.FC = () => {
 
     if (error) {
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
-      console.error("Error fetching my rides:", error);
+      console.error("[PassengerMyRidesPage] Error fetching my rides:", error);
     } else {
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
@@ -67,6 +68,7 @@ const PassengerMyRidesPage: React.FC = () => {
         };
       }) as Ride[];
       setRides(formattedRides);
+      console.log("[PassengerMyRidesPage] My rides fetched:", formattedRides);
     }
     setLoadingRides(false);
   }, []);
@@ -88,7 +90,7 @@ const PassengerMyRidesPage: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('Change received in my rides!', payload);
+      console.log('[PassengerMyRidesPage] Realtime change received!', payload);
       if (user) {
         fetchMyRides(user.id); // Re-fetch data on any ride change
       }
