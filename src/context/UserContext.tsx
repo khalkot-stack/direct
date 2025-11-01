@@ -30,7 +30,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("UserProvider: Initializing, loading =", loading);
+
   const fetchUserProfile = useCallback(async (userId: string) => {
+    console.log("fetchUserProfile: Starting for userId =", userId);
     const { data, error, status } = await supabase
       .from("profiles")
       .select(
@@ -39,12 +42,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       .eq("id", userId)
       .single();
 
-    if (error && status !== 406) {
-      console.error("Error fetching profile:", error);
+    if (error && status !== 406) { // PGRST116 means no rows found
+      console.error("fetchUserProfile: Error fetching profile:", error);
       setProfile(null);
     } else if (data) {
+      console.log("fetchUserProfile: Profile data received:", data);
       setProfile(data as Profile);
     } else {
+      console.log("fetchUserProfile: No profile found, attempting to create default.");
       // If no profile found, create a basic one
       const { data: userData } = await supabase.auth.getUser();
       const currentUser = userData.user;
@@ -75,17 +80,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           .single();
 
         if (insertError) {
-          console.error("Error creating default profile:", insertError);
+          console.error("fetchUserProfile: Error creating default profile:", insertError);
         } else {
+          console.log("fetchUserProfile: Default profile created:", newProfile);
           setProfile(newProfile as Profile);
         }
       }
     }
+    console.log("fetchUserProfile: Finished.");
   }, []);
 
   useEffect(() => {
+    console.log("UserProvider useEffect: Setting up auth listener.");
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, currentSession) => {
+        console.log("onAuthStateChange: Event received, _event =", _event, "currentSession =", currentSession);
         setSession(currentSession);
         setUser(currentSession?.user || null);
         if (currentSession?.user) {
@@ -93,29 +102,38 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           setProfile(null);
         }
-        setLoading(false);
+        console.log("onAuthStateChange: Setting loading to false.");
+        setLoading(false); // This is called after auth state change
       }
     );
 
     // Initial session check
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      console.log("getInitialSession: Starting initial session check.");
+      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("getInitialSession: Error fetching initial session:", error);
+      }
+      console.log("getInitialSession: Initial session data =", initialSession);
       setSession(initialSession);
       setUser(initialSession?.user || null);
       if (initialSession?.user) {
         await fetchUserProfile(initialSession.user.id);
       }
-      setLoading(false);
+      console.log("getInitialSession: Setting loading to false.");
+      setLoading(false); // This is called after initial session check
     };
 
     getInitialSession();
 
     return () => {
+      console.log("UserProvider useEffect: Cleaning up auth listener.");
       authListener.subscription.unsubscribe();
     };
   }, [fetchUserProfile]);
 
   if (loading) {
+    console.log("UserProvider: Rendering loading spinner.");
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -124,6 +142,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }
 
+  console.log("UserProvider: Rendering children, user =", user?.id, "profile =", profile?.id);
   return (
     <UserContext.Provider value={{ user, profile, session, loading, fetchUserProfile: () => fetchUserProfile(user?.id || '') }}>
       {children}
