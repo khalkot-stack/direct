@@ -16,8 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-import { Message, ProfileDetails, SupabaseJoinedMessageData } from "@/types/supabase"; // Import shared types
+import { RealtimeChannel } from "@supabase/supabase-js";
+import { Message, ProfileDetails, SupabaseJoinedMessageData } from "@/types/supabase";
 
 interface ChatDialogProps {
   open: boolean;
@@ -39,16 +39,27 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const [newMessage, setNewMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [otherUserProfile, setOtherUserProfile] = useState<ProfileDetails | null>(null); // State for other user's profile
+  const [otherUserProfile, setOtherUserProfile] = useState<ProfileDetails | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentUserId = user?.id; // Get current user ID from context
+  const currentUserId = user?.id;
+
+  // Refs to hold the latest profile data without triggering useEffect re-runs for the channel
+  const currentUserProfileRef = useRef(currentUserProfile);
+  const otherUserProfileRef = useRef(otherUserProfile);
+
+  useEffect(() => {
+    currentUserProfileRef.current = currentUserProfile;
+  }, [currentUserProfile]);
+
+  useEffect(() => {
+    otherUserProfileRef.current = otherUserProfile;
+  }, [otherUserProfile]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Fetch other user's profile once when dialog opens
   useEffect(() => {
     const fetchOtherProfile = async () => {
       if (open && otherUserId) {
@@ -141,15 +152,19 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
         (payload) => {
           const newMsgPayload = payload.new;
+          // Access current values from refs
+          const currentSenderProfile = currentUserProfileRef.current;
+          const currentOtherUserProfile = otherUserProfileRef.current;
+
           let senderProfiles: ProfileDetails | null = null;
           let receiverProfiles: ProfileDetails | null = null;
 
           if (newMsgPayload.sender_id === currentUserId) {
-            senderProfiles = currentUserProfile;
-            receiverProfiles = otherUserProfile;
+            senderProfiles = currentSenderProfile;
+            receiverProfiles = currentOtherUserProfile;
           } else if (newMsgPayload.sender_id === otherUserId) {
-            senderProfiles = otherUserProfile;
-            receiverProfiles = currentUserProfile;
+            senderProfiles = currentOtherUserProfile;
+            receiverProfiles = currentSenderProfile;
           }
           // Fallback if profiles are not found (shouldn't happen in 1-on-1 chat)
           if (!senderProfiles) {
@@ -180,7 +195,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [open, rideId, currentUserId, currentUserProfile, otherUserId, otherUserProfile]); // Added profile dependencies
+  }, [open, rideId, currentUserId, otherUserId]); // Removed currentUserProfile and otherUserProfile from dependencies
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
