@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form"; // Re-added useForm
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
+import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -122,7 +123,7 @@ const PassengerHome: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('Change received!', payload);
+      console.log('Change received in PassengerHome!', payload); // Added log
       if (user) {
         fetchCurrentRide(user.id);
         if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
@@ -154,29 +155,21 @@ const PassengerHome: React.FC = () => {
     }
 
     setLoadingRideData(true);
-    const { error } = await supabase.from('rides').insert({
+    // Use the Edge Function utility to create the ride
+    const result = await createRideViaEdgeFunction({
       passenger_id: user.id,
       pickup_location: values.pickupLocation,
       destination: values.destination,
       passengers_count: values.passengersCount,
-      status: 'pending',
-      // Removed map coordinates for now
-      pickup_lat: null,
-      pickup_lng: null,
-      destination_lat: null,
-      destination_lng: null,
-    } as Omit<Ride, 'id' | 'created_at' | 'cancellation_reason' | 'driver_id' | 'passenger_profiles' | 'driver_profiles' | 'driver_current_lat' | 'driver_current_lng'>);
+    });
     setLoadingRideData(false);
 
-    if (error) {
-      toast.error(`فشل طلب الرحلة: ${error.message}`);
-      console.error("Error requesting ride:", error);
-    } else {
-      toast.success("تم طلب رحلتك بنجاح! جاري البحث عن سائق.");
+    if (result) {
       setIsRequestDrawerOpen(false);
       form.reset();
       fetchCurrentRide(user.id); // Refresh current ride status
     }
+    // Error handling is already inside createRideViaEdgeFunction
   };
 
   const handleOpenChat = () => {
