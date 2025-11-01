@@ -172,13 +172,13 @@ const DriverHome: React.FC = () => {
       table: 'rides',
       filter: `driver_id=eq.${user?.id}`,
     },
-    (payload) => {
+    (_payload) => { // Changed payload to _payload
       if (user) {
         fetchDriverRides(user.id, searchCriteria);
       }
-      if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+      if (_payload.eventType === 'UPDATE' && _payload.new.status === 'completed' && _payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
-        const completedRide = payload.new as Ride;
+        const completedRide = _payload.new as Ride;
         if (completedRide.passenger_profiles) {
           setRideToRate(completedRide);
           setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
@@ -186,8 +186,8 @@ const DriverHome: React.FC = () => {
         }
         setIsTrackingLocation(false);
       }
-      if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-        toast.warning(`تم إلغاء الرحلة. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+      if (_payload.eventType === 'UPDATE' && _payload.new.status === 'cancelled' && _payload.old.status !== 'cancelled') {
+        toast.warning(`تم إلغاء الرحلة. السبب: ${_payload.new.cancellation_reason || 'غير محدد'}`);
         setIsTrackingLocation(false);
       }
     },
@@ -202,7 +202,7 @@ const DriverHome: React.FC = () => {
       table: 'rides',
       filter: `status=eq.pending`,
     },
-    (payload) => {
+    (_payload) => { // Changed payload to _payload
       if (user && !currentRide) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -501,96 +501,98 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
-          <DrawerContent className="max-h-[60vh]">
-            <DrawerHeader className="text-right">
-              <DrawerTitle>الرحلات المتاحة</DrawerTitle>
-              <DrawerDescription>
-                {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
-              </DrawerDescription>
-            </DrawerHeader>
-            <ScrollArea className="flex-1 p-4">
-              {availableRides.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  <Car className="h-12 w-12 mx-auto mb-4" />
-                  <p>لا توجد رحلات تنتظر سائقين حاليًا.</p>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {availableRides.map((ride) => (
-                    <Card key={ride.id} className="shadow-sm">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
-                          <RideStatusBadge status={ride.status} />
-                        </CardTitle>
-                        <CardDescription>
-                          الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">عدد الركاب:</span>
-                          <span>{ride.passengers_count}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">تاريخ الطلب:</span>
-                          <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
-                        </div>
-                        <Button
-                          onClick={() => handleAcceptRide(ride.id)}
-                          disabled={loadingRideData}
-                          className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
-                        >
-                          {loadingRideData ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                              جاري القبول...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 ml-2 rtl:mr-2" />
-                              قبول الرحلة
-                            </>
-                          )}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-            <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
-              <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
-                <History className="h-4 w-4 ml-2 rtl:mr-2" />
-                عرض رحلاتي المقبولة
-              </Button>
-              <Button
-                onClick={() => setIsSearchDialogOpen(true)}
-                className="bg-primary hover:bg-primary-dark text-primary-foreground"
-              >
-                <Search className="h-4 w-4 ml-2 rtl:mr-2" />
-                بحث عن رحلات
-              </Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
-          <EmptyState
-            icon={Car}
-            title="لا توجد رحلات حاليًا"
-            description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
-          />
-          <Button
-            onClick={() => setIsSearchDialogOpen(true)}
-            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
-          >
-            <Search className="h-5 w-5 ml-2 rtl:mr-2" />
-            بحث عن رحلات
-          </Button>
-        </div>
+      ) : ( // If no current ride, check available rides
+        availableRides.length > 0 ? (
+          <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
+            <DrawerContent className="max-h-[60vh]">
+              <DrawerHeader className="text-right">
+                <DrawerTitle>الرحلات المتاحة</DrawerTitle>
+                <DrawerDescription>
+                  {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
+                </DrawerDescription>
+              </DrawerHeader>
+              <ScrollArea className="flex-1 p-4">
+                {availableRides.length === 0 ? (
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <Car className="h-12 w-12 mx-auto mb-4" />
+                    <p>لا توجد رحلات تنتظر سائقين حاليًا.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {availableRides.map((ride) => (
+                      <Card key={ride.id} className="shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
+                            <RideStatusBadge status={ride.status} />
+                          </CardTitle>
+                          <CardDescription>
+                            الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">عدد الركاب:</span>
+                            <span>{ride.passengers_count}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">تاريخ الطلب:</span>
+                            <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
+                          </div>
+                          <Button
+                            onClick={() => handleAcceptRide(ride.id)}
+                            disabled={loadingRideData}
+                            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
+                          >
+                            {loadingRideData ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                                جاري القبول...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 ml-2 rtl:mr-2" />
+                                قبول الرحلة
+                              </>
+                            )}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+              <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
+                <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
+                  <History className="h-4 w-4 ml-2 rtl:mr-2" />
+                  عرض رحلاتي المقبولة
+                </Button>
+                <Button
+                  onClick={() => setIsSearchDialogOpen(true)}
+                  className="bg-primary hover:bg-primary-dark text-primary-foreground"
+                >
+                  <Search className="h-4 w-4 ml-2 rtl:mr-2" />
+                  بحث عن رحلات
+                </Button>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        ) : ( // If no available rides, show empty state
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
+            <EmptyState
+              icon={Car}
+              title="لا توجد رحلات حاليًا"
+              description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
+            />
+            <Button
+              onClick={() => setIsSearchDialogOpen(true)}
+              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
+            >
+              <Search className="h-5 w-5 ml-2 rtl:mr-2" />
+              بحث عن رحلات
+            </Button>
+          </div>
+        )
       )}
 
       {user && (currentRide || availableRides.length > 0) && (
