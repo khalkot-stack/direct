@@ -110,18 +110,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     // Initial session check
     const getInitialSession = async () => {
       console.log("getInitialSession: Starting initial session check.");
-      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("getInitialSession: Error fetching initial session:", error);
+      try {
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("getInitialSession: Error fetching initial session:", error);
+        }
+        console.log("getInitialSession: Initial session data =", initialSession);
+        setSession(initialSession);
+        setUser(initialSession?.user || null);
+        if (initialSession?.user) {
+          await fetchUserProfile(initialSession.user.id);
+        }
+      } catch (e: any) {
+        console.error("getInitialSession: Unexpected error during session fetch:", e.message);
+      } finally {
+        console.log("getInitialSession: Setting loading to false.");
+        setLoading(false); // This is called after initial session check
       }
-      console.log("getInitialSession: Initial session data =", initialSession);
-      setSession(initialSession);
-      setUser(initialSession?.user || null);
-      if (initialSession?.user) {
-        await fetchUserProfile(initialSession.user.id);
-      }
-      console.log("getInitialSession: Setting loading to false.");
-      setLoading(false); // This is called after initial session check
     };
 
     getInitialSession();
