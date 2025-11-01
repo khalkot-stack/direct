@@ -16,7 +16,7 @@ const defaultCenter = {
 };
 
 // Define libraries as a static constant outside the component
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places", "geometry"]; // Added "geometry"
 
 export interface MarkerLocation { // Exporting the interface
   id: string;
