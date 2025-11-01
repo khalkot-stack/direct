@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Car, MessageSquare, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
+// import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Removed map import
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -21,6 +21,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -36,8 +37,7 @@ const PassengerHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  // Removed map-related states: mapMarkers, mapCenter, isMapReady
 
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
@@ -62,38 +62,7 @@ const PassengerHome: React.FC = () => {
     },
   });
 
-  const { watch, setValue, formState: { errors = {} } } = form;
-  const pickupLocationInput = watch("pickupLocation");
-  const destinationInput = watch("destination");
-
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Get API key
-
-  const geocodeAddress = useCallback(async (address: string, type: 'pickup' | 'destination') => {
-    if (!googleMapsApiKey) {
-      toast.error("مفتاح Google Maps API غير مكوّن. الرجاء إضافة VITE_GOOGLE_MAPS_API_KEY إلى ملف .env الخاص بك.");
-      return null;
-    }
-
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`
-      );
-      const data = await response.json();
-      console.log(`Google Maps Geocoding API response for ${type} (${address}):`, data);
-
-      if (data.results && data.results.length > 0) {
-        const { lat, lng } = data.results[0].geometry.location;
-        return { lat, lng };
-      } else {
-        // toast.error(`لم يتم العثور على إحداثيات لـ ${type === 'pickup' ? 'موقع الانطلاق' : 'الوجهة'}: "${address}". الرجاء إدخال عنوان أكثر دقة.`);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error geocoding address:", error);
-      toast.error("فشل تحديد الموقع الجغرافي. الرجاء التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى.");
-      return null;
-    }
-  }, [googleMapsApiKey]);
+  // Removed googleMapsApiKey and geocodeAddress function
 
   const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRideData(true);
@@ -174,64 +143,13 @@ const PassengerHome: React.FC = () => {
     !!user // Only enable if user is logged in
   );
 
-  useEffect(() => {
-    const updateMapMarkers = async () => {
-      const newMarkers: MarkerLocation[] = [];
-      let currentCenter = undefined;
-
-      if (currentRide) {
-        // Active ride markers
-        if (currentRide.pickup_lat && currentRide.pickup_lng) {
-          newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
-          currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
-        }
-        if (currentRide.destination_lat && currentRide.destination_lng) {
-          newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
-          if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
-        }
-        if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
-          newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقع السائق الحالي', iconColor: 'blue' });
-          currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
-        }
-      } else {
-        // Request ride markers
-        let pickupCoords = null;
-        if (pickupLocationInput) {
-          pickupCoords = await geocodeAddress(pickupLocationInput, 'pickup');
-          if (pickupCoords) {
-            newMarkers.push({ id: 'pickup-request', lat: pickupCoords.lat, lng: pickupCoords.lng, title: 'موقع الانطلاق', iconColor: 'green' });
-            currentCenter = pickupCoords;
-          }
-        }
-
-        let destinationCoords = null;
-        if (destinationInput) {
-          destinationCoords = await geocodeAddress(destinationInput, 'destination');
-          if (destinationCoords) {
-            newMarkers.push({ id: 'destination-request', lat: destinationCoords.lat, lng: destinationCoords.lng, title: 'الوجهة', iconColor: 'red' });
-            if (!currentCenter) currentCenter = destinationCoords;
-          }
-        }
-      }
-      setMapMarkers(newMarkers);
-      setMapCenter(currentCenter);
-    };
-
-    const delayDebounceFn = setTimeout(() => {
-      updateMapMarkers();
-    }, 1000);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [currentRide, pickupLocationInput, destinationInput, geocodeAddress]);
+  // Removed useEffect for map markers
 
   const handleRequestRide = async (values: RideRequestInputs) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
       return;
     }
-
-    const pickupCoords = await geocodeAddress(values.pickupLocation, 'pickup');
-    const destinationCoords = await geocodeAddress(values.destination, 'destination');
 
     setLoadingRideData(true);
     const { error } = await supabase.from('rides').insert({
@@ -240,10 +158,11 @@ const PassengerHome: React.FC = () => {
       destination: values.destination,
       passengers_count: values.passengersCount,
       status: 'pending',
-      pickup_lat: pickupCoords?.lat || null,
-      pickup_lng: pickupCoords?.lng || null,
-      destination_lat: destinationCoords?.lat || null,
-      destination_lng: destinationCoords?.lng || null,
+      // Removed map coordinates for now
+      pickup_lat: null,
+      pickup_lng: null,
+      destination_lat: null,
+      destination_lng: null,
     } as Omit<Ride, 'id' | 'created_at' | 'cancellation_reason' | 'driver_id' | 'passenger_profiles' | 'driver_profiles' | 'driver_current_lat' | 'driver_current_lng'>);
     setLoadingRideData(false);
 
@@ -330,26 +249,16 @@ const PassengerHome: React.FC = () => {
     );
   }
 
-  // Check for Google Maps API Key
-  if (!googleMapsApiKey) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4 text-center">
-        <Car className="h-16 w-16 text-red-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-          خطأ في إعداد الخريطة
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 max-w-sm">
-          الرجاء إضافة مفتاح Google Maps API الخاص بك إلى ملف .env الخاص بالمشروع.
-          (VITE_GOOGLE_MAPS_API_KEY)
-        </p>
-        <Button onClick={() => navigate("/")} className="mt-4">العودة للصفحة الرئيسية</Button>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={14} />
+      {/* Placeholder for map area */}
+      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-lg rounded-lg m-4">
+        <EmptyState
+          icon={Car}
+          title="نظام الخريطة معطل مؤقتًا"
+          description="نعمل على تحسين تجربة الخريطة. يرجى استخدام التطبيق بدونها في الوقت الحالي."
+        />
+      </div>
 
       {currentRide ? (
         // Active Ride Card (similar to Uber's bottom card for active rides)
@@ -442,7 +351,7 @@ const PassengerHome: React.FC = () => {
                 type="number"
                 min="1"
                 {...form.register("passengersCount", { valueAsNumber: true })}
-                onChange={(e) => setValue("passengersCount", parseInt(e.target.value) || 1)}
+                onChange={(e) => form.setValue("passengersCount", parseInt(e.target.value) || 1)}
               />
               {errors.passengersCount && (
                 <p className="text-red-500 text-sm">{errors.passengersCount.message}</p>

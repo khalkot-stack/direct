@@ -137,7 +137,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   useEffect(() => {
     let channel: RealtimeChannel | undefined;
-    if (!open || !currentUserId) {
+    if (!currentUserId) { // Only subscribe if user is logged in
       return () => {
         if (channel) {
           supabase.removeChannel(channel);
@@ -183,7 +183,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             receiver_profiles: receiverProfiles,
           };
           setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
-          if (newMsgPayload.sender_id !== currentUserId) {
+          
+          // Show toast notification only if the message is from the other user AND the chat dialog is NOT open
+          if (newMsgPayload.sender_id !== currentUserId && !open) {
             toast.info(`رسالة جديدة من ${senderProfiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
           }
         }
@@ -195,7 +197,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [open, rideId, currentUserId, otherUserId]);
+  }, [open, rideId, currentUserId, otherUserId]); // Added 'open' to dependencies
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

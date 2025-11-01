@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap";
+// import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Removed map import
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -33,10 +33,7 @@ const DriverHome: React.FC = () => {
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
-  const [mapMarkers, setMapMarkers] = useState<MarkerLocation[]>([]);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
-  const [mapZoom, setMapZoom] = useState<number>(12);
-  const [isMapReady, setIsMapReady] = useState(false);
+  // Removed map-related states: mapMarkers, mapCenter, mapZoom, isMapReady
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -57,7 +54,7 @@ const DriverHome: React.FC = () => {
   const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
   const [isAvailableRidesDrawerOpen, setIsAvailableRidesDrawerOpen] = useState(false);
 
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  // Removed googleMapsApiKey
 
   const fetchDriverRides = useCallback(async (userId: string, criteria?: RideSearchCriteria) => {
     setLoadingRideData(true);
@@ -138,6 +135,9 @@ const DriverHome: React.FC = () => {
           };
         }) as Ride[];
         setAvailableRides(formattedAvailableRides);
+        if (formattedAvailableRides.length > 0) {
+          toast.info("رحلات جديدة متاحة!");
+        }
       }
     }
     setLoadingRideData(false);
@@ -172,7 +172,7 @@ const DriverHome: React.FC = () => {
       table: 'rides',
       filter: `driver_id=eq.${user?.id}`,
     },
-    (_payload) => { // Changed payload to _payload
+    (_payload) => {
       if (user) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -202,7 +202,7 @@ const DriverHome: React.FC = () => {
       table: 'rides',
       filter: `status=eq.pending`,
     },
-    (_payload) => { // Changed payload to _payload
+    (_payload) => {
       if (user && !currentRide) {
         fetchDriverRides(user.id, searchCriteria);
       }
@@ -210,91 +210,39 @@ const DriverHome: React.FC = () => {
     !!user && !currentRide
   );
 
-  const handleMapReady = useCallback(() => {
-    setIsMapReady(true);
-  }, []);
+  // Removed handleMapReady
 
-  useEffect(() => {
-    const updateMapMarkers = () => {
-      if (!isMapReady || !window.google || !window.google.maps || !window.google.maps.LatLngBounds) {
-        return;
-      }
-
-      const newMarkers: MarkerLocation[] = [];
-      let currentCenter = undefined;
-      let currentZoom = 12;
-
-      if (currentRide) {
-        if (currentRide.pickup_lat && currentRide.pickup_lng) {
-          newMarkers.push({ id: 'pickup', lat: currentRide.pickup_lat, lng: currentRide.pickup_lng, title: 'موقع الانطلاق', iconColor: 'green' });
-          currentCenter = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
-        }
-        if (currentRide.destination_lat && currentRide.destination_lng) {
-          newMarkers.push({ id: 'destination', lat: currentRide.destination_lat, lng: currentRide.destination_lng, title: 'الوجهة', iconColor: 'red' });
-          if (!currentCenter) currentCenter = { lat: currentRide.destination_lat, lng: currentRide.destination_lng };
-        }
-        if (currentRide.driver_current_lat && currentRide.driver_current_lng) {
-          newMarkers.push({ id: 'driver', lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng, title: 'موقعك الحالي', iconColor: 'blue' });
-          currentCenter = { lat: currentRide.driver_current_lat, lng: currentRide.driver_current_lng };
-          currentZoom = 14;
-        }
-      } else if (availableRides.length > 0) {
-        const bounds = new window.google.maps.LatLngBounds();
-        let hasValidCoords = false;
-
-        availableRides.forEach(ride => {
-          if (ride.pickup_lat && ride.pickup_lng) {
-            newMarkers.push({ id: `${ride.id}-pickup`, lat: ride.pickup_lat, lng: ride.pickup_lng, title: `انطلاق: ${ride.pickup_location}`, iconColor: 'green' });
-            bounds.extend({ lat: ride.pickup_lat, lng: ride.pickup_lng });
-            hasValidCoords = true;
-          }
-          if (ride.destination_lat && ride.destination_lng) {
-            newMarkers.push({ id: `${ride.id}-destination`, lat: ride.destination_lat, lng: ride.destination_lng, title: `وجهة: ${ride.destination}`, iconColor: 'red' });
-            bounds.extend({ lat: ride.destination_lat, lng: ride.destination_lng });
-            hasValidCoords = true;
-          }
-        });
-
-        if (hasValidCoords) {
-          const centerCoords = bounds.getCenter();
-          if (centerCoords) {
-            currentCenter = centerCoords.toJSON();
-          }
-        }
-      }
-      setMapMarkers(newMarkers);
-      setMapCenter(currentCenter);
-      setMapZoom(currentZoom);
-    };
-
-    updateMapMarkers();
-  }, [currentRide, availableRides, isMapReady]);
+  // Removed useEffect for map markers
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
 
-    const currentLat = currentRide.driver_current_lat || currentRide.pickup_lat;
-    const currentLng = currentRide.driver_current_lng || currentRide.pickup_lng;
-    const destLat = currentRide.destination_lat;
-    const destLng = currentRide.destination_lng;
+    // Since map is disabled, we'll just simulate location update or skip for now
+    // For a real app, this would involve actual geolocation API
+    console.log("Simulating driver location update for ride:", currentRide.id);
 
-    if (currentLat === null || currentLng === null || destLat === null || destLng === null) {
-      console.warn("Missing coordinates for location update.");
-      return;
-    }
+    // const currentLat = currentRide.driver_current_lat || currentRide.pickup_lat;
+    // const currentLng = currentRide.driver_current_lng || currentRide.pickup_lng;
+    // const destLat = currentRide.destination_lat;
+    // const destLng = currentRide.destination_lng;
 
-    const newLat = currentLat + (destLat - currentLat) * 0.01;
-    const newLng = currentLng + (destLng - currentLng) * 0.01;
+    // if (currentLat === null || currentLng === null || destLat === null || destLng === null) {
+    //   console.warn("Missing coordinates for location update.");
+    //   return;
+    // }
 
-    const { error } = await supabase
-      .from('rides')
-      .update({ driver_current_lat: newLat, driver_current_lng: newLng })
-      .eq('id', currentRide.id);
+    // const newLat = currentLat + (destLat - currentLat) * 0.01;
+    // const newLng = currentLng + (destLng - currentLng) * 0.01;
 
-    if (error) {
-      console.error("Error updating driver location:", error);
-      toast.error("فشل تحديث موقع السائق.");
-    }
+    // const { error } = await supabase
+    //   .from('rides')
+    //   .update({ driver_current_lat: newLat, driver_current_lng: newLng })
+    //   .eq('id', currentRide.id);
+
+    // if (error) {
+    //   console.error("Error updating driver location:", error);
+    //   toast.error("فشل تحديث موقع السائق.");
+    // }
   }, [currentRide, user]);
 
   const handleStartTracking = () => {
@@ -303,7 +251,7 @@ const DriverHome: React.FC = () => {
       return;
     }
     setIsTrackingLocation(true);
-    toast.info("بدء تتبع موقعك.");
+    toast.info("بدء تتبع موقعك (محاكاة).");
     locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
   };
 
@@ -313,7 +261,7 @@ const DriverHome: React.FC = () => {
       locationIntervalRef.current = null;
     }
     setIsTrackingLocation(false);
-    toast.info("تم إيقاف تتبع موقعك.");
+    toast.info("تم إيقاف تتبع موقعك (محاكاة).");
   };
 
   const handleCompleteRide = async () => {
@@ -433,25 +381,16 @@ const DriverHome: React.FC = () => {
     );
   }
 
-  if (!googleMapsApiKey) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4 text-center">
-        <Car className="h-16 w-16 text-red-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-          خطأ في إعداد الخريطة
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 max-w-sm">
-          الرجاء إضافة مفتاح Google Maps API الخاص بك إلى ملف .env الخاص بالمشروع.
-          (VITE_GOOGLE_MAPS_API_KEY)
-        </p>
-        <Button onClick={() => navigate("/")} className="mt-4">العودة للصفحة الرئيسية</Button>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
-      <InteractiveMap markers={mapMarkers} center={mapCenter} zoom={mapZoom} onMapReady={handleMapReady} />
+      {/* Placeholder for map area */}
+      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-lg rounded-lg m-4">
+        <EmptyState
+          icon={Car}
+          title="نظام الخريطة معطل مؤقتًا"
+          description="نعمل على تحسين تجربة الخريطة. يرجى استخدام التطبيق بدونها في الوقت الحالي."
+        />
+      </div>
 
       {currentRide ? (
         <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
@@ -501,98 +440,81 @@ const DriverHome: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : ( // If no current ride, check available rides
-        availableRides.length > 0 ? (
-          <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
-            <DrawerContent className="max-h-[60vh]">
-              <DrawerHeader className="text-right">
-                <DrawerTitle>الرحلات المتاحة</DrawerTitle>
-                <DrawerDescription>
-                  {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
-                </DrawerDescription>
-              </DrawerHeader>
-              <ScrollArea className="flex-1 p-4">
-                {availableRides.length === 0 ? (
-                  <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                    <Car className="h-12 w-12 mx-auto mb-4" />
-                    <p>لا توجد رحلات تنتظر سائقين حاليًا.</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {availableRides.map((ride) => (
-                      <Card key={ride.id} className="shadow-sm">
-                        <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
-                            <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
-                            <RideStatusBadge status={ride.status} />
-                          </CardTitle>
-                          <CardDescription>
-                            الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">عدد الركاب:</span>
-                            <span>{ride.passengers_count}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">تاريخ الطلب:</span>
-                            <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
-                          </div>
-                          <Button
-                            onClick={() => handleAcceptRide(ride.id)}
-                            disabled={loadingRideData}
-                            className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
-                          >
-                            {loadingRideData ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                                جاري القبول...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 ml-2 rtl:mr-2" />
-                                قبول الرحلة
-                              </>
-                            )}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-              <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
-                <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
-                  <History className="h-4 w-4 ml-2 rtl:mr-2" />
-                  عرض رحلاتي المقبولة
-                </Button>
-                <Button
-                  onClick={() => setIsSearchDialogOpen(true)}
-                  className="bg-primary hover:bg-primary-dark text-primary-foreground"
-                >
-                  <Search className="h-4 w-4 ml-2 rtl:mr-2" />
-                  بحث عن رحلات
-                </Button>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
-        ) : ( // If no available rides, show empty state
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10 p-4 bg-card rounded-lg">
-            <EmptyState
-              icon={Car}
-              title="لا توجد رحلات حاليًا"
-              description="لا توجد رحلات مقبولة أو متاحة لك في الوقت الحالي. يرجى التحقق لاحقًا."
-            />
-            <Button
-              onClick={() => setIsSearchDialogOpen(true)}
-              className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
-            >
-              <Search className="h-5 w-5 ml-2 rtl:mr-2" />
-              بحث عن رحلات
-            </Button>
-          </div>
-        )
+      ) : (
+        <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
+          <DrawerContent className="max-h-[60vh]">
+            <DrawerHeader className="text-right">
+              <DrawerTitle>الرحلات المتاحة</DrawerTitle>
+              <DrawerDescription>
+                {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
+              </DrawerDescription>
+            </DrawerHeader>
+            <ScrollArea className="flex-1 p-4">
+              {availableRides.length === 0 ? (
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <Car className="h-12 w-12 mx-auto mb-4" />
+                  <p>لا توجد رحلات تنتظر سائقين حاليًا.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {availableRides.map((ride) => (
+                    <Card key={ride.id} className="shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
+                          <RideStatusBadge status={ride.status} />
+                        </CardTitle>
+                        <CardDescription>
+                          الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">عدد الركاب:</span>
+                          <span>{ride.passengers_count}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">تاريخ الطلب:</span>
+                          <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
+                        </div>
+                        <Button
+                          onClick={() => handleAcceptRide(ride.id)}
+                          disabled={loadingRideData}
+                          className="w-full bg-primary hover:bg-primary-dark text-primary-foreground mt-4"
+                        >
+                          {loadingRideData ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                              جاري القبول...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 ml-2 rtl:mr-2" />
+                              قبول الرحلة
+                            </>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+            <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
+              <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
+                <History className="h-4 w-4 ml-2 rtl:mr-2" />
+                عرض رحلاتي المقبولة
+              </Button>
+              <Button
+                onClick={() => setIsSearchDialogOpen(true)}
+                className="bg-primary hover:bg-primary-dark text-primary-foreground"
+              >
+                <Search className="h-4 w-4 ml-2 rtl:mr-2" />
+                بحث عن رحلات
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       )}
 
       {user && (currentRide || availableRides.length > 0) && (
