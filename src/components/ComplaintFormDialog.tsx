@@ -60,7 +60,15 @@ const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({
     }
 
     setIsSubmitting(true);
-    const { error } = await supabase.from('complaints').insert({
+    console.log("Submitting complaint with payload:", {
+      passenger_id: user.id,
+      driver_id: driverId,
+      ride_id: rideId || null,
+      subject: subject.trim(),
+      description: description.trim(),
+      status: 'pending',
+    });
+    const { data, error } = await supabase.from('complaints').insert({
       passenger_id: user.id,
       driver_id: driverId,
       ride_id: rideId || null,
@@ -73,8 +81,10 @@ const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({
     if (error) {
       toast.error(`فشل تقديم الشكوى: ${error.message}`);
       console.error("Error submitting complaint:", error);
+      console.log("Supabase insert error details:", error); // Log error details
     } else {
       toast.success("تم تقديم الشكوى بنجاح! سيتم مراجعتها قريبًا.");
+      console.log("Complaint submitted successfully:", data); // Log success data
       onOpenChange(false);
       onComplaintSubmitted?.();
     }

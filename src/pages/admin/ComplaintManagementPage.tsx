@@ -53,6 +53,7 @@ const ComplaintManagementPage: React.FC = () => {
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
+    console.log("Fetching complaints...");
     const { data: complaintsRaw, error } = await supabase
       .from('complaints')
       .select(`
@@ -66,7 +67,9 @@ const ComplaintManagementPage: React.FC = () => {
     if (error) {
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
       console.error("Error fetching complaints:", error);
+      console.log("Supabase fetch error details:", error); // Log error details
     } else {
+      console.log("Raw complaints data from Supabase:", complaintsRaw); // Log raw data
       const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
         const passengerProfile = Array.isArray(comp.passenger_profiles)
           ? comp.passenger_profiles[0] || null
@@ -88,14 +91,17 @@ const ComplaintManagementPage: React.FC = () => {
         };
       }) as Complaint[];
       setComplaints(formattedComplaints);
+      console.log("Formatted complaints for display:", formattedComplaints); // Log formatted data
     }
     setLoadingComplaints(false);
   }, []);
 
   useEffect(() => {
     if (!userLoading && user) {
+      console.log("User is loaded, fetching complaints for user:", user.id, "with role:", user.user_metadata?.user_type);
       fetchComplaints();
     } else if (!userLoading && !user) {
+      console.log("User is not logged in or still loading.");
       setLoadingComplaints(false);
     }
   }, [userLoading, user, fetchComplaints]);
@@ -108,6 +114,7 @@ const ComplaintManagementPage: React.FC = () => {
       table: 'complaints',
     },
     (_payload) => {
+      console.log("Realtime update received for complaints:", _payload);
       fetchComplaints(); // Re-fetch all complaints on any change
     },
     !!user
