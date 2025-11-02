@@ -167,10 +167,15 @@ const ComplaintManagementPage: React.FC = () => {
       return;
     }
 
+    if (!complaint.ride_id) { // Added check for ride_id
+      toast.error("لا يمكن بدء الدردشة لهذه الشكوى لأنها غير مرتبطة برحلة محددة.");
+      return;
+    }
+
     // Admin can chat with either passenger or driver related to the complaint
     // For simplicity, let's default to chatting with the passenger
     if (complaint.passenger_profiles) {
-      setChatRideId(complaint.ride_id || ""); // Use ride_id if available, otherwise empty
+      setChatRideId(complaint.ride_id); // Now we know ride_id is not null
       setChatOtherUserId(complaint.passenger_id);
       setChatOtherUserName(complaint.passenger_profiles.full_name || 'الراكب');
       setIsChatDialogOpen(true);
@@ -262,7 +267,9 @@ const ComplaintManagementPage: React.FC = () => {
                   <TableCell>{complaint.driver_profiles?.full_name || 'غير معروف'}</TableCell>
                   <TableCell>
                     {complaint.ride_details ? (
-                      <span>{complaint.ride_details.pickup_location} - {complaint.ride_details.destination}</span>
+                      <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => { /* navigate to ride details */ }}>
+                        {complaint.ride_details.pickup_location} - {complaint.ride_details.destination} (ID: {complaint.ride_details.id})
+                      </span>
                     ) : (
                       'N/A'
                     )}
@@ -293,7 +300,7 @@ const ComplaintManagementPage: React.FC = () => {
                       onClick={() => handleOpenChat(complaint)}
                       className="ml-2 rtl:mr-2"
                       title="محادثة مع الراكب"
-                      disabled={!complaint.passenger_id}
+                      disabled={!complaint.passenger_id || !complaint.ride_id} // Disable if no passenger or no ride_id
                     >
                       <MessageSquare className="h-4 w-4" />
                       <span className="sr-only">محادثة</span>

@@ -216,6 +216,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUserId) return;
+    if (!rideId) { // Added check for empty rideId
+      toast.error("لا يمكن إرسال الرسالة: معرف الرحلة غير متوفر.");
+      return;
+    }
 
     setIsSending(true);
 
