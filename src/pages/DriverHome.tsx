@@ -8,7 +8,7 @@ import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCi
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatDialog from "@/components/ChatDialog";
-import RatingDialog from "@/components/RatingDialog";
+// import RatingDialog from "@/components/RatingDialog"; // Removed RatingDialog import
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -28,9 +28,10 @@ const DriverHome: React.FC = () => {
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
-  const [rideToRate, setRideToRate] = useState<Ride | null>(null);
+  // Removed rating-related states
+  // const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  // const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
+  // const [rideToRate, setRideToRate] = useState<Ride | null>(null);
 
   const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
@@ -40,7 +41,7 @@ const DriverHome: React.FC = () => {
   const locationIntervalRef = useRef<number | null>(null);
 
   const fetchCurrentRide = useCallback(async () => {
-    if (!user?.id) return; // التأكد من وجود المستخدم
+    if (!user?.id) return;
 
     setLoadingRideData(true);
 
@@ -51,7 +52,7 @@ const DriverHome: React.FC = () => {
         passenger_profiles:passenger_id(id, full_name, avatar_url),
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
-      .eq('driver_id', user.id) // استخدام user.id مباشرة
+      .eq('driver_id', user.id)
       .in('status', ['accepted'])
       .order('created_at', { ascending: false })
       .limit(1);
@@ -79,11 +80,11 @@ const DriverHome: React.FC = () => {
       setCurrentRide(null);
     }
     setLoadingRideData(false);
-  }, [user]); // التبعية الصحيحة لـ useCallback
+  }, [user]);
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchCurrentRide(); // استدعاء بدون وسائط
+      fetchCurrentRide();
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
@@ -92,7 +93,7 @@ const DriverHome: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [userLoading, user, navigate, fetchCurrentRide]); // fetchCurrentRide هي تبعية هنا
+  }, [userLoading, user, navigate, fetchCurrentRide]);
 
   useSupabaseRealtime(
     'driver_home_rides_channel',
@@ -108,12 +109,7 @@ const DriverHome: React.FC = () => {
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'completed' && _payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
-        const completedRide = _payload.new as Ride;
-        if (completedRide.passenger_profiles) {
-          setRideToRate(completedRide);
-          setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
-          setIsRatingDialogOpen(true);
-        }
+        // Removed rating trigger for drivers
         setIsTrackingLocation(false);
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'cancelled' && _payload.old.status !== 'cancelled') {
@@ -178,24 +174,7 @@ const DriverHome: React.FC = () => {
     setIsChatDialogOpen(true);
   };
 
-  const handleSaveRating = async (rating: number, comment: string) => {
-    if (!user || !rideToRate || !ratingTargetUser) return;
-
-    const { error } = await supabase.from('ratings').insert({
-      ride_id: rideToRate.id,
-      rater_id: user.id,
-      rated_user_id: ratingTargetUser.id,
-      rating,
-      comment,
-    } as Omit<Rating, 'id' | 'created_at'>);
-
-    if (error) {
-      toast.error(`فشل حفظ التقييم: ${error.message}`);
-      console.error("Error saving rating:", error);
-    } else {
-      toast.success("تم حفظ التقييم بنجاح!");
-    }
-  };
+  // Removed handleSaveRating function
 
   const handleCancelRide = (ride: Ride) => {
     setRideToCancel(ride);
@@ -313,15 +292,7 @@ const DriverHome: React.FC = () => {
         />
       )}
 
-      {user && rideToRate && ratingTargetUser && (
-        <RatingDialog
-          open={isRatingDialogOpen}
-          onOpenChange={setIsRatingDialogOpen}
-          onSave={handleSaveRating}
-          targetUserName={ratingTargetUser.name}
-        />
-      )}
-
+      {/* Removed RatingDialog component */}
       <CancellationReasonDialog
         open={isCancellationDialogOpen}
         onOpenChange={setIsCancellationDialogOpen}

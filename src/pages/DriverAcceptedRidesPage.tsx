@@ -9,12 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
-import RatingDialog from "@/components/RatingDialog";
+// import RatingDialog from "@/components/RatingDialog"; // Removed RatingDialog import
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
-import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
-import { Ride, Rating, RawRideData } from "@/types/supabase"; // Import shared Ride and Rating types
-import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
+import { RealtimeChannel } from "@supabase/supabase-js";
+import { Ride, Rating, RawRideData } from "@/types/supabase";
+import RideStatusBadge from "@/components/RideStatusBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,9 +37,10 @@ const DriverAcceptedRidesPage: React.FC = () => {
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
-  const [rideToRate, setRideToRate] = useState<Ride | null>(null);
+  // Removed rating-related states
+  // const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  // const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
+  // const [rideToRate, setRideToRate] = useState<Ride | null>(null);
 
   const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
@@ -105,12 +106,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
             fetchAcceptedRides(user.id); // Re-fetch data on any ride change
             if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
               toast.success("تم إكمال الرحلة بنجاح!");
-              const completedRide = payload.new as Ride;
-              if (completedRide.passenger_profiles) {
-                setRideToRate(completedRide);
-                setRatingTargetUser({ id: completedRide.passenger_id, name: completedRide.passenger_profiles.full_name || 'الراكب' });
-                setIsRatingDialogOpen(true);
-              }
+              // Removed rating trigger for drivers
             }
           }
         )
@@ -137,34 +133,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
     setIsChatDialogOpen(true);
   };
 
-  const handleOpenRatingDialog = (ride: Ride) => {
-    if (!user || !ride.passenger_profiles) {
-      toast.error("لا يمكن تقييم الراكب. معلومات المستخدم أو الرحلة غير متوفرة.");
-      return;
-    }
-    setRideToRate(ride);
-    setRatingTargetUser({ id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' });
-    setIsRatingDialogOpen(true);
-  };
-
-  const handleSaveRating = async (rating: number, comment: string) => {
-    if (!user || !rideToRate || !ratingTargetUser) return;
-
-    const { error } = await supabase.from('ratings').insert({
-      ride_id: rideToRate.id,
-      rater_id: user.id,
-      rated_user_id: ratingTargetUser.id,
-      rating,
-      comment,
-    } as Omit<Rating, 'id' | 'created_at'>);
-
-    if (error) {
-      toast.error(`فشل حفظ التقييم: ${error.message}`);
-      console.error("Error saving rating:", error);
-    } else {
-      toast.success("تم حفظ التقييم بنجاح!");
-    }
-  };
+  // Removed handleOpenRatingDialog and handleSaveRating functions
 
   const handleCancelRide = (ride: Ride) => {
     setRideToCancel(ride);
@@ -273,12 +242,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
                       إلغاء الرحلة
                     </Button>
                   )}
-                  {ride.status === 'completed' && (
-                    <Button onClick={() => handleOpenRatingDialog(ride)} variant="secondary" size="sm" className="flex-1">
-                      <Star className="h-4 w-4 ml-2 rtl:mr-2" />
-                      تقييم الراكب
-                    </Button>
-                  )}
+                  {/* Removed Rating button for drivers */}
                   {(ride.status === 'cancelled' || ride.status === 'completed') && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -332,15 +296,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
         />
       )}
 
-      {user && rideToRate && ratingTargetUser && (
-        <RatingDialog
-          open={isRatingDialogOpen}
-          onOpenChange={setIsRatingDialogOpen}
-          onSave={handleSaveRating}
-          targetUserName={ratingTargetUser.name}
-        />
-      )}
-
+      {/* Removed RatingDialog component */}
       <CancellationReasonDialog
         open={isCancellationDialogOpen}
         onOpenChange={setIsCancellationDialogOpen}
