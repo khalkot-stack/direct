@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useContext,
   useCallback,
-  useRef, // Import useRef
+  useRef,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
@@ -30,9 +30,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const isInitialLoadHandled = useRef(false); // To prevent double-handling in Strict Mode
+  const isInitialLoadHandled = useRef(false);
 
   const fetchUserProfile = useCallback(async (userId: string) => {
+    console.log("UserContext: Attempting to fetch profile for userId:", userId);
     const { data, error, status } = await supabase
       .from("profiles")
       .select(
@@ -41,13 +42,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       .eq("id", userId)
       .single();
 
-    if (error && status !== 406) { // PGRST116 means no rows found
-      console.error("fetchUserProfile: Error fetching profile:", error);
+    if (error && status !== 406) {
+      console.error("UserContext: Error fetching profile:", error);
       setProfile(null);
     } else if (data) {
+      console.log("UserContext: Profile fetched successfully:", data);
       setProfile(data as Profile);
     } else {
-      // If no profile found, attempt to create a default one
+      console.log("UserContext: No profile found, attempting to create default for userId:", userId);
       const { data: userData } = await supabase.auth.getUser();
       const currentUser = userData.user;
 
@@ -77,8 +79,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           .single();
 
         if (insertError) {
-          console.error("fetchUserProfile: Error creating default profile:", insertError);
+          console.error("UserContext: Error creating default profile:", insertError);
         } else {
+          console.log("UserContext: Default profile created:", newProfile);
           setProfile(newProfile as Profile);
         }
       }
@@ -86,7 +89,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useEffect(() => {
-    // This ref ensures the effect runs only once per "real" mount, ignoring Strict Mode double-invocations
     if (isInitialLoadHandled.current) {
       return;
     }
@@ -95,24 +97,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     let authListenerSubscription: { unsubscribe: () => void } | null = null;
 
     const setupAuth = async () => {
-      // 1. Get initial session
+      console.log("UserContext: Initializing authentication setup.");
       const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
-        console.error("setupAuth: Error fetching initial session:", sessionError);
+        console.error("UserContext: Error fetching initial session:", sessionError);
       }
       setSession(initialSession);
       setUser(initialSession?.user || null);
+      console.log("UserContext: Initial session user:", initialSession?.user?.id);
 
       if (initialSession?.user) {
         await fetchUserProfile(initialSession.user.id);
       } else {
         setProfile(null);
       }
-      setLoading(false); // Set loading to false after initial load
+      setLoading(false);
+      console.log("UserContext: Initial loading complete. User:", initialSession?.user?.id ? "Logged In" : "Logged Out");
 
-      // 2. Set up auth state change listener
       const { data } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
+          console.log("UserContext: Auth state changed. Event:", _event, "User:", currentSession?.user?.id);
           setSession(currentSession);
           setUser(currentSession?.user || null);
           if (currentSession?.user) {
@@ -129,10 +133,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       if (authListenerSubscription) {
+        console.log("UserContext: Unsubscribing from auth listener.");
         authListenerSubscription.unsubscribe();
       }
     };
-  }, [fetchUserProfile]); // fetchUserProfile is a dependency because it's called inside setupAuth
+  }, [fetchUserProfile]);
 
   if (loading) {
     return (

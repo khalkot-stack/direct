@@ -4,14 +4,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2, Flag } from "lucide-react"; // Added Flag icon
+import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Import new component
+import ComplaintFormDialog from "@/components/ComplaintFormDialog";
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -49,12 +49,13 @@ const PassengerMyRidesPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
-  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false); // New state for complaint dialog
+  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
   const [complaintDriverId, setComplaintDriverId] = useState("");
   const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
   const [complaintDriverName, setComplaintDriverName] = useState("");
 
   const fetchMyRides = useCallback(async (userId: string) => {
+    console.log("PassengerMyRidesPage: Fetching rides for userId:", userId);
     setLoadingRides(true);
     const { data: ridesRaw, error } = await supabase
       .from('rides')
@@ -67,8 +68,11 @@ const PassengerMyRidesPage: React.FC = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error("PassengerMyRidesPage: Error fetching rides:", error);
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
+      setRides([]); // Ensure rides are cleared on error
     } else {
+      console.log("PassengerMyRidesPage: Rides fetched successfully:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
           ? ride.passenger_profiles[0] || null
@@ -87,13 +91,17 @@ const PassengerMyRidesPage: React.FC = () => {
       setRides(formattedRides);
     }
     setLoadingRides(false);
+    console.log("PassengerMyRidesPage: Loading rides complete.");
   }, []);
 
   useEffect(() => {
+    console.log("PassengerMyRidesPage: useEffect triggered. userLoading:", userLoading, "user:", user?.id);
     if (!userLoading && user) {
       fetchMyRides(user.id);
     } else if (!userLoading && !user) {
+      console.log("PassengerMyRidesPage: User not logged in, redirecting or showing error.");
       toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
+      // Optionally navigate to auth page if not already handled by ProtectedRoute
     }
   }, [userLoading, user, fetchMyRides]);
 
@@ -106,8 +114,9 @@ const PassengerMyRidesPage: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
+      console.log("PassengerMyRidesPage: Realtime update received:", payload);
       if (user) {
-        fetchMyRides(user.id); // Re-fetch data on any ride change
+        fetchMyRides(user.id);
       }
       if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
         toast.success("تم إكمال رحلتك بنجاح!");
@@ -122,7 +131,7 @@ const PassengerMyRidesPage: React.FC = () => {
         toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
       }
     },
-    !!user // Only enable if user is logged in
+    !!user
   );
 
   const handleOpenChat = (ride: Ride) => {
@@ -202,7 +211,7 @@ const PassengerMyRidesPage: React.FC = () => {
       .delete()
       .eq('id', rideToDelete.id);
     setIsDeleting(false);
-    setRideToDelete(null); // Close the dialog
+    setRideToDelete(null);
 
     if (error) {
       toast.error(`فشل حذف الرحلة: ${error.message}`);
@@ -291,7 +300,7 @@ const PassengerMyRidesPage: React.FC = () => {
                       تقييم السائق
                     </Button>
                   )}
-                  {(ride.status === 'completed' || ride.status === 'cancelled') && ride.driver_id && ( // Show complaint button for completed/cancelled rides with a driver
+                  {(ride.status === 'completed' || ride.status === 'cancelled') && ride.driver_id && (
                     <Button onClick={() => handleOpenComplaintDialog(ride)} variant="outline" size="sm" className="flex-1 text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600">
                       <Flag className="h-4 w-4 ml-2 rtl:mr-2" />
                       شكوى
