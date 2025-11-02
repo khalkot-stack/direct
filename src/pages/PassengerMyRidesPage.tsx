@@ -239,6 +239,13 @@ const PassengerMyRidesPage: React.FC = () => {
     setIsComplaintFormDialogOpen(true);
   };
 
+  const handleComplaintSubmitted = () => {
+    // After a complaint is submitted, re-fetch rides to potentially update UI (e.g., show a "Complaint filed" indicator)
+    if (user) {
+      fetchMyRides(user.id);
+    }
+  };
+
   const handleOpenComplaintChat = async (ride: Ride) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لعرض محادثة الشكوى.");
@@ -421,7 +428,7 @@ const PassengerMyRidesPage: React.FC = () => {
           driverId={complaintDriverId}
           rideId={complaintRideId}
           driverName={complaintDriverName}
-          onComplaintSubmitted={() => { /* Optional: handle post-submission logic, e.g., refresh ride list */ }}
+          onComplaintSubmitted={handleComplaintSubmitted} {/* Added callback */}
         />
       )}
 
