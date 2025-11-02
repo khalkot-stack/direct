@@ -45,9 +45,7 @@ const PassengerComplaintsPage: React.FC = () => {
   const [chatComplaintId, setChatComplaintId] = useState("");
 
   const [isComplaintFormDialogOpen, setIsComplaintFormDialogOpen] = useState(false);
-  const [formDriverId, setFormDriverId] = useState("");
-  const [formRideId, setFormRideId] = useState<string | undefined>(undefined);
-  const [formDriverName, setFormDriverName] = useState("");
+  // Removed formDriverId, formRideId, formDriverName states as they are now handled within ComplaintFormDialog
 
   const fetchPassengerComplaints = useCallback(async (passengerId: string) => {
     setLoadingComplaints(true);
@@ -135,14 +133,7 @@ const PassengerComplaintsPage: React.FC = () => {
   };
 
   const handleOpenNewComplaintForm = () => {
-    // For a new complaint, we don't have a specific driver/ride yet,
-    // so we'll need to prompt the user or allow selection within the form.
-    // For simplicity, let's assume we'll open a generic form or require selection.
-    // If we want to link it to a specific ride/driver, we'd need to pass those IDs.
-    // For now, we'll open it without pre-filled driver/ride info.
-    setFormDriverId(""); // Clear previous driver ID
-    setFormRideId(undefined); // Clear previous ride ID
-    setFormDriverName(""); // Clear previous driver name
+    // No need to set driver/ride info here, ComplaintFormDialog will handle it
     setIsComplaintFormDialogOpen(true);
   };
 
@@ -331,9 +322,6 @@ const PassengerComplaintsPage: React.FC = () => {
         <ComplaintFormDialog
           open={isComplaintFormDialogOpen}
           onOpenChange={setIsComplaintFormDialogOpen}
-          driverId={formDriverId} // This will be empty for new complaints, requiring selection in form
-          rideId={formRideId} // This will be undefined for new complaints
-          driverName={formDriverName} // This will be empty for new complaints
           onComplaintSubmitted={handleComplaintSubmitted}
         />
       )}
