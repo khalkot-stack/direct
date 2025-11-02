@@ -11,8 +11,8 @@ import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Keep for submitting new complaints
-import ComplaintChatDialog from "@/components/ComplaintChatDialog"; // Import the new ComplaintChatDialog
+// import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Removed import
+import ComplaintChatDialog from "@/components/ComplaintChatDialog";
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -28,9 +28,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
+  const navigate = useNavigate(); // Initialize useNavigate
   const [rides, setRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(true);
 
@@ -50,13 +52,14 @@ const PassengerMyRidesPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
-  const [isComplaintFormDialogOpen, setIsComplaintFormDialogOpen] = useState(false); // State for submitting NEW complaint
-  const [complaintDriverId, setComplaintDriverId] = useState("");
-  const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
-  const [complaintDriverName, setComplaintDriverName] = useState("");
+  // Removed states related to ComplaintFormDialog for submitting NEW complaint from here
+  // const [isComplaintFormDialogOpen, setIsComplaintFormDialogOpen] = useState(false);
+  // const [complaintDriverId, setComplaintDriverId] = useState("");
+  // const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
+  // const [complaintDriverName, setComplaintDriverName] = useState("");
 
-  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false); // New state for viewing complaint chat
-  const [viewComplaintChatId, setViewComplaintChatId] = useState(""); // New state for the complaint ID to view chat
+  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false);
+  const [viewComplaintChatId, setViewComplaintChatId] = useState("");
 
   const fetchMyRides = useCallback(async (userId: string) => {
     console.log("PassengerMyRidesPage: Fetching rides for userId:", userId);
@@ -74,7 +77,7 @@ const PassengerMyRidesPage: React.FC = () => {
     if (error) {
       console.error("PassengerMyRidesPage: Error fetching rides:", error);
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
-      setRides([]); // Ensure rides are cleared on error
+      setRides([]);
     } else {
       console.log("PassengerMyRidesPage: Rides fetched successfully:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
@@ -105,7 +108,6 @@ const PassengerMyRidesPage: React.FC = () => {
     } else if (!userLoading && !user) {
       console.log("PassengerMyRidesPage: User not logged in, redirecting or showing error.");
       toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
-      // Optionally navigate to auth page if not already handled by ProtectedRoute
     }
   }, [userLoading, user, fetchMyRides]);
 
@@ -228,24 +230,7 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
-  const handleOpenComplaintFormDialog = (ride: Ride) => {
-    if (!ride.driver_id || !ride.driver_profiles) {
-      toast.error("لا يمكن تقديم شكوى. معلومات السائق غير متوفرة.");
-      return;
-    }
-    setComplaintDriverId(ride.driver_id);
-    setComplaintRideId(ride.id);
-    setComplaintDriverName(ride.driver_profiles.full_name || 'السائق');
-    setIsComplaintFormDialogOpen(true);
-  };
-
-  const handleComplaintSubmitted = () => {
-    // After a complaint is submitted, re-fetch rides to potentially update UI (e.g., show a "Complaint filed" indicator)
-    if (user) {
-      fetchMyRides(user.id);
-    }
-  };
-
+  // Modified handleOpenComplaintChat to navigate to the dedicated complaints page
   const handleOpenComplaintChat = async (ride: Ride) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لعرض محادثة الشكوى.");
@@ -256,29 +241,10 @@ const PassengerMyRidesPage: React.FC = () => {
       return;
     }
 
-    // Check if a complaint already exists for this ride and passenger
-    const { data: existingComplaints, error } = await supabase
-      .from('complaints')
-      .select('id')
-      .eq('passenger_id', user.id)
-      .eq('driver_id', ride.driver_id)
-      .eq('ride_id', ride.id)
-      .limit(1);
-
-    if (error) {
-      toast.error(`فشل جلب الشكوى: ${error.message}`);
-      console.error("Error fetching existing complaint:", error);
-      return;
-    }
-
-    // Check if any complaint was returned
-    if (existingComplaints && existingComplaints.length > 0) {
-      setViewComplaintChatId(existingComplaints[0].id); // Use the ID of the first complaint found
-      setIsComplaintChatDialogOpen(true);
-    } else {
-      toast.info("لا توجد شكوى سابقة لهذه الرحلة. يمكنك تقديم شكوى جديدة.");
-      handleOpenComplaintFormDialog(ride); // Offer to create a new complaint
-    }
+    // Instead of opening a dialog directly, navigate to the passenger's complaints page
+    // The complaints page will handle fetching and displaying the relevant complaint/chat
+    navigate('/passenger-dashboard/my-complaints');
+    toast.info("تم توجيهك إلى صفحة الشكاوى الخاصة بك.");
   };
 
   if (userLoading || loadingRides) {
@@ -421,16 +387,17 @@ const PassengerMyRidesPage: React.FC = () => {
         isSubmitting={isCancelling}
       />
 
-      {user && complaintDriverId && (
+      {/* Removed ComplaintFormDialog from here as it's now handled on the dedicated complaints page */}
+      {/* {user && complaintDriverId && (
         <ComplaintFormDialog
           open={isComplaintFormDialogOpen}
           onOpenChange={setIsComplaintFormDialogOpen}
           driverId={complaintDriverId}
           rideId={complaintRideId}
           driverName={complaintDriverName}
-          onComplaintSubmitted={handleComplaintSubmitted} // Added callback
+          onComplaintSubmitted={handleComplaintSubmitted}
         />
-      )}
+      )} */}
 
       {user && (
         <ComplaintChatDialog

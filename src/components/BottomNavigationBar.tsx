@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, History, Settings, Car, Flag } from 'lucide-react'; // Import Flag icon
+import { Home, History, Settings, Car, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/UserContext';
 
@@ -25,14 +25,15 @@ const BottomNavigationBar = () => {
       return [
         { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
+        { name: 'شكاواي', icon: Flag, path: '/passenger-dashboard/my-complaints' }, // New item for passenger complaints
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     } else if (userRole === 'driver') {
       return [
         { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
-        { name: 'رحلات متاحة', icon: Car, path: '/driver-dashboard/available-rides' }, // New item for available rides
+        { name: 'رحلات متاحة', icon: Car, path: '/driver-dashboard/available-rides' },
         { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
-        { name: 'شكاواي', icon: Flag, path: '/driver-dashboard/my-complaints' }, // New item for driver complaints
+        { name: 'شكاواي', icon: Flag, path: '/driver-dashboard/my-complaints' },
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     }

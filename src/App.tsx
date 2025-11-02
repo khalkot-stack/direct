@@ -26,12 +26,13 @@ import AdminLoginPage from "@/pages/AdminLoginPage";
 // Passenger Pages
 import PassengerHome from "@/pages/PassengerHome";
 import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
+import PassengerComplaintsPage from "@/pages/PassengerComplaintsPage"; // Import the new page
 
 // Driver Pages
 import DriverHome from "@/pages/DriverHome";
 import DriverAcceptedRidesPage from "@/pages/DriverAcceptedRidesPage";
 import DriverAvailableRidesPage from "@/pages/DriverAvailableRidesPage";
-import DriverComplaintsPage from "@/pages/DriverComplaintsPage"; // Import the new page
+import DriverComplaintsPage from "@/pages/DriverComplaintsPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -39,7 +40,7 @@ import OverviewPage from "@/pages/admin/OverviewPage";
 import UserManagementPage from "@/pages/admin/UserManagementPage";
 import RideManagementPage from "@/pages/admin/RideManagementPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
-import ComplaintManagementPage from "@/pages/admin/ComplaintManagementPage"; // Import the new page
+import ComplaintManagementPage from "@/pages/admin/ComplaintManagementPage";
 
 function App() {
   return (
@@ -64,12 +65,13 @@ function App() {
               {/* Passenger Routes */}
               <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerHome /></ProtectedRoute>} />
               <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerMyRidesPage /></ProtectedRoute>} />
+              <Route path="/passenger-dashboard/my-complaints" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerComplaintsPage /></ProtectedRoute>} /> {/* New passenger route */}
 
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} />
               <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAcceptedRidesPage /></ProtectedRoute>} />
               <Route path="/driver-dashboard/available-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAvailableRidesPage /></ProtectedRoute>} />
-              <Route path="/driver-dashboard/my-complaints" element={<ProtectedRoute allowedRoles={["driver"]}><DriverComplaintsPage /></ProtectedRoute>} /> {/* New driver route */}
+              <Route path="/driver-dashboard/my-complaints" element={<ProtectedRoute allowedRoles={["driver"]}><DriverComplaintsPage /></ProtectedRoute>} />
             </Route>
 
             {/* Admin Routes with UserLayout (Sidebar) */}
@@ -77,7 +79,7 @@ function App() {
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="rides" element={<RideManagementPage />} />
-              <Route path="complaints" element={<ComplaintManagementPage />} /> {/* New admin route */}
+              <Route path="complaints" element={<ComplaintManagementPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
