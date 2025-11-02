@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
-// import RatingDialog from "@/components/RatingDialog"; // Removed RatingDialog import
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -36,11 +35,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
   const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
-
-  // Removed rating-related states
-  // const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  // const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
-  // const [rideToRate, setRideToRate] = useState<Ride | null>(null);
 
   const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
@@ -106,7 +100,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
             fetchAcceptedRides(user.id); // Re-fetch data on any ride change
             if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
               toast.success("تم إكمال الرحلة بنجاح!");
-              // Removed rating trigger for drivers
             }
           }
         )
@@ -132,8 +125,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
     setChatOtherUserName(ride.passenger_profiles.full_name || 'الراكب');
     setIsChatDialogOpen(true);
   };
-
-  // Removed handleOpenRatingDialog and handleSaveRating functions
 
   const handleCancelRide = (ride: Ride) => {
     setRideToCancel(ride);
@@ -242,7 +233,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
                       إلغاء الرحلة
                     </Button>
                   )}
-                  {/* Removed Rating button for drivers */}
                   {(ride.status === 'cancelled' || ride.status === 'completed') && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -296,7 +286,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
         />
       )}
 
-      {/* Removed RatingDialog component */}
       <CancellationReasonDialog
         open={isCancellationDialogOpen}
         onOpenChange={setIsCancellationDialogOpen}

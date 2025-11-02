@@ -4,15 +4,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2, Flag } from "lucide-react";
+import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-// import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Removed import
-import ComplaintChatDialog from "@/components/ComplaintChatDialog";
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -51,15 +49,6 @@ const PassengerMyRidesPage: React.FC = () => {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
-
-  // Removed states related to ComplaintFormDialog for submitting NEW complaint from here
-  // const [isComplaintFormDialogOpen, setIsComplaintFormDialogOpen] = useState(false);
-  // const [complaintDriverId, setComplaintDriverId] = useState("");
-  // const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
-  // const [complaintDriverName, setComplaintDriverName] = useState("");
-
-  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false);
-  const [viewComplaintChatId, setViewComplaintChatId] = useState("");
 
   const fetchMyRides = useCallback(async (userId: string) => {
     console.log("PassengerMyRidesPage: Fetching rides for userId:", userId);
@@ -230,23 +219,6 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
-  // Modified handleOpenComplaintChat to navigate to the dedicated complaints page
-  const handleOpenComplaintChat = async (ride: Ride) => {
-    if (!user?.id) {
-      toast.error("الرجاء تسجيل الدخول لعرض محادثة الشكوى.");
-      return;
-    }
-    if (!ride.driver_id) {
-      toast.error("لا يمكن عرض محادثة الشكوى. لا يوجد سائق لهذه الرحلة.");
-      return;
-    }
-
-    // Instead of opening a dialog directly, navigate to the passenger's complaints page
-    // The complaints page will handle fetching and displaying the relevant complaint/chat
-    navigate('/passenger-dashboard/my-complaints');
-    toast.info("تم توجيهك إلى صفحة الشكاوى الخاصة بك.");
-  };
-
   if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -310,12 +282,6 @@ const PassengerMyRidesPage: React.FC = () => {
                     <Button onClick={() => handleOpenRatingDialog(ride)} variant="secondary" size="sm" className="flex-1">
                       <Star className="h-4 w-4 ml-2 rtl:mr-2" />
                       تقييم السائق
-                    </Button>
-                  )}
-                  {(ride.status === 'completed' || ride.status === 'cancelled') && ride.driver_id && (
-                    <Button onClick={() => handleOpenComplaintChat(ride)} variant="outline" size="sm" className="flex-1 text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600">
-                      <Flag className="h-4 w-4 ml-2 rtl:mr-2" />
-                      شكوى
                     </Button>
                   )}
                   {(ride.status === 'cancelled' || ride.status === 'completed') && (
@@ -386,26 +352,6 @@ const PassengerMyRidesPage: React.FC = () => {
         onConfirm={confirmCancelRide}
         isSubmitting={isCancelling}
       />
-
-      {/* Removed ComplaintFormDialog from here as it's now handled on the dedicated complaints page */}
-      {/* {user && complaintDriverId && (
-        <ComplaintFormDialog
-          open={isComplaintFormDialogOpen}
-          onOpenChange={setIsComplaintFormDialogOpen}
-          driverId={complaintDriverId}
-          rideId={complaintRideId}
-          driverName={complaintDriverName}
-          onComplaintSubmitted={handleComplaintSubmitted}
-        />
-      )} */}
-
-      {user && (
-        <ComplaintChatDialog
-          open={isComplaintChatDialogOpen}
-          onOpenChange={setIsComplaintChatDialogOpen}
-          complaintId={viewComplaintChatId}
-        />
-      )}
     </div>
   );
 };
