@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import ComplaintChatDialog from "@/components/ComplaintChatDialog";
 
 const ComplaintManagementPage: React.FC = () => {
-  const { user, profile, loading: userLoading } = useUser(); // تم إضافة profile
+  const { user, profile, loading: userLoading } = useUser();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,45 +51,60 @@ const ComplaintManagementPage: React.FC = () => {
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
-    console.log("Fetching complaints (simplified query for debugging)...");
+    console.log("Fetching complaints with joined data...");
     const { data: complaintsRaw, error } = await supabase
       .from('complaints')
-      .select(`*`) // تم تبسيط الاستعلام لجلب جميع الأعمدة مباشرة من جدول الشكاوى
+      .select(`
+        *,
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+        driver_profiles:driver_id(id, full_name, avatar_url, user_type),
+        rides(id, pickup_location, destination)
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
-      console.error("Error fetching complaints (simplified):", error);
-      console.log("Supabase fetch error details (simplified):", error);
+      console.error("Error fetching complaints:", error);
     } else {
-      console.log("Raw complaints data from Supabase (simplified):", complaintsRaw);
-      // سنقوم بتنسيق البيانات هنا بشكل مبسط لأننا لا نملك بيانات العلاقات
-      const formattedComplaints: Complaint[] = (complaintsRaw as any[] || []).map(comp => {
+      console.log("Raw complaints data from Supabase:", complaintsRaw);
+      const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
+        const passengerProfile = Array.isArray(comp.passenger_profiles)
+          ? comp.passenger_profiles[0] || null
+          : comp.passenger_profiles;
+        
+        const driverProfile = Array.isArray(comp.driver_profiles)
+          ? comp.driver_profiles[0] || null
+          : comp.driver_profiles;
+        
+        const rideDetails = Array.isArray(comp.rides) && comp.rides.length > 0
+          ? comp.rides[0]
+          : (comp.rides as { id: string; pickup_location: string; destination: string } | null);
+
         return {
           ...comp,
-          passenger_profiles: null, // تعيين صريح لـ null لأننا لا نجلبها في هذا الاستعلام المبسّط
-          driver_profiles: null,
-          ride_details: null,
-        } as Complaint;
+          passenger_profiles: passengerProfile,
+          driver_profiles: driverProfile,
+          ride_details: rideDetails,
+        };
       });
       setComplaints(formattedComplaints);
-      console.log("Formatted complaints for display (simplified):", formattedComplaints);
+      console.log("Formatted complaints for display:", formattedComplaints);
     }
     setLoadingComplaints(false);
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user && profile) { // التأكد من تحميل profile
+    if (!userLoading && user && profile) {
       console.log("Admin ComplaintManagementPage: User loaded. ID:", user.id, "Email:", user.email);
       console.log("Admin ComplaintManagementPage: User app_metadata:", user.app_metadata);
       console.log("Admin ComplaintManagementPage: User user_metadata:", user.user_metadata);
-      console.log("Admin ComplaintManagementPage: Profile from context:", profile); // سجل profile من السياق
+      console.log("Admin ComplaintManagementPage: Profile from context:", profile);
       fetchComplaints();
     } else if (!userLoading && !user) {
       console.log("Admin ComplaintManagementPage: User is not logged in or still loading.");
       setLoadingComplaints(false);
     }
-  }, [userLoading, user, profile, fetchComplaints]); // إضافة profile إلى مصفوفة التبعيات
+  }, [userLoading, user, profile, fetchComplaints]);
 
   useSupabaseRealtime(
     'admin_complaints_channel',
@@ -156,12 +171,16 @@ const ComplaintManagementPage: React.FC = () => {
   };
 
   const filteredComplaints = complaints.filter(complaint => {
-    // بما أننا بسّطنا الاستعلام، قد لا تكون بيانات الـ profiles والـ rides متاحة هنا
-    // لذا سنركز على البحث في الحقول المباشرة للشكوى
+    const passengerName = complaint.passenger_profiles?.full_name || '';
+    const driverName = complaint.driver_profiles?.full_name || '';
+    const rideLocation = complaint.ride_details ? `${complaint.ride_details.pickup_location} ${complaint.ride_details.destination}` : '';
+
     const matchesSearch = (
       complaint.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.description.toLowerCase().includes(searchTerm.toLowerCase())
-      // لا يمكن البحث في passenger_profiles أو driver_profiles أو ride_details حاليًا
+      complaint.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      passengerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rideLocation.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const matchesStatus = filterStatus === "all" || complaint.status === filterStatus;
@@ -218,9 +237,9 @@ const ComplaintManagementPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>الموضوع</TableHead>
-                <TableHead>الراكب (ID)</TableHead> {/* تم التعديل لعرض ID مؤقتًا */}
-                <TableHead>السائق (ID)</TableHead> {/* تم التعديل لعرض ID مؤقتًا */}
-                <TableHead>الرحلة (ID)</TableHead> {/* تم التعديل لعرض ID مؤقتًا */}
+                <TableHead>الراكب</TableHead>
+                <TableHead>السائق</TableHead>
+                <TableHead>الرحلة</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>تاريخ الإنشاء</TableHead>
                 <TableHead className="text-right">الإجراءات</TableHead>
@@ -230,9 +249,15 @@ const ComplaintManagementPage: React.FC = () => {
               {filteredComplaints.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="font-medium">{complaint.subject}</TableCell>
-                  <TableCell>{complaint.passenger_id?.substring(0, 8) || 'N/A'}</TableCell> {/* عرض ID */}
-                  <TableCell>{complaint.driver_id?.substring(0, 8) || 'N/A'}</TableCell> {/* عرض ID */}
-                  <TableCell>{complaint.ride_id?.substring(0, 8) || 'N/A'}</TableCell> {/* عرض ID */}
+                  <TableCell>{complaint.passenger_profiles?.full_name || 'N/A'}</TableCell>
+                  <TableCell>{complaint.driver_profiles?.full_name || 'N/A'}</TableCell>
+                  <TableCell>
+                    {complaint.ride_details ? (
+                      <span>{complaint.ride_details.pickup_location} - {complaint.ride_details.destination}</span>
+                    ) : (
+                      'N/A'
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(complaint.status)}>
                       {complaint.status === 'pending' ? 'قيد الانتظار' :
@@ -290,16 +315,24 @@ const ComplaintManagementPage: React.FC = () => {
                 <span className="col-span-3 text-sm">{selectedComplaint.description}</span>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">الراكب (ID):</Label>
-                <span className="col-span-3">{selectedComplaint.passenger_id}</span>
+                <Label className="text-right">الراكب:</Label>
+                <span className="col-span-3">{selectedComplaint.passenger_profiles?.full_name || selectedComplaint.passenger_id}</span>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">السائق (ID):</Label>
-                <span className="col-span-3">{selectedComplaint.driver_id}</span>
+                <Label className="text-right">السائق:</Label>
+                <span className="col-span-3">{selectedComplaint.driver_profiles?.full_name || selectedComplaint.driver_id}</span>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">الرحلة (ID):</Label>
-                <span className="col-span-3">{selectedComplaint.ride_id || 'N/A'}</span>
+                <Label className="text-right">الرحلة:</Label>
+                <span className="col-span-3">
+                  {selectedComplaint.ride_details ? (
+                    <span>
+                      {selectedComplaint.ride_details.pickup_location} - {selectedComplaint.ride_details.destination} (ID: {selectedComplaint.ride_details.id})
+                    </span>
+                  ) : (
+                    selectedComplaint.ride_id || 'N/A'
+                  )}
+                </span>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="status" className="text-right">الحالة:</Label>
