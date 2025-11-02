@@ -250,13 +250,13 @@ const PassengerMyRidesPage: React.FC = () => {
     }
 
     // Check if a complaint already exists for this ride and passenger
-    const { data: existingComplaint, error } = await supabase
+    const { data: existingComplaints, error } = await supabase
       .from('complaints')
       .select('id')
       .eq('passenger_id', user.id)
       .eq('driver_id', ride.driver_id)
       .eq('ride_id', ride.id)
-      .maybeSingle();
+      .limit(1); // Changed from .maybeSingle() to .limit(1)
 
     if (error) {
       toast.error(`فشل جلب الشكوى: ${error.message}`);
@@ -264,8 +264,9 @@ const PassengerMyRidesPage: React.FC = () => {
       return;
     }
 
-    if (existingComplaint) {
-      setViewComplaintChatId(existingComplaint.id);
+    // Check if any complaint was returned
+    if (existingComplaints && existingComplaints.length > 0) {
+      setViewComplaintChatId(existingComplaints[0].id); // Use the ID of the first complaint found
       setIsComplaintChatDialogOpen(true);
     } else {
       toast.info("لا توجد شكوى سابقة لهذه الرحلة. يمكنك تقديم شكوى جديدة.");
