@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Home, Users, Car, Settings } from "lucide-react";
+import { Home, Users, Car, Settings, Flag } from "lucide-react"; // Import Flag icon
 import LogoutButton from "@/components/LogoutButton";
 
 interface AdminSidebarProps {
@@ -30,6 +30,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className }) => {
       name: "إدارة الرحلات",
       href: "/admin-dashboard/rides",
       icon: Car,
+    },
+    {
+      name: "إدارة الشكاوى", // New item
+      href: "/admin-dashboard/complaints", // New href
+      icon: Flag, // New icon
     },
     {
       name: "الإعدادات",

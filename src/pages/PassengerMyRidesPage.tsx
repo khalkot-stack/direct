@@ -4,13 +4,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2 } from "lucide-react";
+import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2, Flag } from "lucide-react"; // Added Flag icon
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
+import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Import new component
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -47,6 +48,11 @@ const PassengerMyRidesPage: React.FC = () => {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
+
+  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false); // New state for complaint dialog
+  const [complaintDriverId, setComplaintDriverId] = useState("");
+  const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
+  const [complaintDriverName, setComplaintDriverName] = useState("");
 
   const fetchMyRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
@@ -209,6 +215,17 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
+  const handleOpenComplaintDialog = (ride: Ride) => {
+    if (!ride.driver_id || !ride.driver_profiles) {
+      toast.error("لا يمكن تقديم شكوى. معلومات السائق غير متوفرة.");
+      return;
+    }
+    setComplaintDriverId(ride.driver_id);
+    setComplaintRideId(ride.id);
+    setComplaintDriverName(ride.driver_profiles.full_name || 'السائق');
+    setIsComplaintDialogOpen(true);
+  };
+
   if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -272,6 +289,12 @@ const PassengerMyRidesPage: React.FC = () => {
                     <Button onClick={() => handleOpenRatingDialog(ride)} variant="secondary" size="sm" className="flex-1">
                       <Star className="h-4 w-4 ml-2 rtl:mr-2" />
                       تقييم السائق
+                    </Button>
+                  )}
+                  {(ride.status === 'completed' || ride.status === 'cancelled') && ride.driver_id && ( // Show complaint button for completed/cancelled rides with a driver
+                    <Button onClick={() => handleOpenComplaintDialog(ride)} variant="outline" size="sm" className="flex-1 text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600">
+                      <Flag className="h-4 w-4 ml-2 rtl:mr-2" />
+                      شكوى
                     </Button>
                   )}
                   {(ride.status === 'cancelled' || ride.status === 'completed') && (
@@ -342,6 +365,17 @@ const PassengerMyRidesPage: React.FC = () => {
         onConfirm={confirmCancelRide}
         isSubmitting={isCancelling}
       />
+
+      {user && complaintDriverId && (
+        <ComplaintFormDialog
+          open={isComplaintDialogOpen}
+          onOpenChange={setIsComplaintDialogOpen}
+          driverId={complaintDriverId}
+          rideId={complaintRideId}
+          driverName={complaintDriverName}
+          onComplaintSubmitted={() => { /* Optional: handle post-submission logic, e.g., refresh ride list */ }}
+        />
+      )}
     </div>
   );
 };

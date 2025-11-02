@@ -30,7 +30,7 @@ import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
 // Driver Pages
 import DriverHome from "@/pages/DriverHome";
 import DriverAcceptedRidesPage from "@/pages/DriverAcceptedRidesPage";
-import DriverAvailableRidesPage from "@/pages/DriverAvailableRidesPage"; // Import the new page
+import DriverAvailableRidesPage from "@/pages/DriverAvailableRidesPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -38,6 +38,7 @@ import OverviewPage from "@/pages/admin/OverviewPage";
 import UserManagementPage from "@/pages/admin/UserManagementPage";
 import RideManagementPage from "@/pages/admin/RideManagementPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
+import ComplaintManagementPage from "@/pages/admin/ComplaintManagementPage"; // Import the new page
 
 function App() {
   return (
@@ -66,7 +67,7 @@ function App() {
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} />
               <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAcceptedRidesPage /></ProtectedRoute>} />
-              <Route path="/driver-dashboard/available-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAvailableRidesPage /></ProtectedRoute>} /> {/* New route */}
+              <Route path="/driver-dashboard/available-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAvailableRidesPage /></ProtectedRoute>} />
             </Route>
 
             {/* Admin Routes with UserLayout (Sidebar) */}
@@ -74,6 +75,7 @@ function App() {
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="rides" element={<RideManagementPage />} />
+              <Route path="complaints" element={<ComplaintManagementPage />} /> {/* New admin route */}
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
