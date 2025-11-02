@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Car, MessageSquare, CheckCircle, History, Search, RefreshCw } from "lucide-react";
+import { Loader2, Car, MessageSquare, CheckCircle, Search, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatDialog from "@/components/ChatDialog";
@@ -20,7 +20,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface RideSearchCriteria {
   pickupLocation?: string;
   destination?: string;
-  // Removed passengersCount
 }
 
 const PAGE_SIZE = 5; // عدد الرحلات التي يتم تحميلها في كل مرة
@@ -31,7 +30,7 @@ const DriverAvailableRidesPage: React.FC = () => {
 
   const [loadingRides, setLoadingRides] = useState(true);
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0); // Current page for pagination
   const [hasMoreRides, setHasMoreRides] = useState(false);
 
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
@@ -42,13 +41,13 @@ const DriverAvailableRidesPage: React.FC = () => {
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  const fetchAvailableRides = useCallback(async (append: boolean) => {
-    if (!user?.id) return; // التأكد من وجود المستخدم
+  const fetchAvailableRides = useCallback(async (currentPage: number, append: boolean) => {
+    if (!user?.id) return;
 
     setLoadingRides(true);
 
     const limit = PAGE_SIZE;
-    const offset = page * limit; // استخدام حالة 'page' مباشرة
+    const offset = currentPage * limit;
 
     let query = supabase
       .from('rides')
@@ -58,20 +57,16 @@ const DriverAvailableRidesPage: React.FC = () => {
       `, { count: 'exact' })
       .eq('status', 'pending')
       .is('driver_id', null)
-      .neq('passenger_id', user.id) // استخدام user.id مباشرة
+      .neq('passenger_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (searchCriteria?.pickupLocation) { // استخدام حالة 'searchCriteria' مباشرة
+    if (searchCriteria?.pickupLocation) {
       query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
     }
-    if (searchCriteria?.destination) { // استخدام حالة 'searchCriteria' مباشرة
+    if (searchCriteria?.destination) {
       query = query.ilike('destination', `%${searchCriteria.destination}%`);
     }
-    // Removed passengersCount condition
-    // if (searchCriteria?.passengersCount) {
-    //   query = query.eq('passengers_count', searchCriteria.passengersCount);
-    // }
 
     const { data: ridesRaw, error: ridesError, count } = await query;
 
@@ -89,7 +84,7 @@ const DriverAvailableRidesPage: React.FC = () => {
         return {
           ...ride,
           passenger_profiles: passengerProfile,
-          driver_profiles: null, // Ensure driver_profiles is null for pending rides
+          driver_profiles: null,
         };
       }) as Ride[];
 
@@ -97,15 +92,25 @@ const DriverAvailableRidesPage: React.FC = () => {
       setHasMoreRides(count !== null && (offset + formattedRides.length) < count);
     }
     setLoadingRides(false);
-  }, [user, searchCriteria, page]); // التبعيات الصحيحة لـ useCallback
+  }, [user, searchCriteria]); // Dependencies: user and searchCriteria, NOT page
 
+  // Effect for initial load and when search criteria changes
   useEffect(() => {
     if (!userLoading && user) {
-      fetchAvailableRides(false); // استدعاء بدون وسائط، تستخدم الحالة مباشرة
+      setPage(0); // Reset page to 0 for new search/initial load
+      setAvailableRides([]); // Clear existing rides
+      fetchAvailableRides(0, false); // Fetch the first page, not appending
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
-  }, [userLoading, user, navigate, searchCriteria, page, fetchAvailableRides]); // fetchAvailableRides هي تبعية هنا
+  }, [userLoading, user, navigate, searchCriteria, fetchAvailableRides]);
+
+  // Effect for loading more when `page` state changes
+  useEffect(() => {
+    if (page > 0 && !userLoading && user) {
+      fetchAvailableRides(page, true); // Fetch and append
+    }
+  }, [page, userLoading, user, fetchAvailableRides]);
 
   useSupabaseRealtime(
     'driver_available_rides_channel',
@@ -118,9 +123,8 @@ const DriverAvailableRidesPage: React.FC = () => {
     (_payload) => {
       if (user) {
         // On any change to pending rides, reset pagination and re-fetch the first page
-        setPage(0);
-        setAvailableRides([]);
-        fetchAvailableRides(false); // إعادة جلب الرحلات من البداية
+        setPage(0); // This will trigger the useEffect for initial load/search changes
+        setAvailableRides([]); // Clear existing rides immediately for visual feedback
       }
     },
     !!user
@@ -147,7 +151,6 @@ const DriverAvailableRidesPage: React.FC = () => {
       console.error("Error accepting ride:", error);
     } else {
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في رحلاتي المقبولة.");
-      // Realtime will trigger a re-fetch, so no need to manually call fetchAvailableRides here
       navigate("/driver-dashboard"); // Redirect to home to show current ride
     }
   };
@@ -165,15 +168,13 @@ const DriverAvailableRidesPage: React.FC = () => {
 
   const handleSearch = (criteria: RideSearchCriteria) => {
     setSearchCriteria(criteria);
-    setPage(0); // Reset page for new search
-    setAvailableRides([]); // Clear existing rides for new search
+    // setPage(0) and setAvailableRides([]) are handled by the useEffect when searchCriteria changes
     setIsSearchDialogOpen(false);
-    // useEffect سيتم تشغيله الآن بسبب تغيير searchCriteria و page
   };
 
   const handleLoadMore = () => {
-    if (user) {
-      setPage(prevPage => prevPage + 1); // تحديث رقم الصفحة، مما سيؤدي إلى تشغيل useEffect
+    if (user && !loadingRides && hasMoreRides) {
+      setPage(prevPage => prevPage + 1); // This will trigger the second useEffect
     }
   };
 
@@ -181,7 +182,7 @@ const DriverAvailableRidesPage: React.FC = () => {
     if (user) {
       setPage(0); // Reset page to 0
       setAvailableRides([]); // Clear existing rides
-      fetchAvailableRides(false); // Fetch rides from start (not appending)
+      fetchAvailableRides(0, false); // Fetch rides from start (not appending)
     }
   };
 
@@ -216,7 +217,7 @@ const DriverAvailableRidesPage: React.FC = () => {
         </Button>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-250px)]"> {/* Adjust height as needed */}
+      <ScrollArea className="h-[calc(100vh-250px)]">
         {availableRides.length === 0 ? (
           <EmptyState
             icon={Car}
