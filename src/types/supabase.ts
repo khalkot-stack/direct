@@ -81,3 +81,25 @@ export interface SystemSetting {
   value: string;
   description?: string;
 }
+
+export interface Complaint {
+  id: string;
+  ride_id: string | null;
+  passenger_id: string;
+  driver_id: string | null;
+  subject: string;
+  description: string;
+  status: "pending" | "reviewed" | "resolved" | "rejected";
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  passenger_profiles: ProfileDetails | null;
+  driver_profiles: ProfileDetails | null;
+  ride_details: { id: string; pickup_location: string; destination: string } | null;
+}
+
+export interface RawComplaintData extends Omit<Complaint, 'passenger_profiles' | 'driver_profiles' | 'ride_details'> {
+  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
+  driver_profiles: ProfileDetails[] | ProfileDetails | null;
+  rides: { id: string; pickup_location: string; destination: string }[] | { id: string; pickup_location: string; destination: string } | null;
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, History, Settings, Car } from 'lucide-react';
+import { Home, History, Settings, Car, Flag } from 'lucide-react'; // Added Flag icon
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/UserContext';
 
@@ -25,6 +25,7 @@ const BottomNavigationBar = () => {
       return [
         { name: 'الرئيسية', icon: Home, path: '/passenger-dashboard' },
         { name: 'رحلاتي', icon: History, path: '/passenger-dashboard/my-rides' },
+        { name: 'شكاواي', icon: Flag, path: '/passenger-dashboard/my-complaints' }, // New item
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
     } else if (userRole === 'driver') {

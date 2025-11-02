@@ -26,6 +26,7 @@ import AdminLoginPage from "@/pages/AdminLoginPage";
 // Passenger Pages
 import PassengerHome from "@/pages/PassengerHome";
 import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
+import PassengerComplaintsPage from "@/pages/PassengerComplaintsPage"; // New import
 
 // Driver Pages
 import DriverHome from "@/pages/DriverHome";
@@ -38,6 +39,7 @@ import OverviewPage from "@/pages/admin/OverviewPage";
 import UserManagementPage from "@/pages/admin/UserManagementPage";
 import RideManagementPage from "@/pages/admin/RideManagementPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
+import AdminComplaintManagementPage from "@/pages/admin/ComplaintManagementPage"; // New import
 
 function App() {
   return (
@@ -62,6 +64,7 @@ function App() {
               {/* Passenger Routes */}
               <Route path="/passenger-dashboard" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerHome /></ProtectedRoute>} />
               <Route path="/passenger-dashboard/my-rides" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerMyRidesPage /></ProtectedRoute>} />
+              <Route path="/passenger-dashboard/my-complaints" element={<ProtectedRoute allowedRoles={["passenger"]}><PassengerComplaintsPage /></ProtectedRoute>} /> {/* New route */}
 
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} />
@@ -74,6 +77,7 @@ function App() {
               <Route index element={<OverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="rides" element={<RideManagementPage />} />
+              <Route path="complaints" element={<AdminComplaintManagementPage />} /> {/* New route */}
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
