@@ -106,14 +106,14 @@ const AdminComplaintManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user && profile) {
-      console.log("AdminComplaintManagementPage: User loaded, fetching complaints.");
+    if (!userLoading && user?.id) { // Depend only on user.id to prevent re-fetching on profile object changes
+      console.log("AdminComplaintManagementPage: User ID loaded, fetching complaints.");
       fetchComplaints();
     } else if (!userLoading && !user) {
       console.log("AdminComplaintManagementPage: User not logged in.");
       setLoadingComplaints(false);
     }
-  }, [userLoading, user, profile, fetchComplaints]);
+  }, [userLoading, user?.id, fetchComplaints]); // Changed dependency to user?.id
 
   useSupabaseRealtime(
     'admin_complaints_channel',
@@ -178,6 +178,7 @@ const AdminComplaintManagementPage: React.FC = () => {
       toast.success("تم حذف الشكوى بنجاح!");
       // fetchComplaints() will be triggered by realtime
     }
+    // No need to manually fetch, realtime will handle it
   };
 
   const getStatusBadgeVariant = (status: Complaint['status']) => {
