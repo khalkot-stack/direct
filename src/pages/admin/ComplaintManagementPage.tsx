@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // تم إضافة هذا الاستيراد
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Loader2, Flag, Eye, MessageSquare } from "lucide-react"; // Added MessageSquare back
+import { Search, Loader2, Flag, Eye, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -30,7 +31,7 @@ import { useUser } from "@/context/UserContext";
 import { Complaint, RawComplaintData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Badge } from "@/components/ui/badge";
-import ComplaintChatDialog from "@/components/ComplaintChatDialog"; // Import the new ComplaintChatDialog
+import ComplaintChatDialog from "@/components/ComplaintChatDialog";
 
 const ComplaintManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -45,8 +46,8 @@ const ComplaintManagementPage: React.FC = () => {
   const [newStatus, setNewStatus] = useState<Complaint['status']>('pending');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false); // New state for complaint chat
-  const [chatComplaintId, setChatComplaintId] = useState(""); // New state for complaint ID in chat
+  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false);
+  const [chatComplaintId, setChatComplaintId] = useState("");
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
@@ -64,9 +65,9 @@ const ComplaintManagementPage: React.FC = () => {
     if (error) {
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
       console.error("Error fetching complaints:", error);
-      console.log("Supabase fetch error details:", error); // Log error details
+      console.log("Supabase fetch error details:", error);
     } else {
-      console.log("Raw complaints data from Supabase:", complaintsRaw); // Log raw data
+      console.log("Raw complaints data from Supabase:", complaintsRaw);
       const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
         const passengerProfile = Array.isArray(comp.passenger_profiles)
           ? comp.passenger_profiles[0] || null
@@ -88,7 +89,7 @@ const ComplaintManagementPage: React.FC = () => {
         };
       }) as Complaint[];
       setComplaints(formattedComplaints);
-      console.log("Formatted complaints for display:", formattedComplaints); // Log formatted data
+      console.log("Formatted complaints for display:", formattedComplaints);
     }
     setLoadingComplaints(false);
   }, []);
@@ -114,7 +115,7 @@ const ComplaintManagementPage: React.FC = () => {
     },
     (_payload) => {
       console.log("Realtime update received for complaints:", _payload);
-      fetchComplaints(); // Re-fetch all complaints on any change
+      fetchComplaints();
     },
     !!user
   );
