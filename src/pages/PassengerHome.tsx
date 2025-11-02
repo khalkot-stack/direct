@@ -16,17 +16,9 @@ import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
 import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
-import { useForm } from "react-hook-form"; // Re-added useForm
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import RequestRideDialog from "@/components/RequestRideDialog"; // Import the new RequestRideDialog
 
-const rideRequestSchema = z.object({
-  pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
-  destination: z.string().min(3, { message: "الوجهة مطلوبة." }),
-  passengersCount: z.number().min(1, { message: "يجب أن يكون عدد الركاب واحدًا على الأقل." }).max(10, { message: "الحد الأقصى لعدد الركاب هو 10." }),
-});
-
-type RideRequestInputs = z.infer<typeof rideRequestSchema>;
+// Removed rideRequestSchema and RideRequestInputs as they are now in RequestRideDialog
 
 const PassengerHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -48,16 +40,9 @@ const PassengerHome: React.FC = () => {
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const form = useForm<RideRequestInputs>({
-    resolver: zodResolver(rideRequestSchema),
-    defaultValues: {
-      pickupLocation: "",
-      destination: "",
-      passengersCount: 1,
-    },
-  });
+  const [isRequestRideDialogOpen, setIsRequestRideDialogOpen] = useState(false); // New state for RequestRideDialog
 
-  // Removed googleMapsApiKey and geocodeAddress function
+  // Removed useForm hook as it's now in RequestRideDialog
 
   const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRideData(true);
@@ -138,16 +123,13 @@ const PassengerHome: React.FC = () => {
     !!user // Only enable if user is logged in
   );
 
-  // Removed useEffect for map markers
-
-  const handleRequestRide = async (values: RideRequestInputs) => {
+  const handleRequestRide = async (values: { pickupLocation: string; destination: string; passengersCount: number }) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
       return;
     }
 
     setLoadingRideData(true);
-    // Use the Edge Function utility to create the ride
     const result = await createRideViaEdgeFunction({
       passenger_id: user.id,
       pickup_location: values.pickupLocation,
@@ -157,19 +139,12 @@ const PassengerHome: React.FC = () => {
     setLoadingRideData(false);
 
     if (result) {
-      // setIsRequestDrawerOpen(false); // Removed as drawer is removed
-      form.reset();
+      setIsRequestRideDialogOpen(false); // Close dialog on success
       fetchCurrentRide(user.id); // Refresh current ride status
     }
-    // Error handling is already inside createRideViaEdgeFunction
   };
 
   const handleOpenChat = () => {
-    // console.log("Attempting to open chat...");
-    // console.log("User:", user);
-    // console.log("Current Ride:", currentRide);
-    // console.log("Current Ride Driver Profiles:", currentRide?.driver_profiles);
-
     if (!user || !currentRide || !currentRide.driver_profiles) {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
       return;
@@ -291,7 +266,7 @@ const PassengerHome: React.FC = () => {
       ) : (
         // Request Ride Button (when no active ride)
         <Button
-          onClick={() => { /* Removed setIsRequestDrawerOpen(true) */ }}
+          onClick={() => setIsRequestRideDialogOpen(true)} // Open the new dialog
           className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
         >
           <Car className="h-5 w-5 ml-2 rtl:mr-2" />
@@ -324,6 +299,15 @@ const PassengerHome: React.FC = () => {
         onConfirm={confirmCancelRide}
         isSubmitting={isCancelling}
       />
+
+      {user && (
+        <RequestRideDialog
+          open={isRequestRideDialogOpen}
+          onOpenChange={setIsRequestRideDialogOpen}
+          onSave={handleRequestRide}
+          isSubmitting={loadingRideData} // Use loadingRideData to indicate submission status
+        />
+      )}
     </div>
   );
 };
