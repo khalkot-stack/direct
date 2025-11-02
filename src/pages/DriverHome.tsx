@@ -32,6 +32,7 @@ const DriverHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
+  const [availableRides, setAvailableRides] = useState<Ride[]>([]); // Added this line
   // Removed map-related states: mapMarkers, mapCenter, mapZoom, isMapReady
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
@@ -456,7 +457,7 @@ const DriverHome: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {availableRides.map((ride) => (
+                  {availableRides.map((ride: Ride) => (
                     <Card key={ride.id} className="shadow-sm">
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
