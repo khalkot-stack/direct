@@ -48,7 +48,7 @@ const PassengerMyRidesPage: React.FC = () => {
 
     if (error) {
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
-      console.error("[PassengerMyRidesPage] Error fetching my rides:", error);
+      // console.error("[PassengerMyRidesPage] Error fetching my rides:", error);
     } else {
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)

@@ -126,7 +126,7 @@ const DriverHome: React.FC = () => {
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
-    console.log("Simulating driver location update for ride:", currentRide.id);
+    // console.log("Simulating driver location update for ride:", currentRide.id);
   }, [currentRide, user]);
 
   const handleStartTracking = () => {
