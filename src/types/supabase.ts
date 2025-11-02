@@ -104,3 +104,17 @@ export interface RawComplaintData extends Omit<Complaint, 'passenger_profiles' |
   driver_profiles: ProfileDetails[] | ProfileDetails | null;
   rides: { id: string; pickup_location: string; destination: string }[] | { id: string; pickup_location: string; destination: string } | null;
 }
+
+export interface ComplaintMessage {
+  id: string;
+  complaint_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender_profiles?: ProfileDetails | null; // Joined data
+}
+
+// Raw data interface for complaint messages with joined profiles
+export interface RawComplaintMessageData extends Omit<ComplaintMessage, 'sender_profiles'> {
+  sender_profiles: ProfileDetails[] | ProfileDetails | null;
+}

@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search, Edit, Trash2, Loader2, MessageSquare, Car as CarIcon } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, Loader2, Car as CarIcon } from "lucide-react"; // Removed MessageSquare
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RideFormDialog from "@/components/RideFormDialog";
@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import ChatDialog from "@/components/ChatDialog";
+// Removed ChatDialog import
 import { useUser } from "@/context/UserContext";
 import { Ride, RawRideData } from "@/types/supabase"; // Import shared types
 import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
@@ -44,10 +44,11 @@ const RideManagementPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
-  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-  const [chatRideId, setChatRideId] = useState("");
-  const [chatOtherUserId, setChatOtherUserId] = useState("");
-  const [chatOtherUserName, setChatOtherUserName] = useState("");
+  // Removed chat-related states
+  // const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  // const [chatRideId, setChatRideId] = useState("");
+  // const [chatOtherUserId, setChatOtherUserId] = useState("");
+  // const [chatOtherUserName, setChatOtherUserName] = useState("");
 
   const fetchRides = useCallback(async () => {
     setLoadingRides(true);
@@ -182,30 +183,7 @@ const RideManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenChat = (ride: Ride) => { // Changed type to Ride
-    if (!user?.id) {
-      toast.error("الرجاء تسجيل الدخول للمحادثة.");
-      return;
-    }
-
-    let otherUser: { id: string; name: string } | null = null;
-
-    // For admin view, we want to chat with the passenger by default, or driver if passenger is null
-    if (ride.passenger_profiles) {
-      otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' };
-    } else if (ride.driver_profiles) {
-      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
-    }
-
-    if (otherUser) {
-      setChatRideId(ride.id);
-      setChatOtherUserId(otherUser.id);
-      setChatOtherUserName(otherUser.name);
-      setIsChatDialogOpen(true);
-    } else {
-      toast.error("لا يمكن بدء الدردشة. لا يوجد مستخدم آخر متاح في هذه الرحلة.");
-    }
-  };
+  // Removed handleOpenChat function
 
   const filteredRides = rides.filter(ride => {
     const passengerName = ride.passenger_profiles?.full_name || '';
@@ -282,16 +260,7 @@ const RideManagementPage: React.FC = () => {
                     <TableCell>{ride.passengers_count}</TableCell>
                     <TableCell><RideStatusBadge status={ride.status} /></TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenChat(ride)}
-                        className="ml-2 rtl:mr-2"
-                        title="محادثة"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="sr-only">محادثة</span>
-                      </Button>
+                      {/* Removed Chat Button */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -353,16 +322,7 @@ const RideManagementPage: React.FC = () => {
         onSave={handleSaveRide}
       />
 
-      {user && (
-        <ChatDialog
-          open={isChatDialogOpen}
-          onOpenChange={setIsChatDialogOpen}
-          rideId={chatRideId}
-          otherUserId={chatOtherUserId}
-          otherUserName={chatOtherUserName}
-          isAdminView={true} // Pass isAdminView prop for admin context
-        />
-      )}
+      {/* Removed ChatDialog component */}
     </div>
   );
 };

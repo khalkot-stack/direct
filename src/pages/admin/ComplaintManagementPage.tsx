@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Loader2, Flag, Eye, CheckCircle, XCircle, Ban, MessageSquare } from "lucide-react";
+import { Search, Loader2, Flag, Eye, MessageSquare } from "lucide-react"; // Added MessageSquare back
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -31,7 +31,7 @@ import { useUser } from "@/context/UserContext";
 import { Complaint, RawComplaintData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Badge } from "@/components/ui/badge";
-import ChatDialog from "@/components/ChatDialog";
+import ComplaintChatDialog from "@/components/ComplaintChatDialog"; // Import the new ComplaintChatDialog
 
 const ComplaintManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -46,10 +46,8 @@ const ComplaintManagementPage: React.FC = () => {
   const [newStatus, setNewStatus] = useState<Complaint['status']>('pending');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-  const [chatRideId, setChatRideId] = useState("");
-  const [chatOtherUserId, setChatOtherUserId] = useState("");
-  const [chatOtherUserName, setChatOtherUserName] = useState("");
+  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false); // New state for complaint chat
+  const [chatComplaintId, setChatComplaintId] = useState(""); // New state for complaint ID in chat
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
@@ -161,27 +159,13 @@ const ComplaintManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenChat = (complaint: Complaint) => {
+  const handleOpenComplaintChat = (complaintId: string) => {
     if (!user?.id) {
       toast.error("الرجاء تسجيل الدخول للمحادثة.");
       return;
     }
-
-    if (!complaint.ride_id) { // Added check for ride_id
-      toast.error("لا يمكن بدء الدردشة لهذه الشكوى لأنها غير مرتبطة برحلة محددة.");
-      return;
-    }
-
-    // Admin can chat with either passenger or driver related to the complaint
-    // For simplicity, let's default to chatting with the passenger
-    if (complaint.passenger_profiles) {
-      setChatRideId(complaint.ride_id); // Now we know ride_id is not null
-      setChatOtherUserId(complaint.passenger_id);
-      setChatOtherUserName(complaint.passenger_profiles.full_name || 'الراكب');
-      setIsChatDialogOpen(true);
-    } else {
-      toast.error("لا يمكن بدء الدردشة. معلومات الراكب غير متوفرة.");
-    }
+    setChatComplaintId(complaintId);
+    setIsComplaintChatDialogOpen(true);
   };
 
   const filteredComplaints = complaints.filter(complaint => {
@@ -297,13 +281,12 @@ const ComplaintManagementPage: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleOpenChat(complaint)}
+                      onClick={() => handleOpenComplaintChat(complaint.id)} // Open complaint chat
                       className="ml-2 rtl:mr-2"
-                      title="محادثة مع الراكب"
-                      disabled={!complaint.passenger_id || !complaint.ride_id} // Disable if no passenger or no ride_id
+                      title="محادثة الشكوى"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      <span className="sr-only">محادثة</span>
+                      <span className="sr-only">محادثة الشكوى</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -397,13 +380,10 @@ const ComplaintManagementPage: React.FC = () => {
       </Dialog>
 
       {user && (
-        <ChatDialog
-          open={isChatDialogOpen}
-          onOpenChange={setIsChatDialogOpen}
-          rideId={chatRideId}
-          otherUserId={chatOtherUserId}
-          otherUserName={chatOtherUserName}
-          isAdminView={true} // Pass isAdminView prop for admin context
+        <ComplaintChatDialog
+          open={isComplaintChatDialogOpen}
+          onOpenChange={setIsComplaintChatDialogOpen}
+          complaintId={chatComplaintId}
         />
       )}
     </div>

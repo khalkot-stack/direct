@@ -11,7 +11,8 @@ import EmptyState from "@/components/EmptyState";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
-import ComplaintFormDialog from "@/components/ComplaintFormDialog";
+import ComplaintFormDialog from "@/components/ComplaintFormDialog"; // Keep for submitting new complaints
+import ComplaintChatDialog from "@/components/ComplaintChatDialog"; // Import the new ComplaintChatDialog
 import { useUser } from "@/context/UserContext";
 import { Ride, Rating, RawRideData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -49,10 +50,13 @@ const PassengerMyRidesPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
-  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
+  const [isComplaintFormDialogOpen, setIsComplaintFormDialogOpen] = useState(false); // State for submitting NEW complaint
   const [complaintDriverId, setComplaintDriverId] = useState("");
   const [complaintRideId, setComplaintRideId] = useState<string | undefined>(undefined);
   const [complaintDriverName, setComplaintDriverName] = useState("");
+
+  const [isComplaintChatDialogOpen, setIsComplaintChatDialogOpen] = useState(false); // New state for viewing complaint chat
+  const [viewComplaintChatId, setViewComplaintChatId] = useState(""); // New state for the complaint ID to view chat
 
   const fetchMyRides = useCallback(async (userId: string) => {
     console.log("PassengerMyRidesPage: Fetching rides for userId:", userId);
@@ -224,7 +228,7 @@ const PassengerMyRidesPage: React.FC = () => {
     }
   };
 
-  const handleOpenComplaintDialog = (ride: Ride) => {
+  const handleOpenComplaintFormDialog = (ride: Ride) => {
     if (!ride.driver_id || !ride.driver_profiles) {
       toast.error("لا يمكن تقديم شكوى. معلومات السائق غير متوفرة.");
       return;
@@ -232,7 +236,41 @@ const PassengerMyRidesPage: React.FC = () => {
     setComplaintDriverId(ride.driver_id);
     setComplaintRideId(ride.id);
     setComplaintDriverName(ride.driver_profiles.full_name || 'السائق');
-    setIsComplaintDialogOpen(true);
+    setIsComplaintFormDialogOpen(true);
+  };
+
+  const handleOpenComplaintChat = async (ride: Ride) => {
+    if (!user?.id) {
+      toast.error("الرجاء تسجيل الدخول لعرض محادثة الشكوى.");
+      return;
+    }
+    if (!ride.driver_id) {
+      toast.error("لا يمكن عرض محادثة الشكوى. لا يوجد سائق لهذه الرحلة.");
+      return;
+    }
+
+    // Check if a complaint already exists for this ride and passenger
+    const { data: existingComplaint, error } = await supabase
+      .from('complaints')
+      .select('id')
+      .eq('passenger_id', user.id)
+      .eq('driver_id', ride.driver_id)
+      .eq('ride_id', ride.id)
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`فشل جلب الشكوى: ${error.message}`);
+      console.error("Error fetching existing complaint:", error);
+      return;
+    }
+
+    if (existingComplaint) {
+      setViewComplaintChatId(existingComplaint.id);
+      setIsComplaintChatDialogOpen(true);
+    } else {
+      toast.info("لا توجد شكوى سابقة لهذه الرحلة. يمكنك تقديم شكوى جديدة.");
+      handleOpenComplaintFormDialog(ride); // Offer to create a new complaint
+    }
   };
 
   if (userLoading || loadingRides) {
@@ -301,7 +339,7 @@ const PassengerMyRidesPage: React.FC = () => {
                     </Button>
                   )}
                   {(ride.status === 'completed' || ride.status === 'cancelled') && ride.driver_id && (
-                    <Button onClick={() => handleOpenComplaintDialog(ride)} variant="outline" size="sm" className="flex-1 text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600">
+                    <Button onClick={() => handleOpenComplaintChat(ride)} variant="outline" size="sm" className="flex-1 text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600">
                       <Flag className="h-4 w-4 ml-2 rtl:mr-2" />
                       شكوى
                     </Button>
@@ -377,12 +415,20 @@ const PassengerMyRidesPage: React.FC = () => {
 
       {user && complaintDriverId && (
         <ComplaintFormDialog
-          open={isComplaintDialogOpen}
-          onOpenChange={setIsComplaintDialogOpen}
+          open={isComplaintFormDialogOpen}
+          onOpenChange={setIsComplaintFormDialogOpen}
           driverId={complaintDriverId}
           rideId={complaintRideId}
           driverName={complaintDriverName}
           onComplaintSubmitted={() => { /* Optional: handle post-submission logic, e.g., refresh ride list */ }}
+        />
+      )}
+
+      {user && (
+        <ComplaintChatDialog
+          open={isComplaintChatDialogOpen}
+          onOpenChange={setIsComplaintChatDialogOpen}
+          complaintId={viewComplaintChatId}
         />
       )}
     </div>

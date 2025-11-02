@@ -17,115 +17,83 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { Message, ProfileDetails, SupabaseJoinedMessageData } from "@/types/supabase";
+import { ComplaintMessage, ProfileDetails, RawComplaintMessageData } from "@/types/supabase";
 
-interface ChatDialogProps {
+interface ComplaintChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  rideId: string;
-  otherUserId: string;
-  otherUserName: string;
+  complaintId: string;
+  // No otherUserId or otherUserName needed as it's complaint-centric
 }
 
-const ChatDialog: React.FC<ChatDialogProps> = ({
+const ComplaintChatDialog: React.FC<ComplaintChatDialogProps> = ({
   open,
   onOpenChange,
-  rideId,
-  otherUserId,
-  otherUserName,
+  complaintId,
 }) => {
   const { user, profile: currentUserProfile, loading: userLoading } = useUser();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ComplaintMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [otherUserProfile, setOtherUserProfile] = useState<ProfileDetails | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentUserId = user?.id;
-
-  // Refs to hold the latest profile data without triggering useEffect re-runs for the channel
   const currentUserProfileRef = useRef(currentUserProfile);
-  const otherUserProfileRef = useRef(otherUserProfile);
 
   useEffect(() => {
     currentUserProfileRef.current = currentUserProfile;
   }, [currentUserProfile]);
 
-  useEffect(() => {
-    otherUserProfileRef.current = otherUserProfile;
-  }, [otherUserProfile]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchOtherProfile = useCallback(async () => {
-    if (open && otherUserId) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, user_type') // Fetch user_type
-        .eq('id', otherUserId)
-        .single();
-      if (error) {
-        console.error("Error fetching other user profile:", error);
-        setOtherUserProfile(null);
-      } else {
-        setOtherUserProfile(data);
-      }
-    }
-  }, [open, otherUserId]);
-
-  useEffect(() => {
-    fetchOtherProfile();
-  }, [fetchOtherProfile]);
-
   const fetchMessages = useCallback(async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || !complaintId) return;
 
     setLoadingMessages(true);
     const { data, error } = await supabase
-      .from('messages')
+      .from('complaint_messages')
       .select(`
         id,
+        complaint_id,
         sender_id,
         content,
         created_at,
-        sender_profiles:sender_id(id, full_name, avatar_url, user_type),
-        receiver_profiles:receiver_id(id, full_name, avatar_url, user_type)
+        sender_profiles:sender_id(id, full_name, avatar_url, user_type)
       `)
-      .eq('ride_id', rideId)
+      .eq('complaint_id', complaintId)
       .order('created_at', { ascending: true });
 
     if (error) {
-      toast.error(`فشل جلب الرسائل: ${error.message}`);
-      console.error("Error fetching messages:", error);
+      toast.error(`فشل جلب رسائل الشكوى: ${error.message}`);
+      console.error("Error fetching complaint messages:", error);
     } else {
-      const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => {
+      const formattedMessages: ComplaintMessage[] = (data as RawComplaintMessageData[]).map(msg => {
         const senderProfiles = Array.isArray(msg.sender_profiles) && msg.sender_profiles.length > 0
           ? msg.sender_profiles[0]
           : (msg.sender_profiles as ProfileDetails | null);
         
-        const receiverProfiles = Array.isArray(msg.receiver_profiles) && msg.receiver_profiles.length > 0
-          ? msg.receiver_profiles[0]
-          : (msg.receiver_profiles as ProfileDetails | null);
-
         return {
-          ...msg,
+          id: msg.id,
+          complaint_id: msg.complaint_id,
+          sender_id: msg.sender_id,
+          content: msg.content,
+          created_at: msg.created_at,
           sender_profiles: senderProfiles,
-          receiver_profiles: receiverProfiles,
         };
       });
       setMessages(formattedMessages);
     }
     setLoadingMessages(false);
-  }, [rideId, currentUserId]);
+  }, [complaintId, currentUserId]);
 
   useEffect(() => {
-    if (open && currentUserId) {
+    if (open && currentUserId && complaintId) {
       fetchMessages();
     }
-  }, [open, fetchMessages, currentUserId]);
+  }, [open, fetchMessages, currentUserId, complaintId]);
 
   useEffect(() => {
     if (open) {
@@ -135,7 +103,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   useEffect(() => {
     let channel: RealtimeChannel | undefined;
-    if (!currentUserId) { // Only subscribe if user is logged in
+    if (!currentUserId || !complaintId) {
       return () => {
         if (channel) {
           supabase.removeChannel(channel);
@@ -144,61 +112,46 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     }
 
     channel = supabase
-      .channel(`chat_ride_${rideId}`)
+      .channel(`complaint_chat_${complaintId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
-        async (payload) => { // Made callback async
+        { event: 'INSERT', schema: 'public', table: 'complaint_messages', filter: `complaint_id=eq.${complaintId}` },
+        async (payload) => {
           const newMsgPayload = payload.new;
           
           let senderProfiles: ProfileDetails | null = null;
-          let receiverProfiles: ProfileDetails | null = null;
 
-          // Try to get profiles from refs first
           if (newMsgPayload.sender_id === currentUserId) {
             senderProfiles = currentUserProfileRef.current;
-            receiverProfiles = otherUserProfileRef.current;
-          } else if (newMsgPayload.sender_id === otherUserId) {
-            senderProfiles = otherUserProfileRef.current;
-            receiverProfiles = currentUserProfileRef.current;
-          }
-
-          // If profiles are still null, fetch them
-          if (!senderProfiles || !receiverProfiles) {
-            const { data: profilesData, error: profilesError } = await supabase
+          } else {
+            const { data: profileData, error: profileError } = await supabase
               .from('profiles')
-              .select('id, full_name, avatar_url, user_type') // Fetch user_type
-              .in('id', [newMsgPayload.sender_id, newMsgPayload.receiver_id]);
-
-            if (profilesError) {
-              console.error("Error fetching profiles for new message:", profilesError);
-            } else if (profilesData) {
-              senderProfiles = profilesData.find(p => p.id === newMsgPayload.sender_id) || null;
-              receiverProfiles = profilesData.find(p => p.id === newMsgPayload.receiver_id) || null;
+              .select('id, full_name, avatar_url, user_type')
+              .eq('id', newMsgPayload.sender_id)
+              .single();
+            if (profileError) {
+              console.error("Error fetching profile for new complaint message:", profileError);
+            } else {
+              senderProfiles = profileData;
             }
           }
           
-          // Fallback if profiles are not found
           if (!senderProfiles) {
             senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null, user_type: undefined };
           }
-          if (!receiverProfiles) {
-            receiverProfiles = { id: newMsgPayload.receiver_id, full_name: 'مستخدم غير معروف', avatar_url: null, user_type: undefined };
-          }
 
-          const formattedNewMessage: Message = {
+          const formattedNewMessage: ComplaintMessage = {
             id: newMsgPayload.id,
+            complaint_id: newMsgPayload.complaint_id,
             sender_id: newMsgPayload.sender_id,
             content: newMsgPayload.content,
             created_at: newMsgPayload.created_at,
             sender_profiles: senderProfiles,
-            receiver_profiles: receiverProfiles,
           };
           setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
           
-          // Show toast notification only if the message is from the other user AND the chat dialog is NOT open
           if (newMsgPayload.sender_id !== currentUserId && !open) {
-            toast.info(`رسالة جديدة من ${senderProfiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
+            toast.info(`رسالة جديدة بخصوص الشكوى من ${senderProfiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
           }
         }
       )
@@ -209,36 +162,31 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [open, rideId, currentUserId, otherUserId]); // Added 'open' to dependencies
+  }, [open, complaintId, currentUserId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUserId) return;
-    if (!rideId) {
-      toast.error("لا يمكن إرسال الرسالة: معرف الرحلة غير متوفر.");
-      return;
-    }
+    if (!newMessage.trim() || !currentUserId || !complaintId) return;
 
     setIsSending(true);
 
-    const { error } = await supabase.from('messages').insert({
-      ride_id: rideId,
+    const { error } = await supabase.from('complaint_messages').insert({
+      complaint_id: complaintId,
       sender_id: currentUserId,
-      receiver_id: otherUserId,
       content: newMessage.trim(),
     });
     if (error) {
       toast.error(`فشل إرسال الرسالة: ${error.message}`);
-      console.error("Error sending message:", error);
+      console.error("Error sending complaint message:", error);
     } else {
       setNewMessage("");
     }
     setIsSending(false);
   };
 
-  const getSenderLabel = (msg: Message) => {
+  const getSenderLabel = (msg: ComplaintMessage) => {
     if (msg.sender_id === currentUserId) {
-      return "أنت";
+      return currentUserProfile?.user_type === 'admin' ? "أنت (المدير)" : "أنت";
     }
     const senderName = msg.sender_profiles?.full_name || 'مستخدم';
     const senderType = msg.sender_profiles?.user_type;
@@ -268,9 +216,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] flex flex-col h-[80vh]">
         <DialogHeader>
-          <DialogTitle>الدردشة مع {otherUserName}</DialogTitle>
+          <DialogTitle>محادثة الشكوى</DialogTitle>
           <DialogDescription>
-            تواصل مع {otherUserName} بخصوص الرحلة.
+            تواصل بخصوص الشكوى رقم {complaintId.substring(0, 8)}...
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800 mb-4">
@@ -280,7 +228,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              ابدأ المحادثة!
+              ابدأ المحادثة بخصوص هذه الشكوى!
             </div>
           ) : (
             <div className="space-y-3">
@@ -336,4 +284,4 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   );
 };
 
-export default ChatDialog;
+export default ComplaintChatDialog;
