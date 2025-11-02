@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -96,10 +95,12 @@ const ComplaintManagementPage: React.FC = () => {
 
   useEffect(() => {
     if (!userLoading && user) {
-      console.log("User is loaded, fetching complaints for user:", user.id, "with role:", user.user_metadata?.user_type);
+      console.log("Admin ComplaintManagementPage: User loaded. ID:", user.id, "Email:", user.email);
+      console.log("Admin ComplaintManagementPage: User app_metadata:", user.app_metadata);
+      console.log("Admin ComplaintManagementPage: User user_metadata:", user.user_metadata);
       fetchComplaints();
     } else if (!userLoading && !user) {
-      console.log("User is not logged in or still loading.");
+      console.log("Admin ComplaintManagementPage: User is not logged in or still loading.");
       setLoadingComplaints(false);
     }
   }, [userLoading, user, fetchComplaints]);
