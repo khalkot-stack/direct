@@ -256,7 +256,7 @@ const PassengerMyRidesPage: React.FC = () => {
       .eq('passenger_id', user.id)
       .eq('driver_id', ride.driver_id)
       .eq('ride_id', ride.id)
-      .limit(1); // Changed from .maybeSingle() to .limit(1)
+      .limit(1);
 
     if (error) {
       toast.error(`فشل جلب الشكوى: ${error.message}`);
