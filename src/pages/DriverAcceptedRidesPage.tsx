@@ -88,7 +88,7 @@ const DriverAcceptedRidesPage: React.FC = () => {
             filter: `driver_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('Change received in accepted rides!', payload);
+            // console.log('Change received in accepted rides!', payload);
             fetchAcceptedRides(user.id); // Re-fetch data on any ride change
             if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
               toast.success("تم إكمال الرحلة بنجاح!");

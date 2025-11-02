@@ -123,7 +123,7 @@ const PassengerHome: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log('Change received in PassengerHome!', payload); // Added log
+      // console.log('Change received in PassengerHome!', payload);
       if (user) {
         fetchCurrentRide(user.id);
         if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
@@ -173,10 +173,10 @@ const PassengerHome: React.FC = () => {
   };
 
   const handleOpenChat = () => {
-    console.log("Attempting to open chat...");
-    console.log("User:", user);
-    console.log("Current Ride:", currentRide);
-    console.log("Current Ride Driver Profiles:", currentRide?.driver_profiles);
+    // console.log("Attempting to open chat...");
+    // console.log("User:", user);
+    // console.log("Current Ride:", currentRide);
+    // console.log("Current Ride Driver Profiles:", currentRide?.driver_profiles);
 
     if (!user || !currentRide || !currentRide.driver_profiles) {
       toast.error("لا يمكن بدء الدردشة. معلومات السائق أو الرحلة غير متوفرة.");
