@@ -28,8 +28,9 @@ import PassengerHome from "@/pages/PassengerHome";
 import PassengerMyRidesPage from "@/pages/PassengerMyRidesPage";
 
 // Driver Pages
-import DriverHome from "@/pages/DriverHome"; // Import the new DriverHome
+import DriverHome from "@/pages/DriverHome";
 import DriverAcceptedRidesPage from "@/pages/DriverAcceptedRidesPage";
+import DriverAvailableRidesPage from "@/pages/DriverAvailableRidesPage"; // Import the new page
 
 // Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -65,6 +66,7 @@ function App() {
               {/* Driver Routes */}
               <Route path="/driver-dashboard" element={<ProtectedRoute allowedRoles={["driver"]}><DriverHome /></ProtectedRoute>} />
               <Route path="/driver-dashboard/accepted-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAcceptedRidesPage /></ProtectedRoute>} />
+              <Route path="/driver-dashboard/available-rides" element={<ProtectedRoute allowedRoles={["driver"]}><DriverAvailableRidesPage /></ProtectedRoute>} /> {/* New route */}
             </Route>
 
             {/* Admin Routes with UserLayout (Sidebar) */}

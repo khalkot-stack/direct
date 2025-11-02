@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History, Search, RefreshCw } from "lucide-react";
+import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatDialog from "@/components/ChatDialog";
@@ -14,18 +14,7 @@ import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData, Rating } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import EmptyState from "@/components/EmptyState";
-import RideSearchDialog from "@/components/RideSearchDialog";
-
-interface RideSearchCriteria {
-  pickupLocation?: string;
-  destination?: string;
-  passengersCount?: number;
-}
-
-const PAGE_SIZE = 5; // عدد الرحلات التي يتم تحميلها في كل مرة
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -33,9 +22,6 @@ const DriverHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  const [availableRides, setAvailableRides] = useState<Ride[]>([]);
-  const [page, setPage] = useState(0); // الصفحة الحالية للرحلات المتاحة
-  const [hasMoreRides, setHasMoreRides] = useState(false); // هل توجد المزيد من الرحلات لتحميلها
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatRideId, setChatRideId] = useState("");
@@ -53,14 +39,9 @@ const DriverHome: React.FC = () => {
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const locationIntervalRef = useRef<number | null>(null);
 
-  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
-  const [searchCriteria, setSearchCriteria] = useState<RideSearchCriteria>({});
-  const [isAvailableRidesDrawerOpen, setIsAvailableRidesDrawerOpen] = useState(false);
-
-  const fetchDriverRides = useCallback(async (userId: string, criteria: RideSearchCriteria, resetPagination: boolean = false) => {
+  const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRideData(true);
 
-    // --- جلب الرحلة الحالية للسائق ---
     const { data: currentRideRaw, error: currentRideError } = await supabase
       .from('rides')
       .select(`
@@ -77,9 +58,6 @@ const DriverHome: React.FC = () => {
       toast.error(`فشل جلب الرحلة الحالية: ${currentRideError.message}`);
       console.error("Error fetching current ride:", currentRideError);
       setCurrentRide(null);
-      setAvailableRides([]);
-      setPage(0);
-      setHasMoreRides(false);
     } else if (currentRideRaw && currentRideRaw.length > 0) {
       const ride = currentRideRaw[0] as RawRideData;
       const passengerProfile = Array.isArray(ride.passenger_profiles)
@@ -95,72 +73,15 @@ const DriverHome: React.FC = () => {
         passenger_profiles: passengerProfile,
         driver_profiles: driverProfile,
       } as Ride);
-      setAvailableRides([]); // مسح الرحلات المتاحة إذا وجدت رحلة حالية
-      setPage(0); // إعادة تعيين الصفحة
-      setHasMoreRides(false); // لا توجد المزيد من الرحلات المتاحة
     } else {
-      setCurrentRide(null); // لا توجد رحلة حالية
-
-      // --- جلب الرحلات المتاحة مع التصفح والبحث ---
-      const currentPage = resetPagination ? 0 : page;
-      const limit = PAGE_SIZE;
-      const offset = currentPage * limit;
-
-      let query = supabase
-        .from('rides')
-        .select(`
-          *,
-          passenger_profiles:passenger_id(id, full_name, avatar_url)
-        `, { count: 'exact' })
-        .eq('status', 'pending')
-        .is('driver_id', null)
-        .neq('passenger_id', userId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (criteria?.pickupLocation) {
-        query = query.ilike('pickup_location', `%${criteria.pickupLocation}%`);
-      }
-      if (criteria?.destination) {
-        query = query.ilike('destination', `%${criteria.destination}%`);
-      }
-      if (criteria?.passengersCount) {
-        query = query.eq('passengers_count', criteria.passengersCount);
-      }
-
-      const { data: availableRidesRaw, error: availableRidesError, count } = await query;
-
-      if (availableRidesError) {
-        toast.error(`فشل جلب الرحلات المتاحة: ${availableRidesError.message}`);
-        console.error("Error fetching available rides:", availableRidesError);
-        setAvailableRides([]);
-        setHasMoreRides(false);
-      } else {
-        const formattedAvailableRides: Ride[] = (availableRidesRaw as RawRideData[] || []).map(ride => {
-          const passengerProfile = Array.isArray(ride.passenger_profiles)
-            ? ride.passenger_profiles[0] || null
-            : ride.passenger_profiles;
-          
-          return {
-            ...ride,
-            passenger_profiles: passengerProfile,
-            driver_profiles: null,
-          };
-        }) as Ride[];
-
-        setAvailableRides(prev => resetPagination ? formattedAvailableRides : [...prev, ...formattedAvailableRides]);
-        setHasMoreRides(count !== null && (offset + formattedAvailableRides.length) < count);
-        if (formattedAvailableRides.length > 0 && resetPagination) {
-          toast.info("رحلات جديدة متاحة!");
-        }
-      }
+      setCurrentRide(null);
     }
     setLoadingRideData(false);
-  }, [page]); // 'page' is a dependency because it's used to calculate offset
+  }, []);
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchDriverRides(user.id, searchCriteria, true); // جلب أولي أو تغيير في البحث، مع إعادة تعيين التصفح
+      fetchCurrentRide(user.id);
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
@@ -169,15 +90,7 @@ const DriverHome: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [userLoading, user, navigate, searchCriteria, fetchDriverRides]);
-
-  useEffect(() => {
-    if (!currentRide && availableRides.length > 0) {
-      setIsAvailableRidesDrawerOpen(true);
-    } else {
-      setIsAvailableRidesDrawerOpen(false);
-    }
-  }, [currentRide, availableRides]);
+  }, [userLoading, user, navigate, fetchCurrentRide]);
 
   useSupabaseRealtime(
     'driver_home_rides_channel',
@@ -189,7 +102,7 @@ const DriverHome: React.FC = () => {
     },
     (_payload) => {
       if (user) {
-        fetchDriverRides(user.id, searchCriteria, true); // إعادة جلب كاملة عند أي تغيير في رحلات السائق
+        fetchCurrentRide(user.id);
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'completed' && _payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
@@ -207,22 +120,6 @@ const DriverHome: React.FC = () => {
       }
     },
     !!user
-  );
-
-  useSupabaseRealtime(
-    'driver_available_rides_channel',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'rides',
-      filter: `status=eq.pending`,
-    },
-    (_payload) => {
-      if (user && !currentRide) {
-        fetchDriverRides(user.id, searchCriteria, true); // إعادة جلب كاملة عند أي تغيير في الرحلات المتاحة
-      }
-    },
-    !!user && !currentRide
   );
 
   const updateDriverLocation = useCallback(async () => {
@@ -265,33 +162,6 @@ const DriverHome: React.FC = () => {
     } else {
       setCurrentRide(null);
       handleStopTracking();
-    }
-  };
-
-  const handleAcceptRide = async (rideId: string) => {
-    if (!user?.id) {
-      toast.error("الرجاء تسجيل الدخول لقبول الرحلة.");
-      return;
-    }
-
-    setLoadingRideData(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ driver_id: user.id, status: 'accepted' })
-      .eq('id', rideId)
-      .eq('status', 'pending')
-      .is('driver_id', null);
-
-    setLoadingRideData(false);
-
-    if (error) {
-      toast.error(`فشل قبول الرحلة: ${error.message}`);
-      console.error("Error accepting ride:", error);
-    } else {
-      toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في لوحة التحكم الخاصة بك.");
-      if (user) {
-        fetchDriverRides(user.id, searchCriteria, true); // إعادة جلب كاملة بعد القبول
-      }
     }
   };
 
@@ -348,31 +218,8 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
-        fetchDriverRides(user.id, searchCriteria, true); // إعادة جلب كاملة بعد الإلغاء
+        fetchCurrentRide(user.id);
       }
-    }
-  };
-
-  const handleSearch = (criteria: RideSearchCriteria) => {
-    setSearchCriteria(criteria);
-    setPage(0); // إعادة تعيين الصفحة إلى 0 للبحث الجديد
-    setAvailableRides([]); // مسح الرحلات الموجودة للبحث الجديد
-    setIsSearchDialogOpen(false);
-    // fetchDriverRides سيتم استدعاؤها بواسطة useEffect الرئيسي بسبب تغيير searchCriteria
-  };
-
-  const handleLoadMore = () => {
-    if (user) {
-      setPage(prevPage => prevPage + 1); // تحديث رقم الصفحة
-      // fetchDriverRides سيتم استدعاؤها بواسطة useEffect الرئيسي بسبب تغيير 'page'
-    }
-  };
-
-  const handleRefreshAvailableRides = () => {
-    if (user) {
-      setPage(0); // إعادة تعيين الصفحة إلى 0
-      setAvailableRides([]); // مسح الرحلات الموجودة
-      fetchDriverRides(user.id, searchCriteria, true); // جلب الرحلات من البداية
     }
   };
 
@@ -445,105 +292,16 @@ const DriverHome: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <Drawer open={isAvailableRidesDrawerOpen} onOpenChange={setIsAvailableRidesDrawerOpen}>
-          <DrawerContent className="max-h-[60vh]">
-            <DrawerHeader className="text-right">
-              <DrawerTitle>الرحلات المتاحة</DrawerTitle>
-              <DrawerDescription>
-                {availableRides.length > 0 ? "اختر رحلة لقبولها." : "لا توجد رحلات متاحة حاليًا."}
-              </DrawerDescription>
-            </DrawerHeader>
-            <ScrollArea className="flex-1 p-4">
-              {availableRides.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  <Car className="h-12 w-12 mx-auto mb-4" />
-                  <p>لا توجد رحلات تنتظر سائقين حاليًا.</p>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {availableRides.map((ride: Ride) => (
-                    <Card key={ride.id} className="shadow-sm">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>رحلة من {ride.pickup_location} إلى {ride.destination}</span>
-                          <RideStatusBadge status={ride.status} />
-                        </CardTitle>
-                        <CardDescription>
-                          الراكب: {ride.passenger_profiles?.full_name || 'غير معروف'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">عدد الركاب:</span>
-                          <span>{ride.passengers_count}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">تاريخ الطلب:</span>
-                          <span>{new Date(ride.created_at).toLocaleDateString('ar-SA')}</span>
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                          <Button onClick={() => handleAcceptRide(ride.id)} disabled={loadingRideData} className="flex-1 bg-primary hover:bg-primary-dark text-primary-foreground">
-                            {loadingRideData ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                                جاري القبول...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 ml-2 rtl:mr-2" />
-                                قبول الرحلة
-                              </>
-                            )}
-                          </Button>
-                          <Button onClick={() => handleOpenChat(ride)} variant="outline" className="flex-1">
-                            <MessageSquare className="h-4 w-4 ml-2 rtl:mr-2" />
-                            محادثة مع الراكب
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {hasMoreRides && (
-                    <Button onClick={handleLoadMore} disabled={loadingRideData} className="w-full mt-4">
-                      {loadingRideData ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                          جاري التحميل...
-                        </>
-                      ) : (
-                        "تحميل المزيد"
-                      )}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </ScrollArea>
-            <DrawerFooter className="flex flex-row justify-between items-center p-4 border-t dark:border-gray-700">
-              <Button variant="outline" onClick={() => navigate("/driver-dashboard/accepted-rides")}>
-                <History className="h-4 w-4 ml-2 rtl:mr-2" />
-                عرض رحلاتي المقبولة
-              </Button>
-              <Button
-                onClick={handleRefreshAvailableRides}
-                variant="outline"
-                className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <RefreshCw className="h-4 w-4 ml-2 rtl:mr-2" />
-                تحديث
-              </Button>
-              <Button
-                onClick={() => setIsSearchDialogOpen(true)}
-                className="bg-primary hover:bg-primary-dark text-primary-foreground"
-              >
-                <Search className="h-4 w-4 ml-2 rtl:mr-2" />
-                بحث عن رحلات
-              </Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
+        <Button
+          onClick={() => navigate("/driver-dashboard/available-rides")}
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
+        >
+          <Car className="h-5 w-5 ml-2 rtl:mr-2" />
+          عرض الرحلات المتاحة
+        </Button>
       )}
 
-      {user && (currentRide || availableRides.length > 0) && (
+      {user && currentRide && (
         <ChatDialog
           open={isChatDialogOpen}
           onOpenChange={setIsChatDialogOpen}
@@ -567,13 +325,6 @@ const DriverHome: React.FC = () => {
         onOpenChange={setIsCancellationDialogOpen}
         onConfirm={confirmCancelRide}
         isSubmitting={isCancelling}
-      />
-
-      <RideSearchDialog
-        open={isSearchDialogOpen}
-        onOpenChange={setIsSearchDialogOpen}
-        onSearch={handleSearch}
-        initialCriteria={searchCriteria}
       />
     </div>
   );

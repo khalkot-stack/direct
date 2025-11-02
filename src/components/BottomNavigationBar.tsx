@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, History, Settings } from 'lucide-react';
+import { Home, History, Settings, Car } from 'lucide-react'; // Import Car icon
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/context/UserContext';
 
@@ -29,7 +29,8 @@ const BottomNavigationBar = () => {
       ];
     } else if (userRole === 'driver') {
       return [
-        { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' }, // Points to DriverHome
+        { name: 'الرئيسية', icon: Home, path: '/driver-dashboard' },
+        { name: 'رحلات متاحة', icon: Car, path: '/driver-dashboard/available-rides' }, // New item for available rides
         { name: 'رحلاتي المقبولة', icon: History, path: '/driver-dashboard/accepted-rides' },
         { name: 'الإعدادات', icon: Settings, path: '/app-settings' },
       ];
