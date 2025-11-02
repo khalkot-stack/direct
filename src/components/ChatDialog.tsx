@@ -25,6 +25,7 @@ interface ChatDialogProps {
   rideId: string;
   otherUserId: string;
   otherUserName: string;
+  isAdminView?: boolean; // New prop
 }
 
 const ChatDialog: React.FC<ChatDialogProps> = ({
@@ -33,6 +34,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   rideId,
   otherUserId,
   otherUserName,
+  isAdminView = false, // Default to false
 }) => {
   const { user, profile: currentUserProfile, loading: userLoading } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -64,7 +66,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     if (open && otherUserId) {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name, avatar_url, user_type') // Fetch user_type
         .eq('id', otherUserId)
         .single();
       if (error) {
@@ -91,8 +93,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         sender_id,
         content,
         created_at,
-        sender_profiles:sender_id(id, full_name, avatar_url),
-        receiver_profiles:receiver_id(id, full_name, avatar_url)
+        sender_profiles:sender_id(id, full_name, avatar_url, user_type),
+        receiver_profiles:receiver_id(id, full_name, avatar_url, user_type)
       `)
       .eq('ride_id', rideId)
       .order('created_at', { ascending: true });
@@ -170,7 +172,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           if (!senderProfiles || !receiverProfiles) {
             const { data: profilesData, error: profilesError } = await supabase
               .from('profiles')
-              .select('id, full_name, avatar_url')
+              .select('id, full_name, avatar_url, user_type') // Fetch user_type
               .in('id', [newMsgPayload.sender_id, newMsgPayload.receiver_id]);
 
             if (profilesError) {
@@ -183,10 +185,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           
           // Fallback if profiles are not found
           if (!senderProfiles) {
-            senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null };
+            senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null, user_type: undefined };
           }
           if (!receiverProfiles) {
-            receiverProfiles = { id: newMsgPayload.receiver_id, full_name: 'مستخدم غير معروف', avatar_url: null };
+            receiverProfiles = { id: newMsgPayload.receiver_id, full_name: 'مستخدم غير معروف', avatar_url: null, user_type: undefined };
           }
 
           const formattedNewMessage: Message = {
@@ -219,20 +221,79 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     if (!newMessage.trim() || !currentUserId) return;
 
     setIsSending(true);
-    const { error } = await supabase.from('messages').insert({
-      ride_id: rideId,
-      sender_id: currentUserId,
-      receiver_id: otherUserId,
-      content: newMessage.trim(),
-    });
-    setIsSending(false);
 
-    if (error) {
-      toast.error(`فشل إرسال الرسالة: ${error.message}`);
-      console.error("Error sending message:", error);
+    if (isAdminView) {
+      // Admin sending a message, send to both passenger and driver of the ride
+      const { data: rideData, error: rideError } = await supabase
+        .from('rides')
+        .select('passenger_id, driver_id')
+        .eq('id', rideId)
+        .single();
+
+      if (rideError || !rideData) {
+        toast.error(`فشل جلب تفاصيل الرحلة لإرسال رسالة: ${rideError?.message}`);
+        setIsSending(false);
+        return;
+      }
+
+      const messagesToInsert = [];
+      if (rideData.passenger_id) {
+        messagesToInsert.push({
+          ride_id: rideId,
+          sender_id: currentUserId,
+          receiver_id: rideData.passenger_id,
+          content: newMessage.trim(),
+        });
+      }
+      if (rideData.driver_id) {
+        messagesToInsert.push({
+          ride_id: rideId,
+          sender_id: currentUserId,
+          receiver_id: rideData.driver_id,
+          content: newMessage.trim(),
+        });
+      }
+
+      if (messagesToInsert.length > 0) {
+        const { error: insertError } = await supabase.from('messages').insert(messagesToInsert);
+        if (insertError) {
+          toast.error(`فشل إرسال رسالة المدير: ${insertError.message}`);
+          console.error("Error sending admin message:", insertError);
+        } else {
+          setNewMessage("");
+        }
+      } else {
+        toast.error("لا يوجد ركاب أو سائقين في هذه الرحلة لإرسال رسالة.");
+      }
     } else {
-      setNewMessage("");
+      // Existing logic for passenger/driver 1-to-1 chat
+      const { error } = await supabase.from('messages').insert({
+        ride_id: rideId,
+        sender_id: currentUserId,
+        receiver_id: otherUserId,
+        content: newMessage.trim(),
+      });
+      if (error) {
+        toast.error(`فشل إرسال الرسالة: ${error.message}`);
+        console.error("Error sending message:", error);
+      } else {
+        setNewMessage("");
+      }
     }
+    setIsSending(false);
+  };
+
+  const getSenderLabel = (msg: Message) => {
+    if (msg.sender_id === currentUserId) {
+      return isAdminView ? "أنت (المدير)" : "أنت";
+    }
+    const senderName = msg.sender_profiles?.full_name || 'مستخدم';
+    const senderType = msg.sender_profiles?.user_type;
+    if (senderType) {
+      const typeLabel = senderType === 'passenger' ? 'راكب' : senderType === 'driver' ? 'سائق' : 'مدير';
+      return `${senderName} (${typeLabel})`;
+    }
+    return senderName;
   };
 
   if (userLoading) {
@@ -287,7 +348,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                     )}
                   >
                     <p className="text-xs font-semibold mb-1">
-                      {msg.sender_id === currentUserId ? "أنت" : msg.sender_profiles?.full_name || 'مستخدم'}
+                      {getSenderLabel(msg)}
                     </p>
                     <p className="text-sm">{msg.content}</p>
                     <p className="text-xs text-gray-300 dark:text-gray-500 mt-1 text-left">

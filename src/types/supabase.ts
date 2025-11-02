@@ -13,7 +13,7 @@ export interface ProfileDetails {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  // Removed user_type as it's not consistently selected in joins
+  user_type?: "passenger" | "driver" | "admin"; // Add user_type
 }
 
 export interface Ride {

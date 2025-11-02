@@ -58,8 +58,8 @@ const ComplaintManagementPage: React.FC = () => {
       .from('complaints')
       .select(`
         *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url),
-        driver_profiles:driver_id(id, full_name, avatar_url),
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+        driver_profiles:driver_id(id, full_name, avatar_url, user_type),
         rides(id, pickup_location, destination)
       `)
       .order('created_at', { ascending: false });
@@ -396,6 +396,7 @@ const ComplaintManagementPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
+          isAdminView={true} // Pass isAdminView prop for admin context
         />
       )}
     </div>

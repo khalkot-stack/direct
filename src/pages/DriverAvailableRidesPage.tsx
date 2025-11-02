@@ -53,7 +53,7 @@ const DriverAvailableRidesPage: React.FC = () => {
       .from('rides')
       .select(`
         *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url)
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type)
       `, { count: 'exact' })
       .eq('status', 'pending')
       .is('driver_id', null)

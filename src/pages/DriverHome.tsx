@@ -49,8 +49,8 @@ const DriverHome: React.FC = () => {
       .from('rides')
       .select(`
         *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url),
-        driver_profiles:driver_id(id, full_name, avatar_url)
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
       `)
       .eq('driver_id', user.id)
       .in('status', ['accepted'])

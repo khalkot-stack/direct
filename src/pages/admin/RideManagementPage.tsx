@@ -69,8 +69,8 @@ const RideManagementPage: React.FC = () => {
         destination_lng,
         driver_current_lat,
         driver_current_lng,
-        passenger_profiles:passenger_id(id, full_name, avatar_url),
-        driver_profiles:driver_id(id, full_name, avatar_url)
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
       `)
       .order('created_at', { ascending: false });
 
@@ -190,17 +190,11 @@ const RideManagementPage: React.FC = () => {
 
     let otherUser: { id: string; name: string } | null = null;
 
-    if (user.id === ride.passenger_id && ride.driver_profiles) {
-      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
-    } else if (user.id === ride.driver_id && ride.passenger_profiles) {
+    // For admin view, we want to chat with the passenger by default, or driver if passenger is null
+    if (ride.passenger_profiles) {
       otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' };
-    } else if (user.id !== ride.passenger_id && user.id !== ride.driver_id) {
-      // Admin is initiating chat, choose passenger by default or prompt
-      if (ride.passenger_profiles) {
-        otherUser = { id: ride.passenger_id, name: ride.passenger_profiles.full_name || 'الراكب' };
-      } else if (ride.driver_profiles) {
-        otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
-      }
+    } else if (ride.driver_profiles) {
+      otherUser = { id: ride.driver_id!, name: ride.driver_profiles.full_name || 'السائق' };
     }
 
     if (otherUser) {
@@ -366,6 +360,7 @@ const RideManagementPage: React.FC = () => {
           rideId={chatRideId}
           otherUserId={chatOtherUserId}
           otherUserName={chatOtherUserName}
+          isAdminView={true} // Pass isAdminView prop for admin context
         />
       )}
     </div>

@@ -73,8 +73,8 @@ const PassengerHome: React.FC = () => {
       .from('rides')
       .select(`
         *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url),
-        driver_profiles:driver_id(id, full_name, avatar_url)
+        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
       `)
       .eq('passenger_id', userId)
       .in('status', ['pending', 'accepted'])
@@ -306,73 +306,6 @@ const PassengerHome: React.FC = () => {
           طلب رحلة
         </Button>
       )}
-
-      {/* Request Ride Drawer */}
-      <Drawer open={isRequestDrawerOpen} onOpenChange={setIsRequestDrawerOpen}>
-        <DrawerContent className="max-h-[60vh]">
-          <DrawerHeader className="text-right">
-            <DrawerTitle>طلب رحلة جديدة</DrawerTitle>
-            <DrawerDescription>أدخل تفاصيل رحلتك وسنبحث عن سائق لك.</DrawerDescription>
-          </DrawerHeader>
-          <form onSubmit={form.handleSubmit(handleRequestRide)} className="p-4 space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="pickup-location">موقع الانطلاق</Label>
-              <Input
-                id="pickup-location"
-                type="text"
-                placeholder="أدخل موقع الانطلاق"
-                {...form.register("pickupLocation")}
-              />
-              {errors.pickupLocation && (
-                <p className="text-red-500 text-sm">{errors.pickupLocation.message}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="destination">الوجهة</Label>
-              <Input
-                id="destination"
-                type="text"
-                placeholder="أدخل الوجهة"
-                {...form.register("destination")}
-              />
-              {errors.destination && (
-                <p className="text-red-500 text-sm">{errors.destination.message}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="passengers-count">عدد الركاب</Label>
-              <Input
-                id="passengers-count"
-                type="number"
-                min="1"
-                {...form.register("passengersCount", { valueAsNumber: true })}
-                onChange={(e) => form.setValue("passengersCount", parseInt(e.target.value) || 1)}
-              />
-              {errors.passengersCount && (
-                <p className="text-red-500 text-sm">{errors.passengersCount.message}</p>
-              )}
-            </div>
-            <DrawerFooter className="flex flex-row justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsRequestDrawerOpen(false)}>
-                إلغاء
-              </Button>
-              <Button type="submit" disabled={loadingRideData} className="bg-primary hover:bg-primary-dark text-primary-foreground">
-                {loadingRideData ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                    جاري الطلب...
-                  </>
-                ) : (
-                  <>
-                    <Car className="h-4 w-4 ml-2 rtl:mr-2" />
-                    طلب الرحلة
-                  </>
-                )}
-              </Button>
-            </DrawerFooter>
-          </form>
-        </DrawerContent>
-      </Drawer>
 
       {user && currentRide && currentRide.driver_id && (
         <ChatDialog

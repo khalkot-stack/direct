@@ -94,8 +94,8 @@ const OverviewPage: React.FC = () => {
           destination,
           status,
           created_at,
-          passenger_profiles:passenger_id(id, full_name, avatar_url),
-          driver_profiles:driver_id(id, full_name, avatar_url)
+          passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
+          driver_profiles:driver_id(id, full_name, avatar_url, user_type)
         `)
         .order('created_at', { ascending: false })
         .limit(5);

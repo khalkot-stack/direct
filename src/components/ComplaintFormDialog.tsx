@@ -133,7 +133,7 @@ const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({
               placeholder="الرجاء تقديم أكبر قدر ممكن من التفاصيل حول المشكلة."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="resize-y"
+              className="col-span-3 resize-y"
               rows={5}
               required
             />
