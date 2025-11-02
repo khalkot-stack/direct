@@ -27,7 +27,7 @@ interface ComplaintFormDialogProps {
 }
 
 const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({ open, onOpenChange, onSave }) => {
-  const { user, loading: userLoading } = useUser();
+  const { user } = useUser(); // Removed userLoading
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [selectedRideId, setSelectedRideId] = useState<string | null>(null);

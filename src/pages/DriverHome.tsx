@@ -13,7 +13,7 @@ import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-import EmptyState from "@/components/EmptyState";
+// import EmptyState from "@/components/EmptyState"; // Removed EmptyState
 import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
 
 const DriverHome: React.FC = () => {

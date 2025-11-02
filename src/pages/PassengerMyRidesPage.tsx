@@ -26,11 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+// import { useNavigate } from "react-router-dom"; // Import useNavigate - Removed as it's not used
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
-  const navigate = useNavigate(); // Initialize useNavigate
+  // const navigate = useNavigate(); // Initialize useNavigate - Removed as it's not used
   const [rides, setRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(true);
 

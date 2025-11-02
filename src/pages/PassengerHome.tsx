@@ -14,7 +14,6 @@ import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
 import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
 import RequestRideDialog from "@/components/RequestRideDialog"; // Import the new RequestRideDialog
 import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap

@@ -11,7 +11,7 @@ import EmptyState from "@/components/EmptyState";
 import ComplaintFormDialog from "@/components/ComplaintFormDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Complaint, RawComplaintData, ProfileDetails } from "@/types/supabase";
+import { Complaint, RawComplaintData } from "@/types/supabase"; // Removed ProfileDetails
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,

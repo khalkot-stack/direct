@@ -41,13 +41,13 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     } else {
       // If not, attach to the global callback (defined in index.html)
       // This assumes initMap is globally accessible, which it will be if defined on window
-      (window as any).initMap = initMap;
+      window.initMap = initMap;
     }
 
     return () => {
       // Clean up global callback if component unmounts before map loads
-      if ((window as any).initMap === initMap) {
-        delete (window as any).initMap;
+      if (window.initMap === initMap) {
+        delete window.initMap;
       }
     };
   }, [center, zoom, map]);
