@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { useUser } from "@/context/UserContext";
 import { Complaint, RawComplaintData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
@@ -34,6 +35,7 @@ const DriverComplaintsPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // New state for filter
 
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
@@ -126,6 +128,11 @@ const DriverComplaintsPage: React.FC = () => {
     setIsComplaintChatDialogOpen(true);
   };
 
+  const filteredComplaints = complaints.filter(complaint => {
+    const matchesStatus = filterStatus === "all" || complaint.status === filterStatus;
+    return matchesStatus;
+  });
+
   if (userLoading || loadingComplaints) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -138,7 +145,22 @@ const DriverComplaintsPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <PageHeader title="شكاواي" description="عرض الشكاوى المقدمة ضدك." backPath="/driver-dashboard" />
 
-      {complaints.length === 0 ? (
+      <div className="flex justify-end mb-4">
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="تصفية حسب الحالة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع الحالات</SelectItem>
+            <SelectItem value="pending">قيد الانتظار</SelectItem>
+            <SelectItem value="reviewed">تمت المراجعة</SelectItem>
+            <SelectItem value="resolved">تم الحل</SelectItem>
+            <SelectItem value="rejected">مرفوضة</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredComplaints.length === 0 ? (
         <EmptyState
           icon={Flag}
           title="لا توجد شكاوى"
@@ -158,7 +180,7 @@ const DriverComplaintsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {complaints.map((complaint) => (
+              {filteredComplaints.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="font-medium">{complaint.subject}</TableCell>
                   <TableCell>{complaint.passenger_profiles?.full_name || 'غير معروف'}</TableCell>
