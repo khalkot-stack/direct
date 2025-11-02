@@ -17,6 +17,7 @@ import RideStatusBadge from "@/components/RideStatusBadge";
 import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
 import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
 import RequestRideDialog from "@/components/RequestRideDialog"; // Import the new RequestRideDialog
+import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
 
 // Removed rideRequestSchema and RideRequestInputs as they are now in RequestRideDialog
 
@@ -214,13 +215,7 @@ const PassengerHome: React.FC = () => {
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
       {/* Placeholder for map area */}
-      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-lg rounded-lg m-4">
-        <EmptyState
-          icon={Car}
-          title="نظام الخريطة معطل مؤقتًا"
-          description="نعمل على تحسين تجربة الخريطة. يرجى استخدام التطبيق بدونها في الوقت الحالي."
-        />
-      </div>
+      <InteractiveMap />
 
       {currentRide ? (
         // Active Ride Card (similar to Uber's bottom card for active rides)

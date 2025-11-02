@@ -14,6 +14,7 @@ import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import EmptyState from "@/components/EmptyState";
+import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -215,13 +216,7 @@ const DriverHome: React.FC = () => {
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
       {/* Placeholder for map area */}
-      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-lg rounded-lg m-4">
-        <EmptyState
-          icon={Car}
-          title="نظام الخريطة معطل مؤقتًا"
-          description="نعمل على تحسين تجربة الخريطة. يرجى استخدام التطبيق بدونها في الوقت الحالي."
-        />
-      </div>
+      <InteractiveMap />
 
       {currentRide ? (
         <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
