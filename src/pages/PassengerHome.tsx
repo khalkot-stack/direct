@@ -4,12 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Loader2, Car, MessageSquare, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-// import InteractiveMap, { MarkerLocation } from "@/components/InteractiveMap"; // Removed map import
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
@@ -17,12 +14,11 @@ import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
+import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
+import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
 import { useForm } from "react-hook-form"; // Re-added useForm
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import EmptyState from "@/components/EmptyState"; // Added EmptyState for placeholder
-import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
 
 const rideRequestSchema = z.object({
   pickupLocation: z.string().min(3, { message: "موقع الانطلاق مطلوب." }),
@@ -38,9 +34,7 @@ const PassengerHome: React.FC = () => {
 
   const [loadingRideData, setLoadingRideData] = useState(true);
   const [currentRide, setCurrentRide] = useState<Ride | null>(null);
-  // Removed map-related states: mapMarkers, mapCenter, isMapReady
 
-  const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
   const [chatRideId, setChatRideId] = useState("");
   const [chatOtherUserId, setChatOtherUserId] = useState("");
@@ -62,8 +56,6 @@ const PassengerHome: React.FC = () => {
       passengersCount: 1,
     },
   });
-
-  const { errors } = form.formState; // Destructure errors from formState
 
   // Removed googleMapsApiKey and geocodeAddress function
 
@@ -165,7 +157,7 @@ const PassengerHome: React.FC = () => {
     setLoadingRideData(false);
 
     if (result) {
-      setIsRequestDrawerOpen(false);
+      // setIsRequestDrawerOpen(false); // Removed as drawer is removed
       form.reset();
       fetchCurrentRide(user.id); // Refresh current ride status
     }
@@ -299,7 +291,7 @@ const PassengerHome: React.FC = () => {
       ) : (
         // Request Ride Button (when no active ride)
         <Button
-          onClick={() => setIsRequestDrawerOpen(true)}
+          onClick={() => { /* Removed setIsRequestDrawerOpen(true) */ }}
           className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
         >
           <Car className="h-5 w-5 ml-2 rtl:mr-2" />

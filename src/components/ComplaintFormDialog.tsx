@@ -17,7 +17,6 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/context/UserContext";
-import { ProfileDetails } from "@/types/supabase";
 
 interface ComplaintFormDialogProps {
   open: boolean;

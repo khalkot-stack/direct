@@ -428,7 +428,7 @@ const PassengerMyRidesPage: React.FC = () => {
           driverId={complaintDriverId}
           rideId={complaintRideId}
           driverName={complaintDriverName}
-          onComplaintSubmitted={handleComplaintSubmitted} {/* Added callback */}
+          onComplaintSubmitted={handleComplaintSubmitted} // Added callback
         />
       )}
 

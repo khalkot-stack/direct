@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2 } from "lucide-react";
+import { Loader2, MessageSquare, XCircle, History as HistoryIcon, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -13,7 +13,7 @@ import ChatDialog from "@/components/ChatDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { Ride, Rating, RawRideData } from "@/types/supabase";
+import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import {
   AlertDialog,

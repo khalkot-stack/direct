@@ -112,8 +112,8 @@ const RideManagementPage: React.FC = () => {
       schema: 'public',
       table: 'rides',
     },
-    (payload) => {
-      // console.log('Realtime ride change received:', payload);
+    (_payload) => {
+      // console.log('Realtime ride change received:', _payload);
       fetchRides(); // Re-fetch all rides on any change
     },
     !!user // Only enable if user is logged in

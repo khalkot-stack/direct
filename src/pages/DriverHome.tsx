@@ -4,15 +4,14 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Car, MessageSquare, CheckCircle, PauseCircle, LocateFixed, XCircle, History } from "lucide-react";
+import { Loader2, Car, MessageSquare, PauseCircle, LocateFixed, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatDialog from "@/components/ChatDialog";
-// import RatingDialog from "@/components/RatingDialog"; // Removed RatingDialog import
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Ride, RawRideData, Rating } from "@/types/supabase";
+import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import EmptyState from "@/components/EmptyState";
 
