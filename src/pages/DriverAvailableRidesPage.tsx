@@ -42,11 +42,13 @@ const DriverAvailableRidesPage: React.FC = () => {
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  const fetchAvailableRides = useCallback(async (userId: string, criteria: RideSearchCriteria, currentPage: number, append: boolean) => {
+  const fetchAvailableRides = useCallback(async (append: boolean) => {
+    if (!user?.id) return; // التأكد من وجود المستخدم
+
     setLoadingRides(true);
 
     const limit = PAGE_SIZE;
-    const offset = currentPage * limit;
+    const offset = page * limit; // استخدام حالة 'page' مباشرة
 
     let query = supabase
       .from('rides')
@@ -56,18 +58,18 @@ const DriverAvailableRidesPage: React.FC = () => {
       `, { count: 'exact' })
       .eq('status', 'pending')
       .is('driver_id', null)
-      .neq('passenger_id', userId)
+      .neq('passenger_id', user.id) // استخدام user.id مباشرة
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (criteria?.pickupLocation) {
-      query = query.ilike('pickup_location', `%${criteria.pickupLocation}%`);
+    if (searchCriteria?.pickupLocation) { // استخدام حالة 'searchCriteria' مباشرة
+      query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
     }
-    if (criteria?.destination) {
-      query = query.ilike('destination', `%${criteria.destination}%`);
+    if (searchCriteria?.destination) { // استخدام حالة 'searchCriteria' مباشرة
+      query = query.ilike('destination', `%${searchCriteria.destination}%`);
     }
-    if (criteria?.passengersCount) {
-      query = query.eq('passengers_count', criteria.passengersCount);
+    if (searchCriteria?.passengersCount) { // استخدام حالة 'searchCriteria' مباشرة
+      query = query.eq('passengers_count', searchCriteria.passengersCount);
     }
 
     const { data: ridesRaw, error: ridesError, count } = await query;
@@ -94,15 +96,15 @@ const DriverAvailableRidesPage: React.FC = () => {
       setHasMoreRides(count !== null && (offset + formattedRides.length) < count);
     }
     setLoadingRides(false);
-  }, []);
+  }, [user, searchCriteria, page]); // التبعيات الصحيحة لـ useCallback
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchAvailableRides(user.id, searchCriteria, page, false); // Initial fetch or search change
+      fetchAvailableRides(false); // استدعاء بدون وسائط، تستخدم الحالة مباشرة
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
-  }, [userLoading, user, navigate, searchCriteria, page, fetchAvailableRides]);
+  }, [userLoading, user, navigate, searchCriteria, page, fetchAvailableRides]); // fetchAvailableRides هي تبعية هنا
 
   useSupabaseRealtime(
     'driver_available_rides_channel',
@@ -117,7 +119,7 @@ const DriverAvailableRidesPage: React.FC = () => {
         // On any change to pending rides, reset pagination and re-fetch the first page
         setPage(0);
         setAvailableRides([]);
-        fetchAvailableRides(user.id, searchCriteria, 0, false);
+        fetchAvailableRides(false); // إعادة جلب الرحلات من البداية
       }
     },
     !!user
@@ -165,13 +167,12 @@ const DriverAvailableRidesPage: React.FC = () => {
     setPage(0); // Reset page for new search
     setAvailableRides([]); // Clear existing rides for new search
     setIsSearchDialogOpen(false);
+    // useEffect سيتم تشغيله الآن بسبب تغيير searchCriteria و page
   };
 
   const handleLoadMore = () => {
     if (user) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchAvailableRides(user.id, searchCriteria, nextPage, true); // Append new rides
+      setPage(prevPage => prevPage + 1); // تحديث رقم الصفحة، مما سيؤدي إلى تشغيل useEffect
     }
   };
 
@@ -179,7 +180,7 @@ const DriverAvailableRidesPage: React.FC = () => {
     if (user) {
       setPage(0); // Reset page to 0
       setAvailableRides([]); // Clear existing rides
-      fetchAvailableRides(user.id, searchCriteria, 0, false); // Fetch rides from start
+      fetchAvailableRides(false); // Fetch rides from start (not appending)
     }
   };
 

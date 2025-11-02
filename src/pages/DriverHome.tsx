@@ -39,7 +39,9 @@ const DriverHome: React.FC = () => {
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const locationIntervalRef = useRef<number | null>(null);
 
-  const fetchCurrentRide = useCallback(async (userId: string) => {
+  const fetchCurrentRide = useCallback(async () => {
+    if (!user?.id) return; // التأكد من وجود المستخدم
+
     setLoadingRideData(true);
 
     const { data: currentRideRaw, error: currentRideError } = await supabase
@@ -49,7 +51,7 @@ const DriverHome: React.FC = () => {
         passenger_profiles:passenger_id(id, full_name, avatar_url),
         driver_profiles:driver_id(id, full_name, avatar_url)
       `)
-      .eq('driver_id', userId)
+      .eq('driver_id', user.id) // استخدام user.id مباشرة
       .in('status', ['accepted'])
       .order('created_at', { ascending: false })
       .limit(1);
@@ -77,11 +79,11 @@ const DriverHome: React.FC = () => {
       setCurrentRide(null);
     }
     setLoadingRideData(false);
-  }, []);
+  }, [user]); // التبعية الصحيحة لـ useCallback
 
   useEffect(() => {
     if (!userLoading && user) {
-      fetchCurrentRide(user.id);
+      fetchCurrentRide(); // استدعاء بدون وسائط
     } else if (!userLoading && !user) {
       navigate("/auth");
     }
@@ -90,7 +92,7 @@ const DriverHome: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [userLoading, user, navigate, fetchCurrentRide]);
+  }, [userLoading, user, navigate, fetchCurrentRide]); // fetchCurrentRide هي تبعية هنا
 
   useSupabaseRealtime(
     'driver_home_rides_channel',
@@ -102,7 +104,7 @@ const DriverHome: React.FC = () => {
     },
     (_payload) => {
       if (user) {
-        fetchCurrentRide(user.id);
+        fetchCurrentRide();
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'completed' && _payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
@@ -218,7 +220,7 @@ const DriverHome: React.FC = () => {
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
-        fetchCurrentRide(user.id);
+        fetchCurrentRide();
       }
     }
   };
