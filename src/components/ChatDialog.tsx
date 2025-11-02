@@ -113,10 +113,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           : (msg.receiver_profiles as ProfileDetails | null);
 
         return {
-          id: msg.id,
-          sender_id: msg.sender_id,
-          content: msg.content,
-          created_at: msg.created_at,
+          ...msg,
           sender_profiles: senderProfiles,
           receiver_profiles: receiverProfiles,
         };
@@ -228,10 +225,18 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         .from('rides')
         .select('passenger_id, driver_id')
         .eq('id', rideId)
-        .single();
+        .maybeSingle(); // Changed to maybeSingle()
 
-      if (rideError || !rideData) {
-        toast.error(`فشل جلب تفاصيل الرحلة لإرسال رسالة: ${rideError?.message}`);
+      if (rideError) {
+        toast.error(`فشل جلب تفاصيل الرحلة لإرسال رسالة: ${rideError.message}`);
+        console.error("Error fetching ride details for admin message:", rideError);
+        setIsSending(false);
+        return;
+      }
+      
+      if (!rideData) {
+        toast.error("فشل إرسال رسالة المدير: لم يتم العثور على تفاصيل الرحلة.");
+        console.error("Ride details not found for admin message, rideId:", rideId);
         setIsSending(false);
         return;
       }
