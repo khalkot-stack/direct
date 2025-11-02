@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon } from "lucide-react";
+import { Loader2, MessageSquare, Star, XCircle, History as HistoryIcon, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -15,6 +15,17 @@ import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js"; // Import RealtimeChannel
 import { Ride, Rating, RawRideData } from "@/types/supabase"; // Import shared Ride and Rating types
 import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const DriverAcceptedRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -33,6 +44,9 @@ const DriverAcceptedRidesPage: React.FC = () => {
   const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
   const fetchAcceptedRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
@@ -88,7 +102,6 @@ const DriverAcceptedRidesPage: React.FC = () => {
             filter: `driver_id=eq.${user.id}`,
           },
           (payload) => {
-            // console.log('Change received in accepted rides!', payload);
             fetchAcceptedRides(user.id); // Re-fetch data on any ride change
             if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
               toast.success("تم إكمال الرحلة بنجاح!");
@@ -181,6 +194,28 @@ const DriverAcceptedRidesPage: React.FC = () => {
     }
   };
 
+  const handleDeleteRide = async () => {
+    if (!rideToDelete) return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('rides')
+      .delete()
+      .eq('id', rideToDelete.id);
+    setIsDeleting(false);
+    setRideToDelete(null); // Close the dialog
+
+    if (error) {
+      toast.error(`فشل حذف الرحلة: ${error.message}`);
+      console.error("Error deleting ride:", error);
+    } else {
+      toast.success("تم حذف الرحلة بنجاح!");
+      if (user) {
+        fetchAcceptedRides(user.id);
+      }
+    }
+  };
+
   if (userLoading || loadingRides) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -243,6 +278,42 @@ const DriverAcceptedRidesPage: React.FC = () => {
                       <Star className="h-4 w-4 ml-2 rtl:mr-2" />
                       تقييم الراكب
                     </Button>
+                  )}
+                  {(ride.status === 'cancelled' || ride.status === 'completed') && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 flex-1"
+                          onClick={() => setRideToDelete(ride)}
+                        >
+                          <Trash2 className="h-4 w-4 ml-2 rtl:mr-2" />
+                          حذف
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            سيؤدي هذا الإجراء إلى حذف الرحلة من {ride.pickup_location} إلى {ride.destination} بشكل دائم. لا يمكن التراجع عن هذا الإجراء.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setRideToDelete(null)}>إلغاء</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteRide} disabled={isDeleting}>
+                            {isDeleting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                                جاري الحذف...
+                              </>
+                            ) : (
+                              "حذف"
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
               </CardContent>
