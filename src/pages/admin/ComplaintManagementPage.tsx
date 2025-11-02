@@ -61,6 +61,7 @@ const AdminComplaintManagementPage: React.FC = () => {
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
+    console.log("AdminComplaintManagementPage: Attempting to fetch complaints...");
     const { data: complaintsRaw, error } = await supabase
       .from('complaints')
       .select(`
@@ -72,9 +73,11 @@ const AdminComplaintManagementPage: React.FC = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error("AdminComplaintManagementPage: Error fetching complaints:", error);
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
-      console.error("Error fetching complaints:", error);
+      setComplaints([]);
     } else {
+      console.log("AdminComplaintManagementPage: Raw complaints data received:", complaintsRaw);
       const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
         const passengerProfile = Array.isArray(comp.passenger_profiles)
           ? comp.passenger_profiles[0] || null
@@ -95,15 +98,19 @@ const AdminComplaintManagementPage: React.FC = () => {
           ride_details: rideDetails,
         };
       });
+      console.log("AdminComplaintManagementPage: Formatted complaints:", formattedComplaints);
       setComplaints(formattedComplaints);
     }
     setLoadingComplaints(false);
+    console.log("AdminComplaintManagementPage: Finished fetching complaints.");
   }, []);
 
   useEffect(() => {
     if (!userLoading && user && profile) {
+      console.log("AdminComplaintManagementPage: User loaded, fetching complaints.");
       fetchComplaints();
     } else if (!userLoading && !user) {
+      console.log("AdminComplaintManagementPage: User not logged in.");
       setLoadingComplaints(false);
     }
   }, [userLoading, user, profile, fetchComplaints]);
@@ -116,6 +123,7 @@ const AdminComplaintManagementPage: React.FC = () => {
       table: 'complaints',
     },
     (_payload) => {
+      console.log("AdminComplaintManagementPage: Realtime update received, re-fetching complaints.");
       fetchComplaints();
     },
     !!user
