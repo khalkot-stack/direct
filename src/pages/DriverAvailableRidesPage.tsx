@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface RideSearchCriteria {
   pickupLocation?: string;
   destination?: string;
-  passengersCount?: number;
+  // Removed passengersCount
 }
 
 const PAGE_SIZE = 5; // عدد الرحلات التي يتم تحميلها في كل مرة
@@ -68,9 +68,10 @@ const DriverAvailableRidesPage: React.FC = () => {
     if (searchCriteria?.destination) { // استخدام حالة 'searchCriteria' مباشرة
       query = query.ilike('destination', `%${searchCriteria.destination}%`);
     }
-    if (searchCriteria?.passengersCount) { // استخدام حالة 'searchCriteria' مباشرة
-      query = query.eq('passengers_count', searchCriteria.passengersCount);
-    }
+    // Removed passengersCount condition
+    // if (searchCriteria?.passengersCount) {
+    //   query = query.eq('passengers_count', searchCriteria.passengersCount);
+    // }
 
     const { data: ridesRaw, error: ridesError, count } = await query;
 

@@ -17,7 +17,7 @@ import { Search } from "lucide-react";
 interface RideSearchCriteria {
   pickupLocation?: string;
   destination?: string;
-  passengersCount?: number;
+  // Removed passengersCount
 }
 
 interface RideSearchDialogProps {
@@ -35,15 +35,13 @@ const RideSearchDialog: React.FC<RideSearchDialogProps> = ({
 }) => {
   const [pickupLocation, setPickupLocation] = useState(initialCriteria?.pickupLocation || "");
   const [destination, setDestination] = useState(initialCriteria?.destination || "");
-  const [passengersCount, setPassengersCount] = useState<string>(
-    initialCriteria?.passengersCount ? String(initialCriteria.passengersCount) : ""
-  );
+  // Removed passengersCount state
 
   useEffect(() => {
     if (open) {
       setPickupLocation(initialCriteria?.pickupLocation || "");
       setDestination(initialCriteria?.destination || "");
-      setPassengersCount(initialCriteria?.passengersCount ? String(initialCriteria.passengersCount) : "");
+      // Removed passengersCount reset
     }
   }, [open, initialCriteria]);
 
@@ -52,9 +50,6 @@ const RideSearchDialog: React.FC<RideSearchDialogProps> = ({
     const criteria: RideSearchCriteria = {};
     if (pickupLocation) criteria.pickupLocation = pickupLocation;
     if (destination) criteria.destination = destination;
-    if (passengersCount && !isNaN(parseInt(passengersCount))) {
-      criteria.passengersCount = parseInt(passengersCount);
-    }
     onSearch(criteria);
     onOpenChange(false);
   };
@@ -62,7 +57,7 @@ const RideSearchDialog: React.FC<RideSearchDialogProps> = ({
   const handleClear = () => {
     setPickupLocation("");
     setDestination("");
-    setPassengersCount("");
+    // Removed passengersCount clear
     onSearch({});
     onOpenChange(false);
   };
@@ -97,17 +92,7 @@ const RideSearchDialog: React.FC<RideSearchDialogProps> = ({
               onChange={(e) => setDestination(e.target.value)}
             />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="passengers-count">عدد الركاب</Label>
-            <Input
-              id="passengers-count"
-              type="number"
-              min="1"
-              placeholder="مثال: 2"
-              value={passengersCount}
-              onChange={(e) => setPassengersCount(e.target.value)}
-            />
-          </div>
+          {/* Removed passengersCount input */}
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={handleClear}>
               مسح البحث
