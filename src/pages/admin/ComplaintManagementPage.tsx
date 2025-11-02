@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Loader2, Flag, Eye } from "lucide-react";
+import { Search, Loader2, Flag, Eye, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
@@ -31,6 +31,17 @@ import { useUser } from "@/context/UserContext";
 import { Complaint, RawComplaintData } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const AdminComplaintManagementPage: React.FC = () => {
   const { user, profile, loading: userLoading } = useUser();
@@ -44,6 +55,9 @@ const AdminComplaintManagementPage: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState("");
   const [newStatus, setNewStatus] = useState<Complaint['status']>('pending');
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [complaintToDelete, setComplaintToDelete] = useState<Complaint | null>(null);
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
@@ -134,6 +148,26 @@ const AdminComplaintManagementPage: React.FC = () => {
     } else {
       toast.success("تم تحديث الشكوى بنجاح!");
       setIsViewDialogOpen(false);
+      // fetchComplaints() will be triggered by realtime
+    }
+  };
+
+  const handleDeleteComplaint = async () => {
+    if (!complaintToDelete) return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('complaints')
+      .delete()
+      .eq('id', complaintToDelete.id);
+    setIsDeleting(false);
+    setComplaintToDelete(null); // Close the dialog
+
+    if (error) {
+      toast.error(`فشل حذف الشكوى: ${error.message}`);
+      console.error("Error deleting complaint:", error);
+    } else {
+      toast.success("تم حذف الشكوى بنجاح!");
       // fetchComplaints() will be triggered by realtime
     }
   };
@@ -256,6 +290,41 @@ const AdminComplaintManagementPage: React.FC = () => {
                       <Eye className="h-4 w-4" />
                       <span className="sr-only">عرض/تعديل</span>
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
+                          onClick={() => setComplaintToDelete(complaint)}
+                          title="حذف"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">حذف</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            سيؤدي هذا الإجراء إلى حذف الشكوى "{complaintToDelete?.subject}" بشكل دائم. لا يمكن التراجع عن هذا الإجراء.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setComplaintToDelete(null)}>إلغاء</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteComplaint} disabled={isDeleting}>
+                            {isDeleting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                                جاري الحذف...
+                              </>
+                            ) : (
+                              "حذف"
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
