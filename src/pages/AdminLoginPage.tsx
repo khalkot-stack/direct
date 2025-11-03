@@ -52,11 +52,12 @@ const AdminLoginPage: React.FC = () => {
       toast.error(`فشل تسجيل الدخول: ${error.message}`);
     } else {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user?.user_metadata?.user_type === "admin") {
+      // تم التعديل: التحقق من user_type من app_metadata بدلاً من user_metadata
+      if (user?.app_metadata?.user_type === "admin") {
         toast.success("تم تسجيل الدخول بنجاح كمدير!");
         navigate("/admin-dashboard");
       } else {
-        // If not an admin, sign them out and redirect
+        // إذا لم يكن المستخدم مديرًا، قم بتسجيل خروجه وإعادة توجيهه
         await supabase.auth.signOut();
         toast.error("ليس لديك صلاحيات المدير للوصول إلى هذه الصفحة.");
         navigate("/auth");
