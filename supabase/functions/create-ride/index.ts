@@ -31,8 +31,8 @@ serve(async (req) => {
     const { passenger_id, pickup_location, destination, passengers_count } = await req.json()
 
     console.log('Edge Function: Authenticated user ID (from JWT):', user.id);
+    console.log('Edge Function: User app_metadata user_type:', user.app_metadata.user_type); // Added log here
     console.log('Edge Function: Payload passenger_id:', passenger_id);
-    console.log('Edge Function: User type:', user.app_metadata.user_type);
 
     if (!passenger_id || !pickup_location || !destination || !passengers_count) {
       console.log('Edge Function: Missing required fields in payload.');
