@@ -108,7 +108,7 @@ const AdminSettingsPage: React.FC = () => {
             <Label htmlFor="default-currency">العملة الافتراضية</Label>
             <Input
               id="default-currency"
-              value={getSettingValue("default_currency", "JOD")} {/* Changed default to JOD */}
+              value={getSettingValue("default_currency", "JOD")}
               onChange={(e) => handleSettingChange(getSettingId("default_currency"), e.target.value)}
             />
           </div>
