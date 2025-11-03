@@ -9,8 +9,24 @@ interface CreateRidePayload {
 }
 
 export async function createRideViaEdgeFunction(payload: CreateRidePayload): Promise<any | null> {
+  const SUPABASE_PROJECT_ID = "utbimfmafegovypqtdyj"; // From Supabase Context
+  const EDGE_FUNCTION_NAME = "create-ride";
+  const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/${EDGE_FUNCTION_NAME}`;
+
+  const callEdgeFunction = async (accessToken: string) => {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return response;
+  };
+
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    let { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
       toast.error("الرجاء تسجيل الدخول لطلب رحلة.");
@@ -18,19 +34,22 @@ export async function createRideViaEdgeFunction(payload: CreateRidePayload): Pro
       return null;
     }
 
-    // Replace with your actual Supabase Project ID and Edge Function name
-    const SUPABASE_PROJECT_ID = "utbimfmafegovypqtdyj"; // From Supabase Context
-    const EDGE_FUNCTION_NAME = "create-ride";
-    const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/${EDGE_FUNCTION_NAME}`;
+    let response = await callEdgeFunction(session.access_token);
 
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    // If 403 Forbidden, try to refresh session and retry once
+    if (response.status === 403) {
+      console.warn("Received 403 from Edge Function. Attempting to refresh session and retry...");
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (refreshError || !refreshData.session) {
+        toast.error(`فشل تحديث الجلسة: ${refreshError?.message || 'لا توجد جلسة جديدة.'}`);
+        console.error("Error refreshing session:", refreshError);
+        return null;
+      }
+
+      session = refreshData.session; // Use the new session
+      response = await callEdgeFunction(session.access_token); // Retry the call
+    }
 
     if (!response.ok) {
       const errorData = await response.json();
