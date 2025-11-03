@@ -49,7 +49,11 @@ serve(async (req) => {
         return new Response('Forbidden: Not authorized to create rides for this user', { status: 403, headers: corsHeaders })
     }
 
-    console.log('Edge Function: Attempting to insert ride with passenger_id:', passenger_id, 'and authenticated user.id:', user.id);
+    // Added detailed logging here
+    console.log('Edge Function Debug: User ID from JWT (auth.uid() equivalent):', user.id);
+    console.log('Edge Function Debug: Passenger ID from payload (to be inserted):', passenger_id);
+    console.log('Edge Function Debug: Are they equal?', user.id === passenger_id);
+
 
     const { data, error } = await supabaseClient
       .from('rides')
