@@ -47,6 +47,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfile(null);
     } else if (data) {
       console.log("UserContext: Profile fetched successfully:", data);
+      console.log("UserContext: Fetched profile user_type:", data.user_type); // Added log
       setProfile(data as Profile);
     } else {
       console.log("UserContext: No profile found, attempting to create default for userId:", userId);
@@ -82,6 +83,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error("UserContext: Error creating default profile:", insertError);
         } else {
           console.log("UserContext: Default profile created:", newProfile);
+          console.log("UserContext: Created profile user_type:", (newProfile as Profile).user_type); // Added log
           setProfile(newProfile as Profile);
         }
       }
