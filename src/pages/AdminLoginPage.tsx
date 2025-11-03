@@ -53,6 +53,8 @@ const AdminLoginPage: React.FC = () => {
     } else {
       const { data: { user } } = await supabase.auth.getUser();
       // تم التعديل: التحقق من user_type من app_metadata بدلاً من user_metadata
+      console.log("AdminLoginPage: User after login:", user); // Added log
+      console.log("AdminLoginPage: User app_metadata user_type:", user?.app_metadata?.user_type); // Added log
       if (user?.app_metadata?.user_type === "admin") {
         toast.success("تم تسجيل الدخول بنجاح كمدير!");
         navigate("/admin-dashboard");
