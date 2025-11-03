@@ -106,7 +106,7 @@ const OverviewPage: React.FC = () => {
       // Convert map to array for Recharts, sorting by date
       const sortedMonthlyRevenue = Array.from(monthlyRevenueMap.entries())
         .map(([name, total]) => ({ name, total }))
-        .sort((a, b) => {
+        .sort((_a, _b) => { // Renamed a, b to _a, _b
           // Simple sorting by month name might not be chronological,
           // for real app, store month index or full date for sorting.
           // For now, assuming month names are ordered for display.

@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SystemSetting } from "@/types/supabase"; // Import SystemSetting type
+// import { SystemSetting } from "@/types/supabase"; // Removed unused import
 
 const loginSchema = z.object({
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),

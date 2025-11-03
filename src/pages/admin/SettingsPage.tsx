@@ -84,7 +84,7 @@ const AdminSettingsPage: React.FC = () => {
       key,
       value,
       description,
-      created_at,
+      created_at, // Now 'created_at' exists on SystemSetting
     }));
 
     const { error } = await supabase

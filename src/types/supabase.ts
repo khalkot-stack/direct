@@ -80,6 +80,7 @@ export interface SystemSetting {
   key: string;
   value: string;
   description?: string;
+  created_at: string; // Added created_at property
 }
 
 export interface Complaint {
