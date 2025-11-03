@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react"; // Removed useRef
+import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'; // For default marker icon - Corrected path
@@ -84,15 +84,15 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      center={finalCenter}
-      zoom={finalZoom}
+      center={finalCenter as LatLngExpression} // Explicitly cast to LatLngExpression
+      zoom={finalZoom as number} // Explicitly cast to number
       scrollWheelZoom={true}
       className={`w-full h-full ${className}`}
       style={{ zIndex: 0 }} // Ensure map is behind other elements if any
     >
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' as string} // Explicitly cast to string
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {children}
