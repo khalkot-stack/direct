@@ -11,8 +11,10 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemSetting } from "@/types/supabase";
+import { useUser } from "@/context/UserContext"; // Import useUser
 
 const AdminSettingsPage: React.FC = () => {
+  const { user, profile, loading: userContextLoading } = useUser(); // Use user context
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,8 +35,12 @@ const AdminSettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+    if (!userContextLoading) {
+      console.log("AdminSettingsPage: Current user profile user_type:", profile?.user_type); // Added log
+      console.log("AdminSettingsPage: Current user app_metadata user_type:", user?.app_metadata?.user_type); // Added log
+      fetchSettings();
+    }
+  }, [userContextLoading, user, profile, fetchSettings]);
 
   const handleSettingChange = (id: string, newValue: string | boolean) => {
     setSettings(prevSettings =>
@@ -69,7 +75,7 @@ const AdminSettingsPage: React.FC = () => {
     return settings.find(s => s.key === key)?.id || "";
   };
 
-  if (loading) {
+  if (userContextLoading || loading) {
     return (
       <div className="container mx-auto p-4 flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
