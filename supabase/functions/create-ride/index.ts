@@ -22,15 +22,15 @@ serve(async (req) => {
       }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
-      console.log('Edge Function: Unauthorized - No user session.')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    if (userError || !user) {
+      console.log('Edge Function: Unauthorized - No user session or error getting user.', userError?.message)
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
     const { passenger_id, pickup_location, destination, passengers_count } = await req.json()
 
-    console.log('Edge Function: Authenticated user ID:', user.id);
+    console.log('Edge Function: Authenticated user ID (from JWT):', user.id);
     console.log('Edge Function: Payload passenger_id:', passenger_id);
     console.log('Edge Function: User type:', user.app_metadata.user_type);
 
@@ -43,10 +43,13 @@ serve(async (req) => {
     }
 
     // Ensure the user making the request is authorized to create a ride for this passenger_id
+    // This check is at the application level, before RLS is evaluated by the database.
     if (user.id !== passenger_id && user.app_metadata.user_type !== 'admin') {
-        console.log('Edge Function: Forbidden - User not authorized to create rides for this passenger_id.');
+        console.log('Edge Function: Forbidden - User not authorized to create rides for this passenger_id. User ID:', user.id, 'Payload Passenger ID:', passenger_id);
         return new Response('Forbidden: Not authorized to create rides for this user', { status: 403, headers: corsHeaders })
     }
+
+    console.log('Edge Function: Attempting to insert ride with passenger_id:', passenger_id, 'and authenticated user.id:', user.id);
 
     const { data, error } = await supabaseClient
       .from('rides')
@@ -61,7 +64,7 @@ serve(async (req) => {
       .single()
 
     if (error) {
-      console.error('Error inserting ride:', error)
+      console.error('Edge Function: Error inserting ride:', error)
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -75,7 +78,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Edge Function error:', error)
+    console.error('Edge Function: Unexpected error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
