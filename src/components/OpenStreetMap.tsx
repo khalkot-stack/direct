@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as L from 'leaflet'; // Import Leaflet as namespace L
+import { LatLngExpression } from 'leaflet'; // Direct import of the type
 
 interface OpenStreetMapProps {
   center?: { lat: number; lng: number };
@@ -19,7 +19,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
-const ChangeView: React.FC<{ center: L.LatLngExpression; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: LatLngExpression; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -76,7 +76,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
-  const finalCenter: L.LatLngExpression = [
+  const finalCenter: LatLngExpression = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
@@ -88,7 +88,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
       zoom={finalZoom}
       scrollWheelZoom={true}
       className={`w-full h-full ${className}`}
-      style={{ zIndex: 0 }} // Ensure map is behind other elements if any
+      style={{ zIndex: 0 }}
     >
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer
