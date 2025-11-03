@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import { LatLngExpression, MapOptions, TileLayerOptions } from 'leaflet'; // Explicitly import types from 'leaflet'
+import type { LatLngExpression, MapOptions, TileLayerOptions } from 'leaflet'; // Using 'import type'
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
