@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css'; // For default marker icon
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'; // For default marker icon - Corrected path
 import 'leaflet-defaulticon-compatibility'; // For default marker icon
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
