@@ -68,7 +68,15 @@ const AdminSettingsPage: React.FC = () => {
   };
 
   const getSettingValue = (key: string, defaultValue: string = "") => {
-    return settings.find(s => s.key === key)?.value || defaultValue;
+    const setting = settings.find(s => s.key === key);
+    if (setting) {
+      return setting.value;
+    }
+    // Default to 'true' for these specific settings if not found in DB
+    if (key === 'allow_new_registrations' || key === 'driver_auto_approve') {
+      return 'true';
+    }
+    return defaultValue;
   };
 
   const getSettingId = (key: string) => {
