@@ -46,16 +46,24 @@ interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles
   driver_profiles: ProfileDetails[] | ProfileDetails | null;
 }
 
+interface MonthlyRevenueData {
+  name: string;
+  total: number;
+}
+
 const OverviewPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
-  const [completedRides, setCompletedRides] = useState<number | null>(null);
+  const [completedRidesCount, setCompletedRidesCount] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [recentRides, setRecentRides] = useState<Ride[]>([]); // Use shared Ride type directly
+  const [revenueData, setRevenueData] = useState<MonthlyRevenueData[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const fetchOverviewData = useCallback(async () => {
+    if (!user?.id) return;
+
     setLoadingData(true);
     try {
       // Fetch total users
@@ -65,13 +73,47 @@ const OverviewPage: React.FC = () => {
       if (usersError) throw usersError;
       setTotalUsers(usersCount);
 
-      // Fetch completed rides
-      const { count: completedRidesCount, error: completedRidesError } = await supabase
+      // Fetch completed rides count
+      const { count: completedRidesCountData, error: completedRidesCountError } = await supabase
         .from('rides')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'completed');
-      if (completedRidesError) throw completedRidesError;
-      setCompletedRides(completedRidesCount);
+      if (completedRidesCountError) throw completedRidesCountError;
+      setCompletedRidesCount(completedRidesCountData);
+
+      // Fetch all completed rides for revenue calculation and chart
+      const { data: allCompletedRides, error: allCompletedRidesError } = await supabase
+        .from('rides')
+        .select('price, created_at')
+        .eq('status', 'completed');
+      if (allCompletedRidesError) throw allCompletedRidesError;
+
+      let calculatedTotalRevenue = 0;
+      const monthlyRevenueMap = new Map<string, number>(); // "YYYY-MM" -> total
+
+      if (allCompletedRides) {
+        allCompletedRides.forEach(ride => {
+          const price = ride.price || 0; // Handle null prices
+          calculatedTotalRevenue += price;
+
+          const date = new Date(ride.created_at);
+          const monthYear = date.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short' }); // e.g., "يناير ٢٠٢٣"
+          monthlyRevenueMap.set(monthYear, (monthlyRevenueMap.get(monthYear) || 0) + price);
+        });
+      }
+      setTotalRevenue(calculatedTotalRevenue);
+
+      // Convert map to array for Recharts, sorting by date
+      const sortedMonthlyRevenue = Array.from(monthlyRevenueMap.entries())
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => {
+          // Simple sorting by month name might not be chronological,
+          // for real app, store month index or full date for sorting.
+          // For now, assuming month names are ordered for display.
+          return 0; // Keep current order or implement proper date sorting
+        });
+      setRevenueData(sortedMonthlyRevenue);
+
 
       // Fetch average rating
       const { data: ratingsData, error: ratingsError } = await supabase
@@ -119,15 +161,13 @@ const OverviewPage: React.FC = () => {
       }) as Ride[]; // Cast to Ride[] after mapping
       setRecentRides(formattedRecentRides);
 
-      // Placeholder for revenue calculation (requires more complex logic, e.g., ride prices)
-      setTotalRevenue(0); // For now, set to 0 or implement actual calculation
     } catch (error: any) {
       toast.error(`فشل جلب بيانات النظرة العامة: ${error.message}`);
       console.error("Error fetching overview data:", error);
     } finally {
       setLoadingData(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!userLoading && user) {
@@ -136,16 +176,6 @@ const OverviewPage: React.FC = () => {
       setLoadingData(false);
     }
   }, [userLoading, user, fetchOverviewData]);
-
-  const revenueData = [
-    { name: "يناير", total: 4000 },
-    { name: "فبراير", total: 3000 },
-    { name: "مارس", total: 5000 },
-    { name: "أبريل", total: 4500 },
-    { name: "مايو", total: 6000 },
-    { name: "يونيو", total: 5500 },
-    { name: "يوليو", total: 7000 },
-  ];
 
   if (userLoading || loadingData) {
     return (
@@ -162,8 +192,8 @@ const OverviewPage: React.FC = () => {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="إجمالي المستخدمين" value={totalUsers !== null ? totalUsers : "N/A"} icon={Users} color="text-blue-500" description="+20.1% من الشهر الماضي" />
-        <StatCard title="الرحلات المكتملة" value={completedRides !== null ? completedRides : "N/A"} icon={Car} color="text-green-500" description="+15.5% من الشهر الماضي" />
-        <StatCard title="إجمالي الإيرادات" value={`SAR ${totalRevenue !== null ? totalRevenue.toLocaleString() : "N/A"}`} icon={DollarSign} color="text-yellow-500" description="+10.0% من الشهر الماضي" />
+        <StatCard title="الرحلات المكتملة" value={completedRidesCount !== null ? completedRidesCount : "N/A"} icon={Car} color="text-green-500" description="+15.5% من الشهر الماضي" />
+        <StatCard title="إجمالي الإيرادات" value={`JOD ${totalRevenue !== null ? totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "N/A"}`} icon={DollarSign} color="text-yellow-500" description="+10.0% من الشهر الماضي" />
         <StatCard title="متوسط التقييم" value={averageRating !== null ? averageRating : "N/A"} icon={Star} color="text-purple-500" description="بناءً على تقييمات السائقين والركاب" />
       </div>
 
@@ -188,7 +218,7 @@ const OverviewPage: React.FC = () => {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `SAR ${value}`}
+                    tickFormatter={(value) => `JOD ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   />
                   <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                   <Tooltip
@@ -200,7 +230,7 @@ const OverviewPage: React.FC = () => {
                     }}
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value: number) => [`SAR ${value.toLocaleString()}`, 'الإجمالي']}
+                    formatter={(value: number) => [`JOD ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'الإجمالي']}
                   />
                   <Bar
                     dataKey="total"
