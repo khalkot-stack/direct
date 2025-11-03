@@ -19,8 +19,8 @@ const defaultSystemSettings: Omit<SystemSetting, 'id' | 'created_at'>[] = [
   { key: 'driver_auto_approve', value: 'true', description: 'الموافقة تلقائيًا على السائقين الجدد عند التسجيل.' },
   { key: 'default_currency', value: 'JOD', description: 'العملة الافتراضية المستخدمة في التطبيق.' },
   { key: 'default_map_zoom', value: '12', description: 'مستوى التكبير الافتراضي للخريطة.' },
-  { key: 'default_map_center_lat', value: '31.9539', description: 'خط العرض الافتراضي لمركز الخريطة (عمان، الأردن).' },
-  { key: 'default_map_center_lng', value: '35.9106', description: 'خط الطول الافتراضي لمركز الخريطة (عمان، الأردن).' },
+  { key: 'default_map_center_lat', value: '31.9539', description: 'خط العرض الافتراضي لمركز الخريطة.' },
+  { key: 'default_map_center_lng', value: '35.9106', description: 'خط الطول الافتراضي لمركز الخريطة.' },
 ];
 
 const AdminSettingsPage: React.FC = () => {

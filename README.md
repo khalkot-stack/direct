@@ -28,9 +28,9 @@ Since you've reset your database, you'll need to:
         ```
         VITE_SUPABASE_URL="YOUR_SUPABASE_URL"
         VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
-        VITE_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY"
+        # VITE_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY" # Removed as OpenStreetMap is used
         ```
-    *   Replace `"YOUR_SUPABASE_URL"`, `"YOUR_SUPABASE_ANON_KEY"`, and `"YOUR_GOOGLE_MAPS_API_KEY"` with your actual keys.
+    *   Replace `"YOUR_SUPABASE_URL"` and `"YOUR_SUPABASE_ANON_KEY"` with your actual keys.
 
 3.  **Run SQL scripts (Optional, but recommended for full functionality):**
     *   You will need to recreate your database schema (tables, RLS policies, functions, etc.) in your Supabase project. You can use the SQL scripts provided in the original codebase or create new ones based on your application's needs.

@@ -1,6 +1,5 @@
-/// <reference types="google.maps" />
+/// <reference types="leaflet" />
+/// <reference types="react-leaflet" />
 
-interface Window {
-  google: typeof google;
-  initMap?: () => void; // Made optional to allow deletion
-}
+// Removed Google Maps types as it's no longer used.
+// If you need to add custom types for Leaflet or other libraries, add them here.
