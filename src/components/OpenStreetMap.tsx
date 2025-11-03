@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, MapContainerProps, TileLayerProps } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'; // For default marker icon - Corrected path
-import 'leaflet-defaulticon-compatibility'; // For default marker icon
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
+import 'leaflet-defaulticon-compatibility';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LatLngExpression } from 'leaflet'; // Direct import of the type
+// Removed direct import of LatLngExpression from 'leaflet'
 
 interface OpenStreetMapProps {
   center?: { lat: number; lng: number };
@@ -19,6 +19,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
+// LatLngExpression should now be globally available from @types/leaflet
 const ChangeView: React.FC<{ center: LatLngExpression; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
@@ -76,25 +77,31 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
+  // LatLngExpression should be globally available now
   const finalCenter: LatLngExpression = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
+  // Use MapContainerProps and TileLayerProps directly for type safety
+  const mapContainerProps: MapContainerProps = {
+    center: finalCenter,
+    zoom: finalZoom,
+    scrollWheelZoom: true,
+    className: `w-full h-full ${className}`,
+    style: { zIndex: 0 },
+  };
+
+  const tileLayerProps: TileLayerProps = {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  };
+
   return (
-    <MapContainer
-      center={finalCenter}
-      zoom={finalZoom}
-      scrollWheelZoom={true}
-      className={`w-full h-full ${className}`}
-      style={{ zIndex: 0 }}
-    >
+    <MapContainer {...mapContainerProps}>
       <ChangeView center={finalCenter} zoom={finalZoom} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer {...tileLayerProps} />
       {children}
     </MapContainer>
   );
