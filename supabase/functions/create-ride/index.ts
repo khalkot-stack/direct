@@ -24,12 +24,18 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
+      console.log('Edge Function: Unauthorized - No user session.')
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
     const { passenger_id, pickup_location, destination, passengers_count } = await req.json()
 
+    console.log('Edge Function: Authenticated user ID:', user.id);
+    console.log('Edge Function: Payload passenger_id:', passenger_id);
+    console.log('Edge Function: User type:', user.app_metadata.user_type);
+
     if (!passenger_id || !pickup_location || !destination || !passengers_count) {
+      console.log('Edge Function: Missing required fields in payload.');
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -37,9 +43,8 @@ serve(async (req) => {
     }
 
     // Ensure the user making the request is authorized to create a ride for this passenger_id
-    // For simplicity, let's assume the authenticated user is the passenger or an admin
-    // A more robust check would be needed here.
     if (user.id !== passenger_id && user.app_metadata.user_type !== 'admin') {
+        console.log('Edge Function: Forbidden - User not authorized to create rides for this passenger_id.');
         return new Response('Forbidden: Not authorized to create rides for this user', { status: 403, headers: corsHeaders })
     }
 
@@ -63,6 +68,7 @@ serve(async (req) => {
       })
     }
 
+    console.log('Edge Function: Ride created successfully:', data);
     return new Response(JSON.stringify(data), {
       status: 201,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
