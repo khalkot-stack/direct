@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface GoogleMapProps {
   center?: { lat: number; lng: number };
@@ -12,21 +14,57 @@ interface GoogleMapProps {
 }
 
 const GoogleMap: React.FC<GoogleMapProps> = ({
-  center = DEFAULT_MAP_CENTER,
-  zoom = DEFAULT_MAP_ZOOM,
+  center, // Now optional, will be overridden by settings if available
+  zoom,   // Now optional, will be overridden by settings if available
   children,
   className,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapSettings, setMapSettings] = useState({
+    center: DEFAULT_MAP_CENTER,
+    zoom: DEFAULT_MAP_ZOOM,
+  });
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
+  const fetchMapSettings = useCallback(async () => {
+    setLoadingSettings(true);
+    const { data, error } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['default_map_zoom', 'default_map_center_lat', 'default_map_center_lng']);
+
+    if (error) {
+      console.error("Error fetching map settings:", error);
+      toast.error("فشل جلب إعدادات الخريطة الافتراضية.");
+    } else {
+      const settingsMap = new Map(data.map(s => [s.key, s.value]));
+      const defaultLat = parseFloat(settingsMap.get('default_map_center_lat') || String(DEFAULT_MAP_CENTER.lat));
+      const defaultLng = parseFloat(settingsMap.get('default_map_center_lng') || String(DEFAULT_MAP_CENTER.lng));
+      const defaultZoom = parseInt(settingsMap.get('default_map_zoom') || String(DEFAULT_MAP_ZOOM));
+
+      setMapSettings({
+        center: { lat: defaultLat, lng: defaultLng },
+        zoom: defaultZoom,
+      });
+    }
+    setLoadingSettings(false);
+  }, []);
+
+  useEffect(() => {
+    fetchMapSettings();
+  }, [fetchMapSettings]);
 
   useEffect(() => {
     const initMap = () => {
-      if (ref.current && !map) {
+      if (ref.current && !map && !loadingSettings) {
+        const finalCenter = center || mapSettings.center;
+        const finalZoom = zoom || mapSettings.zoom;
+
         const newMap = new window.google.maps.Map(ref.current, {
-          center,
-          zoom,
+          center: finalCenter,
+          zoom: finalZoom,
           mapId: "YOUR_MAP_ID", // Consider using a Map ID for custom styling
           disableDefaultUI: true, // Disable default UI for a cleaner look
         });
@@ -35,13 +73,16 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       }
     };
 
-    // Check if Google Maps API is already loaded
-    if (window.google && window.google.maps) {
-      initMap();
-    } else {
-      // If not, attach to the global callback (defined in index.html)
-      // This assumes initMap is globally accessible, which it will be if defined on window
-      window.initMap = initMap;
+    // Only try to init map if settings are loaded
+    if (!loadingSettings) {
+      // Check if Google Maps API is already loaded
+      if (window.google && window.google.maps) {
+        initMap();
+      } else {
+        // If not, attach to the global callback (defined in index.html)
+        // This assumes initMap is globally accessible, which it will be if defined on window
+        window.initMap = initMap;
+      }
     }
 
     return () => {
@@ -50,15 +91,26 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         delete window.initMap;
       }
     };
-  }, [center, zoom, map]);
+  }, [center, zoom, map, isMapLoaded, loadingSettings, mapSettings]);
 
-  // Update map center/zoom if props change
+  // Update map center/zoom if props or fetched settings change
   useEffect(() => {
-    if (map) {
-      map.setCenter(center);
-      map.setZoom(zoom);
+    if (map && !loadingSettings) {
+      const finalCenter = center || mapSettings.center;
+      const finalZoom = zoom || mapSettings.zoom;
+      map.setCenter(finalCenter);
+      map.setZoom(finalZoom);
     }
-  }, [map, center, zoom]);
+  }, [map, center, zoom, loadingSettings, mapSettings]);
+
+  if (loadingSettings) {
+    return (
+      <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="sr-only">جاري تحميل إعدادات الخريطة...</span>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative w-full h-full ${className}`}>
