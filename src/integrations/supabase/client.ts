@@ -19,3 +19,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true, // الكشف عن الجلسة في عنوان URL
   },
 });
+
+// **إضافة مؤقتة لأغراض التصحيح فقط:**
+// تعريض كائن supabase عالميًا للسماح بالوصول إليه من وحدة التحكم في المتصفح.
+// سنقوم بإزالة هذا السطر لاحقًا.
+(window as any).supabase = supabase;
