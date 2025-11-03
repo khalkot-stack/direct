@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LatLngExpression } from 'leaflet'; // Import LatLngExpression from leaflet
+import * as L from 'leaflet'; // Import Leaflet as namespace L
 
 interface OpenStreetMapProps {
   center?: { lat: number; lng: number };
@@ -19,7 +19,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
-const ChangeView: React.FC<{ center: LatLngExpression; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: L.LatLngExpression; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -76,7 +76,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
-  const finalCenter: LatLngExpression = [
+  const finalCenter: L.LatLngExpression = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
@@ -84,15 +84,15 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      center={finalCenter as LatLngExpression} // Explicitly cast to LatLngExpression
-      zoom={finalZoom as number} // Explicitly cast to number
+      center={finalCenter}
+      zoom={finalZoom}
       scrollWheelZoom={true}
       className={`w-full h-full ${className}`}
       style={{ zIndex: 0 }} // Ensure map is behind other elements if any
     >
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer
-        attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' as string} // Explicitly cast to string
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {children}
