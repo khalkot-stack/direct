@@ -13,8 +13,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { SystemSetting } from "@/types/supabase";
 import { useUser } from "@/context/UserContext"; // Import useUser
 
+// Define default system settings
+const defaultSystemSettings: Omit<SystemSetting, 'id' | 'created_at'>[] = [
+  { key: 'allow_new_registrations', value: 'true', description: 'السماح للمستخدمين الجدد بالتسجيل في التطبيق.' },
+  { key: 'driver_auto_approve', value: 'true', description: 'الموافقة تلقائيًا على السائقين الجدد عند التسجيل.' },
+  { key: 'default_currency', value: 'JOD', description: 'العملة الافتراضية المستخدمة في التطبيق.' },
+  { key: 'default_map_zoom', value: '12', description: 'مستوى التكبير الافتراضي للخريطة.' },
+  { key: 'default_map_center_lat', value: '31.9539', description: 'خط العرض الافتراضي لمركز الخريطة (عمان، الأردن).' },
+  { key: 'default_map_center_lng', value: '35.9106', description: 'خط الطول الافتراضي لمركز الخريطة (عمان، الأردن).' },
+];
+
 const AdminSettingsPage: React.FC = () => {
-  const { user, profile, loading: userContextLoading } = useUser(); // Use user context
+  const { user, profile, loading: userContextLoading } = useUser();
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -28,59 +38,71 @@ const AdminSettingsPage: React.FC = () => {
     if (error) {
       toast.error(`فشل جلب الإعدادات: ${error.message}`);
       console.error("Error fetching settings:", error);
+      setSettings([]); // Ensure settings is an empty array on error
     } else {
-      setSettings(data as SystemSetting[]);
+      const fetchedSettingsMap = new Map(data.map(s => [s.key, s]));
+      const mergedSettings: SystemSetting[] = defaultSystemSettings.map(defaultSetting => {
+        const existingSetting = fetchedSettingsMap.get(defaultSetting.key);
+        if (existingSetting) {
+          return existingSetting as SystemSetting;
+        } else {
+          // If setting doesn't exist in DB, create it with default value and null ID for upsert
+          return {
+            id: null as any, // Supabase will generate ID on insert
+            created_at: new Date().toISOString(), // Placeholder, will be set by DB
+            ...defaultSetting,
+          };
+        }
+      });
+      setSettings(mergedSettings);
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     if (!userContextLoading) {
-      console.log("AdminSettingsPage: Current user profile user_type:", profile?.user_type); // Added log
-      console.log("AdminSettingsPage: Current user app_metadata user_type:", user?.app_metadata?.user_type); // Added log
+      console.log("AdminSettingsPage: Current user profile user_type:", profile?.user_type);
+      console.log("AdminSettingsPage: Current user app_metadata user_type:", user?.app_metadata?.user_type);
       fetchSettings();
     }
   }, [userContextLoading, user, profile, fetchSettings]);
 
-  const handleSettingChange = (id: string, newValue: string | boolean) => {
+  const handleSettingChange = (key: string, newValue: string | boolean) => {
     setSettings(prevSettings =>
       prevSettings.map(setting =>
-        setting.id === id ? { ...setting, value: String(newValue) } : setting
+        setting.key === key ? { ...setting, value: String(newValue) } : setting
       )
     );
   };
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    const updates = settings.map(({ id, key, value }) => ({ id, key, value }));
+    // Filter out settings with null IDs if they are not meant to be inserted
+    // For system settings, we want to upsert all of them.
+    const updates = settings.map(({ id, key, value, description, created_at }) => ({
+      id: id === null ? undefined : id, // Convert null id to undefined for Supabase insert
+      key,
+      value,
+      description,
+      created_at,
+    }));
+
     const { error } = await supabase
       .from('settings')
-      .upsert(updates, { onConflict: 'id' });
+      .upsert(updates, { onConflict: 'key' }); // Use 'key' for onConflict as it's unique
 
     if (error) {
       toast.error(`فشل حفظ الإعدادات: ${error.message}`);
       console.error("Error saving settings:", error);
     } else {
       toast.success("تم حفظ الإعدادات بنجاح!");
-      fetchSettings();
+      fetchSettings(); // Re-fetch to get actual IDs for newly inserted settings
     }
     setIsSaving(false);
   };
 
   const getSettingValue = (key: string, defaultValue: string = "") => {
-    const setting = settings.find(s => s.key === key);
-    if (setting) {
-      return setting.value;
-    }
-    // Default to 'true' for these specific settings if not found in DB
-    if (key === 'allow_new_registrations' || key === 'driver_auto_approve') {
-      return 'true';
-    }
-    return defaultValue;
-  };
-
-  const getSettingId = (key: string) => {
-    return settings.find(s => s.key === key)?.id || "";
+    return settings.find(s => s.key === key)?.value || defaultValue;
   };
 
   if (userContextLoading || loading) {
@@ -107,7 +129,7 @@ const AdminSettingsPage: React.FC = () => {
             <Switch
               id="allow-new-registrations"
               checked={getSettingValue("allow_new_registrations") === "true"}
-              onCheckedChange={(checked) => handleSettingChange(getSettingId("allow_new_registrations"), checked)}
+              onCheckedChange={(checked) => handleSettingChange("allow_new_registrations", checked)}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -115,7 +137,7 @@ const AdminSettingsPage: React.FC = () => {
             <Switch
               id="driver-auto-approve"
               checked={getSettingValue("driver_auto_approve") === "true"}
-              onCheckedChange={(checked) => handleSettingChange(getSettingId("driver_auto_approve"), checked)}
+              onCheckedChange={(checked) => handleSettingChange("driver_auto_approve", checked)}
             />
           </div>
           <div className="grid gap-2">
@@ -123,7 +145,7 @@ const AdminSettingsPage: React.FC = () => {
             <Input
               id="default-currency"
               value={getSettingValue("default_currency", "JOD")}
-              onChange={(e) => handleSettingChange(getSettingId("default_currency"), e.target.value)}
+              onChange={(e) => handleSettingChange("default_currency", e.target.value)}
             />
           </div>
         </CardContent>
@@ -143,7 +165,7 @@ const AdminSettingsPage: React.FC = () => {
               min="1"
               max="20"
               value={getSettingValue("default_map_zoom", "12")}
-              onChange={(e) => handleSettingChange(getSettingId("default_map_zoom"), e.target.value)}
+              onChange={(e) => handleSettingChange("default_map_zoom", e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -153,7 +175,7 @@ const AdminSettingsPage: React.FC = () => {
               type="number"
               step="any"
               value={getSettingValue("default_map_center_lat", "31.9539")}
-              onChange={(e) => handleSettingChange(getSettingId("default_map_center_lat"), e.target.value)}
+              onChange={(e) => handleSettingChange("default_map_center_lat", e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -163,7 +185,7 @@ const AdminSettingsPage: React.FC = () => {
               type="number"
               step="any"
               value={getSettingValue("default_map_center_lng", "35.9106")}
-              onChange={(e) => handleSettingChange(getSettingId("default_map_center_lng"), e.target.value)}
+              onChange={(e) => handleSettingChange("default_map_center_lng", e.target.value)}
             />
           </div>
         </CardContent>
