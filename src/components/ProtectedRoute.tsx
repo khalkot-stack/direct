@@ -24,10 +24,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
       return;
     }
 
+    // Check user status from app_metadata
+    const userStatus = user.app_metadata?.status;
+    if (userStatus === 'pending_review') {
+      toast.info("حسابك قيد المراجعة. يرجى الانتظار حتى يتم تفعيله.");
+      navigate("/auth"); // Redirect to auth page if pending review
+      return;
+    }
+
     if (!profile) {
-      // This case should ideally not happen if profile creation in UserProvider works,
-      // but as a fallback, we can assume a default role or redirect.
-      // For now, let's assume if user exists but no profile, it's an issue.
       toast.error("فشل جلب معلومات الملف الشخصي. الرجاء المحاولة مرة أخرى.");
       navigate("/auth");
       return;
@@ -61,7 +66,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
   }
 
   // Only render children if user is loaded, exists, has a profile, and is authorized
-  if (user && profile && allowedRoles.includes(profile.user_type)) {
+  // Also ensure user status is not 'pending_review'
+  if (user && user.app_metadata?.status !== 'pending_review' && profile && allowedRoles.includes(profile.user_type)) {
     return <>{children}</>;
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import React, {
+import React,
+{
   createContext,
   useState,
   useEffect,
@@ -59,9 +60,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           currentUser.user_metadata.full_name ||
           currentUser.email?.split("@")[0] ||
           "مستخدم جديد";
+        // Use app_metadata for user_type and status as they are set during signup
         const defaultUserType =
-          currentUser.user_metadata.user_type || "passenger";
-        const defaultStatus = currentUser.user_metadata.status || "active";
+          currentUser.app_metadata.user_type || "passenger";
+        const defaultStatus = currentUser.app_metadata.status || "active";
         const defaultPhoneNumber = currentUser.user_metadata.phone_number || null;
         const defaultAvatarUrl = currentUser.user_metadata.avatar_url || null;
 

@@ -16,6 +16,8 @@ const UserStatusBadge: React.FC<UserStatusBadgeProps> = ({ status }) => {
       return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-500/80">معلق</Badge>;
     case "banned":
       return <Badge variant="destructive">محظور</Badge>;
+    case "pending_review":
+      return <Badge variant="outline" className="bg-blue-500 hover:bg-blue-500/80 text-white">قيد المراجعة</Badge>;
     default:
       return <Badge variant="outline">غير معروف</Badge>;
   }

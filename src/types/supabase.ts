@@ -3,7 +3,7 @@ export interface Profile {
   full_name: string | null; // Changed to allow null
   email: string;
   user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned";
+  status: "active" | "suspended" | "banned" | "pending_review"; // Added 'pending_review'
   phone_number: string | null; // Changed to allow null
   avatar_url: string | null; // Changed to allow null
   created_at: string;

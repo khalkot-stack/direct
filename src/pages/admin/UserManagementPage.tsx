@@ -31,12 +31,14 @@ import {
 import { useUser } from "@/context/UserContext";
 import { Profile } from "@/types/supabase";
 import UserStatusBadge from "@/components/UserStatusBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // New state for status filter
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | undefined>(undefined);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -119,11 +121,15 @@ const UserManagementPage: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    (user.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.user_type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = (
+      (user.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.user_type.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const matchesStatus = filterStatus === "all" || user.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   if (userLoading || loadingUsers) {
     return (
@@ -137,7 +143,7 @@ const UserManagementPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين في النظام." showBackButton={false} />
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-4">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -148,6 +154,18 @@ const UserManagementPage: React.FC = () => {
             className="pl-8"
           />
         </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="تصفية حسب الحالة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع الحالات</SelectItem>
+            <SelectItem value="active">نشط</SelectItem>
+            <SelectItem value="suspended">معلق</SelectItem>
+            <SelectItem value="banned">محظور</SelectItem>
+            <SelectItem value="pending_review">قيد المراجعة</SelectItem>
+          </SelectContent>
+        </Select>
         <Button onClick={handleAddUser} className="bg-primary hover:bg-primary-dark text-primary-foreground">
           <PlusCircle className="h-4 w-4 ml-2 rtl:mr-2" />
           إضافة مستخدم

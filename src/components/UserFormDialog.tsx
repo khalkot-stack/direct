@@ -31,7 +31,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
   const [email, setEmail] = useState(profile?.email || "");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState<"passenger" | "driver" | "admin">(profile?.user_type || "passenger");
-  const [status, setStatus] = useState<"active" | "suspended" | "banned">(profile?.status || "active");
+  const [status, setStatus] = useState<"active" | "suspended" | "banned" | "pending_review">(profile?.status || "active");
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || "");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -81,7 +81,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             full_name: fullName,
             phone_number: finalPhoneNumber,
             user_type: userType,
-            status: status,
+            status: status, // Use selected status for new user
           },
         },
       });
@@ -175,7 +175,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
             <Label htmlFor="status" className="text-right">
               الحالة
             </Label>
-            <Select value={status} onValueChange={(value: "active" | "suspended" | "banned") => setStatus(value)}>
+            <Select value={status} onValueChange={(value: "active" | "suspended" | "banned" | "pending_review") => setStatus(value)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="اختر حالة المستخدم" />
               </SelectTrigger>
@@ -183,6 +183,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
                 <SelectItem value="active">نشط</SelectItem>
                 <SelectItem value="suspended">معلق</SelectItem>
                 <SelectItem value="banned">محظور</SelectItem>
+                <SelectItem value="pending_review">قيد المراجعة</SelectItem>
               </SelectContent>
             </Select>
           </div>
