@@ -106,14 +106,14 @@ const AdminComplaintManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user?.id) { // Depend only on user.id to prevent re-fetching on profile object changes
+    if (!userLoading && user?.id) {
       console.log("AdminComplaintManagementPage: User ID loaded, fetching complaints.");
       fetchComplaints();
     } else if (!userLoading && !user) {
       console.log("AdminComplaintManagementPage: User not logged in.");
       setLoadingComplaints(false);
     }
-  }, [userLoading, user?.id, fetchComplaints]); // Changed dependency to user?.id
+  }, [userLoading, user?.id, fetchComplaints]);
 
   useSupabaseRealtime(
     'admin_complaints_channel',
@@ -156,7 +156,6 @@ const AdminComplaintManagementPage: React.FC = () => {
     } else {
       toast.success("تم تحديث الشكوى بنجاح!");
       setIsViewDialogOpen(false);
-      // fetchComplaints() will be triggered by realtime
     }
   };
 
@@ -169,16 +168,14 @@ const AdminComplaintManagementPage: React.FC = () => {
       .delete()
       .eq('id', complaintToDelete.id);
     setIsDeleting(false);
-    setComplaintToDelete(null); // Close the dialog
+    setComplaintToDelete(null);
 
     if (error) {
       toast.error(`فشل حذف الشكوى: ${error.message}`);
       console.error("Error deleting complaint:", error);
     } else {
       toast.success("تم حذف الشكوى بنجاح!");
-      // fetchComplaints() will be triggered by realtime
     }
-    // No need to manually fetch, realtime will handle it
   };
 
   const getStatusBadgeVariant = (status: Complaint['status']) => {
@@ -253,7 +250,7 @@ const AdminComplaintManagementPage: React.FC = () => {
           description="لا توجد شكاوى لعرضها حاليًا."
         />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
           <Table>
             <TableHeader>
               <TableRow>

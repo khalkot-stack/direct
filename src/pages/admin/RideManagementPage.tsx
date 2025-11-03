@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search, Edit, Trash2, Loader2, Car as CarIcon } from "lucide-react"; // Removed MessageSquare
+import { PlusCircle, Search, Edit, Trash2, Loader2, Car as CarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RideFormDialog from "@/components/RideFormDialog";
@@ -28,27 +28,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-// Removed ChatDialog import
 import { useUser } from "@/context/UserContext";
-import { Ride, RawRideData } from "@/types/supabase"; // Import shared types
-import RideStatusBadge from "@/components/RideStatusBadge"; // Import the new component
-import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime"; // Import useSupabaseRealtime
+import { Ride, RawRideData } from "@/types/supabase";
+import RideStatusBadge from "@/components/RideStatusBadge";
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
-  const [rides, setRides] = useState<Ride[]>([]); // Changed to use Ride interface directly
+  const [rides, setRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | undefined>(undefined);
   const [isDeleting, setIsDeleting] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
-
-  // Removed chat-related states
-  // const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-  // const [chatRideId, setChatRideId] = useState("");
-  // const [chatOtherUserId, setChatOtherUserId] = useState("");
-  // const [chatOtherUserName, setChatOtherUserName] = useState("");
 
   const fetchRides = useCallback(async () => {
     setLoadingRides(true);
@@ -96,7 +89,7 @@ const RideManagementPage: React.FC = () => {
           passenger_profiles: passengerProfile,
           driver_profiles: driverProfile,
         };
-      }) as Ride[]; // Cast to Ride[] after mapping
+      }) as Ride[];
       console.log("RideManagementPage: Formatted rides:", formattedRides);
       setRides(formattedRides);
     }
@@ -108,7 +101,6 @@ const RideManagementPage: React.FC = () => {
     fetchRides();
   }, [fetchRides]);
 
-  // Realtime subscription for rides
   useSupabaseRealtime(
     'admin_rides_channel',
     {
@@ -118,9 +110,9 @@ const RideManagementPage: React.FC = () => {
     },
     (_payload) => {
       console.log('RideManagementPage: Realtime ride change received:', _payload);
-      fetchRides(); // Re-fetch all rides on any change
+      fetchRides();
     },
-    !!user // Only enable if user is logged in
+    !!user
   );
 
   const handleAddRide = () => {
@@ -128,14 +120,13 @@ const RideManagementPage: React.FC = () => {
     setIsFormDialogOpen(true);
   };
 
-  const handleEditRide = (ride: Ride) => { // Changed type to Ride
+  const handleEditRide = (ride: Ride) => {
     setSelectedRide(ride);
     setIsFormDialogOpen(true);
   };
 
   const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>) => {
     if (selectedRide) {
-      // Update existing ride
       const { id, ...updates } = rideData;
       const { error } = await supabase
         .from('rides')
@@ -148,14 +139,12 @@ const RideManagementPage: React.FC = () => {
         console.error("Supabase update error details:", error.details, error.hint, error.code);
       } else {
         toast.success("تم تحديث الرحلة بنجاح!");
-        // fetchRides(); // Realtime will handle this
       }
     } else {
-      // Create new ride: Omit the 'id' field as it's auto-generated
-      const { id, ...insertData } = rideData; // Destructure to remove 'id'
+      const { id, ...insertData } = rideData;
       const { error } = await supabase
         .from('rides')
-        .insert(insertData); // Insert without 'id'
+        .insert(insertData);
 
       if (error) {
         toast.error(`فشل إضافة الرحلة: ${error.message}`);
@@ -163,7 +152,6 @@ const RideManagementPage: React.FC = () => {
         console.error("Supabase insert error details:", error.details, error.hint, error.code);
       } else {
         toast.success("تم إضافة الرحلة بنجاح!");
-        // fetchRides(); // Realtime will handle this
       }
     }
     setIsFormDialogOpen(false);
@@ -178,18 +166,15 @@ const RideManagementPage: React.FC = () => {
       .delete()
       .eq('id', rideToDelete.id);
     setIsDeleting(false);
-    setRideToDelete(null); // Close the dialog
+    setRideToDelete(null);
 
     if (error) {
       toast.error(`فشل حذف الرحلة: ${error.message}`);
       console.error("Error deleting ride:", error);
     } else {
       toast.success("تم حذف الرحلة بنجاح!");
-      // fetchRides(); // Realtime will handle this
     }
   };
-
-  // Removed handleOpenChat function
 
   const filteredRides = rides.filter(ride => {
     const passengerName = ride.passenger_profiles?.full_name || '';
@@ -240,7 +225,7 @@ const RideManagementPage: React.FC = () => {
           description="لا توجد بيانات رحلات لعرضها. ابدأ بإضافة رحلة جديدة."
         />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -266,7 +251,6 @@ const RideManagementPage: React.FC = () => {
                     <TableCell>{ride.passengers_count}</TableCell>
                     <TableCell><RideStatusBadge status={ride.status} /></TableCell>
                     <TableCell className="text-right">
-                      {/* Removed Chat Button */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -283,7 +267,7 @@ const RideManagementPage: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
-                            onClick={() => setRideToDelete(ride)} // Changed type to Ride
+                            onClick={() => setRideToDelete(ride)}
                             title="حذف"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -327,8 +311,6 @@ const RideManagementPage: React.FC = () => {
         ride={selectedRide}
         onSave={handleSaveRide}
       />
-
-      {/* Removed ChatDialog component */}
     </div>
   );
 };

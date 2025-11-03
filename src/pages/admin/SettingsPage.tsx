@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { SystemSetting } from "@/types/supabase"; // Import shared SystemSetting type
+import { SystemSetting } from "@/types/supabase";
 
 const AdminSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<SystemSetting[]>([]);
@@ -56,7 +56,7 @@ const AdminSettingsPage: React.FC = () => {
       console.error("Error saving settings:", error);
     } else {
       toast.success("تم حفظ الإعدادات بنجاح!");
-      fetchSettings(); // Re-fetch to ensure consistency
+      fetchSettings();
     }
     setIsSaving(false);
   };
@@ -108,7 +108,7 @@ const AdminSettingsPage: React.FC = () => {
             <Label htmlFor="default-currency">العملة الافتراضية</Label>
             <Input
               id="default-currency"
-              value={getSettingValue("default_currency", "SAR")}
+              value={getSettingValue("default_currency", "JOD")} {/* Changed default to JOD */}
               onChange={(e) => handleSettingChange(getSettingId("default_currency"), e.target.value)}
             />
           </div>

@@ -29,8 +29,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useUser } from "@/context/UserContext";
-import { Profile } from "@/types/supabase"; // Import shared Profile type
-import UserStatusBadge from "@/components/UserStatusBadge"; // Import the new component
+import { Profile } from "@/types/supabase";
+import UserStatusBadge from "@/components/UserStatusBadge";
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -60,12 +60,12 @@ const UserManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && user) { // Ensure user is loaded before fetching data
+    if (!userLoading && user) {
       fetchUsers();
     } else if (!userLoading && !user) {
-      setLoadingUsers(false); // No user, no users to fetch
+      setLoadingUsers(false);
     }
-  }, [userLoading, user, fetchUsers]); // Add user to dependency array
+  }, [userLoading, user, fetchUsers]);
 
   const handleAddUser = () => {
     setSelectedUser(undefined);
@@ -81,8 +81,6 @@ const UserManagementPage: React.FC = () => {
 
   const handleSaveUser = async (profileData: Profile) => {
     if (isNewUser) {
-      // User creation is handled within UserFormDialog via supabase.auth.signUp
-      // We just need to refetch users to show the new one
       fetchUsers();
     } else if (selectedUser) {
       const { id, ...updates } = profileData;
@@ -110,7 +108,7 @@ const UserManagementPage: React.FC = () => {
       .delete()
       .eq('id', userToDelete.id);
     setIsDeleting(false);
-    setUserToDelete(null); // Close the dialog
+    setUserToDelete(null);
 
     if (error) {
       toast.error(`فشل حذف المستخدم: ${error.message}`);
@@ -127,7 +125,7 @@ const UserManagementPage: React.FC = () => {
     user.user_type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (userLoading || loadingUsers) { // Use combined loading state
+  if (userLoading || loadingUsers) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -163,7 +161,7 @@ const UserManagementPage: React.FC = () => {
           description="لا توجد بيانات مستخدمين لعرضها. ابدأ بإضافة مستخدم جديد."
         />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
           <Table>
             <TableHeader>
               <TableRow>
