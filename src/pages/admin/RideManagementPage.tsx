@@ -145,6 +145,7 @@ const RideManagementPage: React.FC = () => {
       if (error) {
         toast.error(`فشل تحديث الرحلة: ${error.message}`);
         console.error("Error updating ride:", error);
+        console.error("Supabase update error details:", error.details, error.hint, error.code);
       } else {
         toast.success("تم تحديث الرحلة بنجاح!");
         // fetchRides(); // Realtime will handle this
@@ -159,6 +160,7 @@ const RideManagementPage: React.FC = () => {
       if (error) {
         toast.error(`فشل إضافة الرحلة: ${error.message}`);
         console.error("Error adding ride:", error);
+        console.error("Supabase insert error details:", error.details, error.hint, error.code);
       } else {
         toast.success("تم إضافة الرحلة بنجاح!");
         // fetchRides(); // Realtime will handle this
