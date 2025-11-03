@@ -52,6 +52,7 @@ const RideManagementPage: React.FC = () => {
 
   const fetchRides = useCallback(async () => {
     setLoadingRides(true);
+    console.log("RideManagementPage: Attempting to fetch rides...");
     const { data: ridesRaw, error } = await supabase
       .from('rides')
       .select(`
@@ -76,10 +77,11 @@ const RideManagementPage: React.FC = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error("RideManagementPage: Error fetching rides:", error);
       toast.error(`فشل جلب الرحلات: ${error.message}`);
-      console.error("Error fetching rides:", error);
+      setRides([]);
     } else {
-      // Map raw data to conform to the Ride interface
+      console.log("RideManagementPage: Raw rides data received:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
           ? ride.passenger_profiles[0] || null
@@ -95,9 +97,11 @@ const RideManagementPage: React.FC = () => {
           driver_profiles: driverProfile,
         };
       }) as Ride[]; // Cast to Ride[] after mapping
+      console.log("RideManagementPage: Formatted rides:", formattedRides);
       setRides(formattedRides);
     }
     setLoadingRides(false);
+    console.log("RideManagementPage: Finished fetching rides.");
   }, []);
 
   useEffect(() => {
@@ -113,7 +117,7 @@ const RideManagementPage: React.FC = () => {
       table: 'rides',
     },
     (_payload) => {
-      // console.log('Realtime ride change received:', _payload);
+      console.log('RideManagementPage: Realtime ride change received:', _payload);
       fetchRides(); // Re-fetch all rides on any change
     },
     !!user // Only enable if user is logged in
