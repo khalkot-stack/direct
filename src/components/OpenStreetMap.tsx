@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-// Removed: import type { LatLngExpression, MapOptions, TileLayerOptions } from 'leaflet'; // Relying on global types from @types/leaflet
+import * as L from 'leaflet'; // Explicitly import L namespace
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
