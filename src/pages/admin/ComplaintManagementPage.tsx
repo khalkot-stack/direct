@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminComplaintManagementPage: React.FC = () => {
-  const { user, profile, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
