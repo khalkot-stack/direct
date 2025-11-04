@@ -120,6 +120,7 @@ const AuthPage: React.FC = () => {
       const { fullName, email, password, phoneNumber, userType } = values as RegisterFormInputs;
 
       const initialStatus = (userType === 'driver' && !driverAutoApprove) ? 'pending_review' : 'active';
+      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -127,7 +128,7 @@ const AuthPage: React.FC = () => {
         options: {
           data: {
             full_name: fullName,
-            phone_number: phoneNumber,
+            phone_number: finalPhoneNumber, // Use the potentially nullified phone number
             user_type: userType,
             status: initialStatus,
           },
