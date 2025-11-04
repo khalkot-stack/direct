@@ -194,6 +194,7 @@ const AuthPage: React.FC = () => {
                           id="password"
                           type="password"
                           placeholder="********"
+                          autocomplete="current-password" // Added autocomplete
                           {...field}
                         />
                       </FormControl>
@@ -263,6 +264,7 @@ const AuthPage: React.FC = () => {
                           id="password"
                           type="password"
                           placeholder="********"
+                          autocomplete="new-password" // Added autocomplete
                           {...field}
                         />
                       </FormControl>

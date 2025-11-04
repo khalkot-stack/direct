@@ -44,7 +44,7 @@ import AdminComplaintManagementPage from "@/pages/admin/ComplaintManagementPage"
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <UserProvider>
           <Routes>
             {/* Public Routes */}
