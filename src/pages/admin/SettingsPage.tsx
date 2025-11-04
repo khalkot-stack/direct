@@ -46,9 +46,9 @@ const AdminSettingsPage: React.FC = () => {
         if (existingSetting) {
           return existingSetting as SystemSetting;
         } else {
-          // If setting doesn't exist in DB, create it with default value and null ID for upsert
+          // If setting doesn't exist in DB, create it with default value and undefined ID for upsert
           return {
-            id: null as any, // Supabase will generate ID on insert
+            id: undefined, // Supabase will generate ID on insert
             created_at: new Date().toISOString(), // Placeholder, will be set by DB
             ...defaultSetting,
           };
@@ -78,7 +78,7 @@ const AdminSettingsPage: React.FC = () => {
     // Filter out settings with null IDs if they are not meant to be inserted
     // For system settings, we want to upsert all of them.
     const updates = settings.map(({ id, key, value, description, created_at }) => ({
-      id: id === null ? undefined : id, // Convert null id to undefined for Supabase insert
+      id: id === undefined ? undefined : id, // Keep undefined for new records, existing ID for updates
       key,
       value,
       description,

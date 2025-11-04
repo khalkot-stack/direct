@@ -59,7 +59,6 @@ const DriverHome: React.FC = () => {
 
     if (currentRideError) {
       toast.error(`فشل جلب الرحلة الحالية: ${currentRideError.message}`);
-      console.error("Error fetching current ride:", currentRideError);
       setCurrentRide(null);
     } else if (currentRideRaw && currentRideRaw.length > 0) {
       const ride = currentRideRaw[0] as RawRideData;
@@ -136,16 +135,13 @@ const DriverHome: React.FC = () => {
             .eq('id', currentRide.id);
 
           if (error) {
-            console.error("Error updating driver location:", error);
-            // toast.error("فشل تحديث موقع السائق."); // Avoid spamming toasts
+            toast.error("فشل تحديث موقع السائق."); // Uncommented toast error
           } else {
-            // console.log(`Driver location updated: Lat ${latitude}, Lng ${longitude}`);
             // Optionally update local state to reflect new location on map if needed
             setCurrentRide(prev => prev ? { ...prev, driver_current_lat: latitude, driver_current_lng: longitude } : null);
           }
         },
         (error) => {
-          console.error("Error getting geolocation:", error);
           toast.error("فشل الحصول على موقعك. الرجاء التأكد من تمكين خدمات الموقع.");
           handleStopTracking(); // Stop tracking on error
         },
@@ -190,7 +186,6 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل إكمال الرحلة: ${error.message}`);
-      console.error("Error completing ride:", error);
     } else {
       setCurrentRide(null);
       handleStopTracking();
@@ -229,7 +224,6 @@ const DriverHome: React.FC = () => {
 
     if (error) {
       toast.error(`فشل إلغاء الرحلة: ${error.message}`);
-      console.error("Error cancelling ride:", error);
     } else {
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
