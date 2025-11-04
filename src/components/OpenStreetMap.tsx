@@ -97,6 +97,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
+  // Use a key that changes only when the map's core properties (center, zoom) change
+  // This forces React to re-mount the MapContainer if these props change, preventing re-initialization errors.
   const mapComponentKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
 
   const tileLayerProps = {
@@ -106,7 +108,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapComponentKey}
+      key={mapComponentKey} // Added key here
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
