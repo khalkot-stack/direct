@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import type * as Leaflet from 'leaflet'; // استيراد الأنواع فقط
+// تم إزالة الاستيراد الصريح لـ 'leaflet'
 import 'leaflet/dist/leaflet.css';
 // تم إزالة الاستيراد الصريح لملف CSS الخاص بـ leaflet-defaulticon-compatibility
 // تم إزالة الاستيراد الصريح لـ leaflet-defaulticon-compatibility
@@ -19,7 +19,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
-const ChangeView: React.FC<{ center: Leaflet.LatLngExpression; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: any; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -76,15 +76,13 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
-  const finalCenter: Leaflet.LatLngExpression = [
+  const finalCenter: any = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Use MapOptions from leaflet for core map properties
-  // and then add react-leaflet specific props like className
-  const mapContainerProps: Leaflet.MapOptions & { className?: string; style?: React.CSSProperties } = {
+  const mapContainerProps: any = {
     center: finalCenter,
     zoom: finalZoom,
     scrollWheelZoom: true,
@@ -92,8 +90,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     style: { zIndex: 0 },
   };
 
-  // Use TileLayerOptions from leaflet for core tile layer properties
-  const tileLayerProps: Leaflet.TileLayerOptions = {
+  const tileLayerProps: any = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   };
