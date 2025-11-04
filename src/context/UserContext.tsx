@@ -42,7 +42,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       .eq("id", userId)
       .single();
 
-    if (error && status !== 406) {
+    if (error && status !== 406) { // 406 means no rows found, which is handled below
       console.error("UserContext: Error fetching profile:", error);
       setProfile(null);
     } else if (data) {
