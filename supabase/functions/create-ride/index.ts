@@ -28,7 +28,13 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
+    console.log('Edge Function: User ID from JWT:', user.id);
+    console.log('Edge Function: User app_metadata:', user.app_metadata);
+    console.log('Edge Function: User type from app_metadata:', user.app_metadata.user_type);
+
     const { passenger_id, pickup_location, destination, passengers_count } = await req.json()
+
+    console.log('Edge Function: Payload received - passenger_id:', passenger_id, 'pickup_location:', pickup_location, 'destination:', destination, 'passengers_count:', passengers_count);
 
     if (!passenger_id || !pickup_location || !destination || !passengers_count) {
       console.error('Edge Function: Missing required fields in payload.');
