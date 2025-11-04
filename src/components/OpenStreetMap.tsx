@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import type * as Leaflet from 'leaflet'; // استيراد الأنواع فقط
 import 'leaflet/dist/leaflet.css';
 // تم إزالة الاستيراد الصريح لملف CSS الخاص بـ leaflet-defaulticon-compatibility
-import 'leaflet-defaulticon-compatibility';
+// تم إزالة الاستيراد الصريح لـ leaflet-defaulticon-compatibility
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
