@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import L from 'leaflet'; // Import Leaflet library
+import L from 'leaflet';
 
 // Fix for default Leaflet icons not showing up
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -44,8 +44,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [mapRenderKey, setMapRenderKey] = useState(0); // Dynamic key for MapContainer
-  const mapRef = useRef<L.Map | null>(null); // Ref to hold the Leaflet map instance
+  const [mapReady, setMapReady] = useState(false); // New state to control MapContainer rendering
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -67,8 +66,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
-      // Increment key here to force remount after settings are loaded
-      setMapRenderKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -77,17 +74,17 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  // Cleanup effect for Leaflet map instance
+  // Use a setTimeout to defer rendering MapContainer
   useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []); // Run only on mount and unmount
+    if (!loadingSettings) {
+      const timer = setTimeout(() => {
+        setMapReady(true);
+      }, 100); // A small delay
+      return () => clearTimeout(timer);
+    }
+  }, [loadingSettings]);
 
-  if (loadingSettings) {
+  if (loadingSettings || !mapReady) { // Only show loader if settings are loading or map isn't ready
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -109,13 +106,11 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapRenderKey} // Use the incrementing key to force remount
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
       className={`w-full h-full ${className}`}
       style={{ zIndex: 0 }}
-      whenCreated={mapInstance => { mapRef.current = mapInstance; }} // Store map instance in ref
     >
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer {...tileLayerProps} />
