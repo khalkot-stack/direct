@@ -2,10 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-// تم إزالة الاستيراد الصريح لـ 'leaflet'
 import 'leaflet/dist/leaflet.css';
-// تم إزالة الاستيراد الصريح لملف CSS الخاص بـ leaflet-defaulticon-compatibility
-// تم إزالة الاستيراد الصريح لـ leaflet-defaulticon-compatibility
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +16,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
-const ChangeView: React.FC<{ center: any; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -76,13 +73,13 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
-  const finalCenter: any = [
+  const finalCenter: [number, number] = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  const mapContainerProps: any = {
+  const mapContainerProps = {
     center: finalCenter,
     zoom: finalZoom,
     scrollWheelZoom: true,
@@ -90,7 +87,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     style: { zIndex: 0 },
   };
 
-  const tileLayerProps: any = {
+  const tileLayerProps = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   };
