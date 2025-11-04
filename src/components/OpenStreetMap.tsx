@@ -35,15 +35,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [isComponentMounted, setIsComponentMounted] = useState(false);
-
-  // This effect runs once to mark the component as mounted
-  useEffect(() => {
-    setIsComponentMounted(true);
-    return () => {
-      setIsComponentMounted(false);
-    };
-  }, []);
+  const [mapInstanceKey, setMapInstanceKey] = useState(0); // Dynamic key for MapContainer
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -65,6 +57,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+      // Increment key here to force remount after settings are loaded
+      setMapInstanceKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -73,8 +67,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  // Only show loader if settings are loading OR component is not yet fully mounted
-  if (loadingSettings || !isComponentMounted) {
+  if (loadingSettings) {
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -89,10 +82,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Use a key that changes when relevant props change to force remount
-  // This is the primary mechanism to prevent "Map container is already initialized"
-  const mapKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}-${className}`;
-
   const tileLayerProps = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -100,7 +89,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapKey} // Pass key directly
+      key={mapInstanceKey} // Use the incrementing key
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
