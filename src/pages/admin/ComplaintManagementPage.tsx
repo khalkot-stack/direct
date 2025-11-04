@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ComplaintTableSkeleton from "@/components/skeletons/ComplaintTableSkeleton"; // Import the new skeleton component
 
 const AdminComplaintManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -206,7 +207,7 @@ const AdminComplaintManagementPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (userLoading || loadingComplaints) {
+  if (userLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -243,7 +244,9 @@ const AdminComplaintManagementPage: React.FC = () => {
         </Select>
       </div>
 
-      {filteredComplaints.length === 0 ? (
+      {loadingComplaints ? (
+        <ComplaintTableSkeleton />
+      ) : filteredComplaints.length === 0 ? (
         <EmptyState
           icon={Flag}
           title="لا توجد شكاوى"

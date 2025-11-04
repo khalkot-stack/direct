@@ -32,6 +32,7 @@ import { useUser } from "@/context/UserContext";
 import { Ride, RawRideData } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
+import RideTableSkeleton from "@/components/skeletons/RideTableSkeleton"; // Import the new skeleton component
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -189,7 +190,7 @@ const RideManagementPage: React.FC = () => {
     );
   });
 
-  if (userLoading || loadingRides) {
+  if (userLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -218,7 +219,9 @@ const RideManagementPage: React.FC = () => {
         </Button>
       </div>
 
-      {filteredRides.length === 0 ? (
+      {loadingRides ? (
+        <RideTableSkeleton />
+      ) : filteredRides.length === 0 ? (
         <EmptyState
           icon={CarIcon}
           title="لا توجد رحلات"
