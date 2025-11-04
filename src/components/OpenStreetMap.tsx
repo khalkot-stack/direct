@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import * as L from 'leaflet'; // Explicitly import L namespace again
+import * as L from 'leaflet'; // Keep L for runtime usage if needed, but import types explicitly
+import { LatLngExpression, MapOptions, TileLayerOptions } from 'leaflet'; // Explicitly import types
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-icon.css'; // Corrected import path for default icon CSS
 import 'leaflet-defaulticon-compatibility';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
@@ -19,7 +20,7 @@ interface OpenStreetMapProps {
 }
 
 // Helper component to update map center and zoom
-const ChangeView: React.FC<{ center: L.LatLngExpression; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: LatLngExpression; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -76,7 +77,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     );
   }
 
-  const finalCenter: L.LatLngExpression = [
+  const finalCenter: LatLngExpression = [
     (center || mapSettings.center).lat,
     (center || mapSettings.center).lng,
   ];
@@ -84,7 +85,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   // Use MapOptions from leaflet for core map properties
   // and then add react-leaflet specific props like className
-  const mapContainerProps: L.MapOptions & { className?: string; style?: React.CSSProperties } = {
+  const mapContainerProps: MapOptions & { className?: string; style?: React.CSSProperties } = {
     center: finalCenter,
     zoom: finalZoom,
     scrollWheelZoom: true,
@@ -93,7 +94,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   };
 
   // Use TileLayerOptions from leaflet for core tile layer properties
-  const tileLayerProps: L.TileLayerOptions = {
+  const tileLayerProps: TileLayerOptions = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   };
