@@ -43,12 +43,12 @@ const DriverAvailableRidesPage: React.FC = () => {
 
   const fetchAvailableRides = useCallback(async (currentPage: number, append: boolean) => {
     if (!user?.id) {
-      console.log("fetchAvailableRides: User ID not available, skipping fetch.");
+      console.log("DriverAvailableRidesPage: fetchAvailableRides - User ID not available, skipping fetch.");
       setLoadingRides(false);
       return;
     }
 
-    console.log("fetchAvailableRides: Fetching for user ID:", user.id, "Page:", currentPage, "Append:", append, "Search Criteria:", searchCriteria);
+    console.log("DriverAvailableRidesPage: fetchAvailableRides - User ID:", user.id, "User Type from app_metadata:", user.app_metadata?.user_type, "Page:", currentPage, "Append:", append, "Search Criteria:", searchCriteria);
 
     setLoadingRides(true);
 
@@ -68,26 +68,26 @@ const DriverAvailableRidesPage: React.FC = () => {
       .range(offset, offset + limit - 1);
 
     // Log the constructed query filters (simplified representation)
-    console.log("fetchAvailableRides: Supabase query filters - status=pending, driver_id=null, (passenger_id!=current_user_id - TEMPORARILY REMOVED)");
+    console.log("DriverAvailableRidesPage: fetchAvailableRides - Supabase query filters - status=pending, driver_id=null, (passenger_id!=current_user_id - TEMPORARILY REMOVED)");
 
     if (searchCriteria?.pickupLocation) {
       query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
-      console.log("fetchAvailableRides: Adding pickup_location filter:", searchCriteria.pickupLocation);
+      console.log("DriverAvailableRidesPage: fetchAvailableRides - Adding pickup_location filter:", searchCriteria.pickupLocation);
     }
     if (searchCriteria?.destination) {
       query = query.ilike('destination', `%${searchCriteria.destination}%`);
-      console.log("fetchAvailableRides: Adding destination filter:", searchCriteria.destination);
+      console.log("DriverAvailableRidesPage: fetchAvailableRides - Adding destination filter:", searchCriteria.destination);
     }
 
     const { data: ridesRaw, error: ridesError, count } = await query;
 
     if (ridesError) {
-      console.error("fetchAvailableRides: Error fetching available rides:", ridesError);
+      console.error("DriverAvailableRidesPage: fetchAvailableRides - Error fetching available rides:", ridesError);
       toast.error(`فشل جلب الرحلات المتاحة: ${ridesError.message}`);
       setAvailableRides([]);
       setHasMoreRides(false);
     } else {
-      console.log("fetchAvailableRides: Successfully fetched rides. Count:", count, "Raw data:", ridesRaw);
+      console.log("DriverAvailableRidesPage: fetchAvailableRides - Successfully fetched rides. Count:", count, "Raw data:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
           ? ride.passenger_profiles[0] || null

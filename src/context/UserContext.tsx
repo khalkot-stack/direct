@@ -101,6 +101,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       setSession(initialSession);
       setUser(initialSession?.user || null);
+      console.log("UserContext: Initial session user:", initialSession?.user?.id, "App Metadata:", initialSession?.user?.app_metadata);
+
 
       if (initialSession?.user) {
         await fetchUserProfile(initialSession.user.id);
@@ -112,10 +114,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const { data } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
           if (_event === 'TOKEN_REFRESHED') {
-            // console.log('UserContext: Supabase token refreshed!'); // Keep this log for token refresh info
+            console.log('UserContext: Supabase token refreshed!');
           }
           setSession(currentSession);
           setUser(currentSession?.user || null);
+          console.log("UserContext: Auth state changed - Event:", _event, "User ID:", currentSession?.user?.id, "App Metadata:", currentSession?.user?.app_metadata);
+
           if (currentSession?.user) {
             await fetchUserProfile(currentSession.user.id);
           } else {
