@@ -63,12 +63,12 @@ const DriverAvailableRidesPage: React.FC = () => {
       `, { count: 'exact' })
       .eq('status', 'pending')
       .is('driver_id', null)
-      .neq('passenger_id', user.id)
+      // .neq('passenger_id', user.id) // تم إزالة هذا الشرط مؤقتًا لأغراض تصحيح الأخطاء
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     // Log the constructed query filters (simplified representation)
-    console.log("fetchAvailableRides: Supabase query filters - status=pending, driver_id=null, passenger_id!=current_user_id");
+    console.log("fetchAvailableRides: Supabase query filters - status=pending, driver_id=null, (passenger_id!=current_user_id - TEMPORARILY REMOVED)");
 
     if (searchCriteria?.pickupLocation) {
       query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
