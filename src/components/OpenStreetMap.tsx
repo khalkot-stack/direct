@@ -44,8 +44,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [mapReady, setMapReady] = useState(false); // Controls when MapContainer is rendered
-  const [mapInstanceKey, setMapInstanceKey] = useState(0); // Key to force remount of MapContainer
+  const [mapRenderKey, setMapRenderKey] = useState(0); // Key to force remount of the map container
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -67,6 +66,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+      // Increment key here to force remount of the outer div and MapContainer
+      setMapRenderKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -75,18 +76,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  // Effect to delay rendering and update key once settings are loaded
-  useEffect(() => {
-    if (!loadingSettings) {
-      const timer = setTimeout(() => {
-        setMapReady(true);
-        setMapInstanceKey(prev => prev + 1); // Increment key to force remount
-      }, 100); // A small delay to allow StrictMode's double render to complete
-      return () => clearTimeout(timer);
-    }
-  }, [loadingSettings]);
-
-  if (!mapReady) { // Show loader if settings are loading or map isn't ready
+  if (loadingSettings) {
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -107,18 +97,19 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   };
 
   return (
-    <MapContainer
-      key={mapInstanceKey} // Use the incrementing key to force remount
-      center={finalCenter}
-      zoom={finalZoom}
-      scrollWheelZoom={true}
-      className={`w-full h-full ${className}`}
-      style={{ zIndex: 0 }}
-    >
-      <ChangeView center={finalCenter} zoom={finalZoom} />
-      <TileLayer {...tileLayerProps} />
-      {children}
-    </MapContainer>
+    <div key={mapRenderKey} className={`w-full h-full ${className}`} style={{ zIndex: 0 }}>
+      <MapContainer
+        center={finalCenter}
+        zoom={finalZoom}
+        scrollWheelZoom={true}
+        className="w-full h-full" // Apply full size to MapContainer itself
+        style={{ zIndex: 0 }}
+      >
+        <ChangeView center={finalCenter} zoom={finalZoom} />
+        <TileLayer {...tileLayerProps} />
+        {children}
+      </MapContainer>
+    </div>
   );
 };
 
