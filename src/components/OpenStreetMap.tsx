@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import * as L from 'leaflet'; // Keep L for runtime usage if needed, but import types explicitly
+// Removed: import * as L from 'leaflet'; // No longer needed as specific types are imported directly
 import { LatLngExpression, MapOptions, TileLayerOptions } from 'leaflet'; // Explicitly import types
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-icon.css'; // Corrected import path for default icon CSS
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
