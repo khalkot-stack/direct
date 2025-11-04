@@ -62,7 +62,6 @@ const AdminComplaintManagementPage: React.FC = () => {
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
-    console.log("AdminComplaintManagementPage: Attempting to fetch complaints...");
     const { data: complaintsRaw, error } = await supabase
       .from('complaints')
       .select(`
@@ -78,7 +77,6 @@ const AdminComplaintManagementPage: React.FC = () => {
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
       setComplaints([]);
     } else {
-      console.log("AdminComplaintManagementPage: Raw complaints data received:", complaintsRaw);
       const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
         const passengerProfile = Array.isArray(comp.passenger_profiles)
           ? comp.passenger_profiles[0] || null
@@ -99,19 +97,15 @@ const AdminComplaintManagementPage: React.FC = () => {
           ride_details: rideDetails,
         };
       });
-      console.log("AdminComplaintManagementPage: Formatted complaints:", formattedComplaints);
       setComplaints(formattedComplaints);
     }
     setLoadingComplaints(false);
-    console.log("AdminComplaintManagementPage: Finished fetching complaints.");
   }, []);
 
   useEffect(() => {
     if (!userLoading && user?.id) {
-      console.log("AdminComplaintManagementPage: User ID loaded, fetching complaints.");
       fetchComplaints();
     } else if (!userLoading && !user) {
-      console.log("AdminComplaintManagementPage: User not logged in.");
       setLoadingComplaints(false);
     }
   }, [userLoading, user?.id, fetchComplaints]);
@@ -124,7 +118,6 @@ const AdminComplaintManagementPage: React.FC = () => {
       table: 'complaints',
     },
     (_payload) => {
-      console.log("AdminComplaintManagementPage: Realtime update received, re-fetching complaints.");
       fetchComplaints();
     },
     !!user

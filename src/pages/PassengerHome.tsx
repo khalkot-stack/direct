@@ -100,7 +100,6 @@ const PassengerHome: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      // console.log('Change received in PassengerHome!', payload);
       if (user) {
         fetchCurrentRide(user.id);
         if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
@@ -205,7 +204,7 @@ const PassengerHome: React.FC = () => {
   if (userLoading || loadingRideData) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 w-8 animate-spin text-primary" />
         <span className="sr-only">جاري تحميل التطبيق...</span>
       </div>
     );

@@ -52,11 +52,6 @@ const AdminLoginPage: React.FC = () => {
       toast.error(`فشل تسجيل الدخول: ${error.message}`);
     } else {
       const { data: { user } } = await supabase.auth.getUser();
-      // تم التعديل: التحقق من user_type من app_metadata بدلاً من user_metadata
-      console.log("AdminLoginPage: User after login:", user); // Added log
-      console.log("AdminLoginPage: User app_metadata user_type:", user?.app_metadata?.user_type); // Added log
-      console.log("AdminLoginPage: User app_metadata status:", user?.app_metadata?.status); // Added log
-
       const userRole = user?.app_metadata?.user_type;
       const userStatus = user?.app_metadata?.status;
 

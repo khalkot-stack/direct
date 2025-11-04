@@ -61,8 +61,6 @@ const AdminSettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (!userContextLoading) {
-      console.log("AdminSettingsPage: Current user profile user_type:", profile?.user_type);
-      console.log("AdminSettingsPage: Current user app_metadata user_type:", user?.app_metadata?.user_type);
       fetchSettings();
     }
   }, [userContextLoading, user, profile, fetchSettings]);
