@@ -35,16 +35,15 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [shouldRenderMap, setShouldRenderMap] = useState(false); // State to control map rendering
+  const [mapRenderKey, setMapRenderKey] = useState(0); // Dynamic key for MapContainer
 
   useEffect(() => {
-    // Set to true after initial render to allow MapContainer to mount
-    setShouldRenderMap(true);
-    return () => {
-      // Reset on unmount to ensure clean state if component remounts
-      setShouldRenderMap(false);
-    };
-  }, []);
+    // Increment the key when settings are loaded to force a re-render of MapContainer
+    // This helps prevent the "Map container is already initialized" error in StrictMode
+    if (!loadingSettings) {
+      setMapRenderKey(prev => prev + 1);
+    }
+  }, [loadingSettings]);
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -74,7 +73,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  if (loadingSettings || !shouldRenderMap) {
+  if (loadingSettings) {
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -89,8 +88,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Separate key from other props
-  const mapKey = 'map-container';
   const mapProps = {
     center: finalCenter,
     zoom: finalZoom,
@@ -99,18 +96,18 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     style: { zIndex: 0 },
   };
 
+  const tileLayerProps = {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  };
+
   return (
-    <MapContainer key={mapKey} {...mapProps}>
+    <MapContainer key={mapRenderKey} {...mapProps}>
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer {...tileLayerProps} />
       {children}
     </MapContainer>
   );
-};
-
-const tileLayerProps = {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 };
 
 export default OpenStreetMap;
