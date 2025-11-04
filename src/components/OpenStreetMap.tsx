@@ -1,12 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import L from 'leaflet'; // Import Leaflet library
+
+// Fix for default Leaflet icons not showing up
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 interface OpenStreetMapProps {
   center?: { lat: number; lng: number };
@@ -36,6 +45,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [mapRenderKey, setMapRenderKey] = useState(0); // Dynamic key for MapContainer
+  const mapRef = useRef<L.Map | null>(null); // Ref to hold the Leaflet map instance
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -67,6 +77,16 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
+  // Cleanup effect for Leaflet map instance
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []); // Run only on mount and unmount
+
   if (loadingSettings) {
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
@@ -95,6 +115,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
       scrollWheelZoom={true}
       className={`w-full h-full ${className}`}
       style={{ zIndex: 0 }}
+      whenCreated={mapInstance => { mapRef.current = mapInstance; }} // Store map instance in ref
     >
       <ChangeView center={finalCenter} zoom={finalZoom} />
       <TileLayer {...tileLayerProps} />
