@@ -24,8 +24,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    /* Type Roots for external declarations */
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src", "vite-env.d.ts", "postcss.config.js", "tailwind.config.ts"],
+  "include": ["src", "src/types/global.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
