@@ -122,9 +122,10 @@ const DriverAvailableRidesPage: React.FC = () => {
     },
     (_payload) => {
       if (user) {
-        // On any change to pending rides, reset pagination and re-fetch the first page
-        setPage(0); // This will trigger the useEffect for initial load/search changes
+        // On any change to pending rides, directly re-fetch the first page and clear existing rides
         setAvailableRides([]); // Clear existing rides immediately for visual feedback
+        setPage(0); // Reset page to 0
+        fetchAvailableRides(0, false); // Re-fetch the first page
       }
     },
     !!user
