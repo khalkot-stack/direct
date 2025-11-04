@@ -28,6 +28,7 @@ interface OpenStreetMapProps {
 const ChangeView: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
+    console.log("ChangeView: Setting map view to", center, zoom);
     map.setView(center, zoom);
   }, [center, zoom, map]);
   return null;
@@ -44,14 +45,10 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [hasMounted, setHasMounted] = useState(false); // New state to track if component has mounted
-
-  // Effect to set hasMounted to true only once after initial render
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
+  const [mapInitialized, setMapInitialized] = useState(false); // Tracks if map has been initialized once
 
   const fetchMapSettings = useCallback(async () => {
+    console.log("OpenStreetMap: Fetching map settings...");
     setLoadingSettings(true);
     const { data, error } = await supabase
       .from('settings')
@@ -59,7 +56,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
       .in('key', ['default_map_zoom', 'default_map_center_lat', 'default_map_center_lng']);
 
     if (error) {
-      console.error("Error fetching map settings:", error);
+      console.error("OpenStreetMap: Error fetching map settings:", error);
       toast.error("فشل جلب إعدادات الخريطة الافتراضية.");
     } else {
       const settingsMap = new Map(data.map(s => [s.key, s.value]));
@@ -71,19 +68,23 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+      console.log("OpenStreetMap: Map settings fetched:", { lat: defaultLat, lng: defaultLng, zoom: defaultZoom });
     }
     setLoadingSettings(false);
-  }, []);
+    // Mark map as initialized after settings are loaded for the first time
+    if (!mapInitialized) {
+      setMapInitialized(true);
+      console.log("OpenStreetMap: Map marked as initialized.");
+    }
+  }, [mapInitialized]);
 
   useEffect(() => {
-    // Only fetch settings if the component has mounted
-    if (hasMounted) {
-      fetchMapSettings();
-    }
-  }, [hasMounted, fetchMapSettings]);
+    fetchMapSettings();
+  }, [fetchMapSettings]);
 
-  // Show loader if settings are loading or if the component hasn't mounted yet
-  if (loadingSettings || !hasMounted) {
+  // Show loader if settings are loading or if the map hasn't been initialized yet
+  if (loadingSettings || !mapInitialized) {
+    console.log("OpenStreetMap: Rendering loader. loadingSettings:", loadingSettings, "mapInitialized:", mapInitialized);
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -98,10 +99,10 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Create a unique key based on the final map properties.
-  // This key will only change if the actual center or zoom props change,
-  // forcing a remount of MapContainer when necessary, but not on every StrictMode re-render.
-  const mapComponentKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
+  // Use a simple key that changes only when the map is truly ready to be rendered
+  // This helps React treat it as a new component instance only when necessary
+  const mapKey = `map-${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
+  console.log("OpenStreetMap: Rendering MapContainer with key:", mapKey, "Center:", finalCenter, "Zoom:", finalZoom);
 
   const tileLayerProps = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -110,7 +111,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapComponentKey} // Apply key directly to MapContainer
+      key={mapKey}
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
