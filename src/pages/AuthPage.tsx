@@ -258,7 +258,7 @@ const AuthPage: React.FC = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel htmlFor="password">كلمة المرور</Label>
+                      <FormLabel htmlFor="password">كلمة المرور</FormLabel>
                       <FormControl>
                         <Input
                           id="password"
