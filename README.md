@@ -28,7 +28,6 @@ Since you've reset your database, you'll need to:
         ```
         VITE_SUPABASE_URL="YOUR_SUPABASE_URL"
         VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
-        # VITE_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY" # Removed as OpenStreetMap is used
         ```
     *   Replace `"YOUR_SUPABASE_URL"` and `"YOUR_SUPABASE_ANON_KEY"` with your actual keys.
 
