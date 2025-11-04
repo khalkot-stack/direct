@@ -122,7 +122,39 @@ const DriverHome: React.FC = () => {
 
   const updateDriverLocation = useCallback(async () => {
     if (!currentRide || !user) return;
-    // console.log("Simulating driver location update for ride:", currentRide.id);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const { error } = await supabase
+            .from('rides')
+            .update({
+              driver_current_lat: latitude,
+              driver_current_lng: longitude,
+            })
+            .eq('id', currentRide.id);
+
+          if (error) {
+            console.error("Error updating driver location:", error);
+            // toast.error("فشل تحديث موقع السائق."); // Avoid spamming toasts
+          } else {
+            // console.log(`Driver location updated: Lat ${latitude}, Lng ${longitude}`);
+            // Optionally update local state to reflect new location on map if needed
+            setCurrentRide(prev => prev ? { ...prev, driver_current_lat: latitude, driver_current_lng: longitude } : null);
+          }
+        },
+        (error) => {
+          console.error("Error getting geolocation:", error);
+          toast.error("فشل الحصول على موقعك. الرجاء التأكد من تمكين خدمات الموقع.");
+          handleStopTracking(); // Stop tracking on error
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    } else {
+      toast.error("متصفحك لا يدعم تحديد الموقع الجغرافي.");
+      handleStopTracking(); // Stop tracking if not supported
+    }
   }, [currentRide, user]);
 
   const handleStartTracking = () => {
@@ -131,8 +163,10 @@ const DriverHome: React.FC = () => {
       return;
     }
     setIsTrackingLocation(true);
-    toast.info("بدء تتبع موقعك (محاكاة).");
-    locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
+    toast.info("بدء تتبع موقعك.");
+    // Immediately update location once, then start interval
+    updateDriverLocation();
+    locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000); // Update every 5 seconds
   };
 
   const handleStopTracking = () => {
@@ -141,7 +175,7 @@ const DriverHome: React.FC = () => {
       locationIntervalRef.current = null;
     }
     setIsTrackingLocation(false);
-    toast.info("تم إيقاف تتبع موقعك (محاكاة).");
+    toast.info("تم إيقاف تتبع موقعك.");
   };
 
   const handleCompleteRide = async () => {
