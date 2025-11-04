@@ -5,7 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// import { Label } from "@/components/ui/label"; // Removed unused import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -194,7 +194,7 @@ const AuthPage: React.FC = () => {
                           id="password"
                           type="password"
                           placeholder="********"
-                          autocomplete="current-password" // Added autocomplete
+                          autoComplete="current-password" // Fixed: autocomplete to autoComplete
                           {...field}
                         />
                       </FormControl>
@@ -258,13 +258,13 @@ const AuthPage: React.FC = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel htmlFor="password">كلمة المرور</FormLabel>
+                      <FormLabel htmlFor="password">كلمة المرور</Label>
                       <FormControl>
                         <Input
                           id="password"
                           type="password"
                           placeholder="********"
-                          autocomplete="new-password" // Added autocomplete
+                          autoComplete="new-password" // Fixed: autocomplete to autoComplete
                           {...field}
                         />
                       </FormControl>

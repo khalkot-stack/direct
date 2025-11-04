@@ -76,7 +76,7 @@ export interface UserSettings {
 }
 
 export interface SystemSetting {
-  id: string;
+  id?: string; // Made optional to allow for new settings without an ID
   key: string;
   value: string;
   description?: string;

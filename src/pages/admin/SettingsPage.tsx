@@ -46,11 +46,14 @@ const AdminSettingsPage: React.FC = () => {
         if (existingSetting) {
           return existingSetting as SystemSetting;
         } else {
-          // If setting doesn't exist in DB, create it with default value and undefined ID for upsert
+          // For new settings, omit 'id' from the object passed to upsert.
+          // However, for local state, we need to conform to SystemSetting interface.
+          // Since 'id' is now optional, we can simply omit it.
           return {
-            id: undefined, // Supabase will generate ID on insert
-            created_at: new Date().toISOString(), // Placeholder, will be set by DB
-            ...defaultSetting,
+            key: defaultSetting.key,
+            value: defaultSetting.value,
+            description: defaultSetting.description,
+            created_at: new Date().toISOString(), // Placeholder for local state
           };
         }
       });
@@ -75,15 +78,12 @@ const AdminSettingsPage: React.FC = () => {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    // Filter out settings with null IDs if they are not meant to be inserted
-    // For system settings, we want to upsert all of them.
-    const updates = settings.map(({ id, key, value, description, created_at }) => ({
-      id: id === undefined ? undefined : id, // Keep undefined for new records, existing ID for updates
-      key,
-      value,
-      description,
-      created_at, // Now 'created_at' exists on SystemSetting
-    }));
+    
+    // Prepare updates for upsert. If 'id' is undefined (for new settings), omit it.
+    const updates = settings.map(setting => {
+      const { id, ...rest } = setting;
+      return id ? { id, ...rest } : rest; // Conditionally include id
+    });
 
     const { error } = await supabase
       .from('settings')

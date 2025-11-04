@@ -141,7 +141,7 @@ const DriverHome: React.FC = () => {
             setCurrentRide(prev => prev ? { ...prev, driver_current_lat: latitude, driver_current_lng: longitude } : null);
           }
         },
-        (error) => {
+        (_error) => { // Fixed: Changed 'error' to '_error'
           toast.error("فشل الحصول على موقعك. الرجاء التأكد من تمكين خدمات الموقع.");
           handleStopTracking(); // Stop tracking on error
         },
