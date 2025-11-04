@@ -44,6 +44,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [mapRenderKey, setMapRenderKey] = useState(0); // New state for the key
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -65,6 +66,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+      // Increment the key only once after initial settings are loaded
+      setMapRenderKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -88,10 +91,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Create a unique key based on the final map properties
-  // This will force a remount of MapContainer if any of these change
-  const mapComponentKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
-
   const tileLayerProps = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -99,7 +98,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapComponentKey} // Apply key directly to MapContainer
+      key={mapRenderKey} // Use the new mapRenderKey
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
