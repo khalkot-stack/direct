@@ -35,7 +35,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [mapInstanceKey, setMapInstanceKey] = useState(0); // Dynamic key for MapContainer
+  const [mapRenderKey, setMapRenderKey] = useState(0); // Dynamic key for MapContainer
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -58,7 +58,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         zoom: defaultZoom,
       });
       // Increment key here to force remount after settings are loaded
-      setMapInstanceKey(prev => prev + 1);
+      setMapRenderKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -89,7 +89,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapInstanceKey} // Use the incrementing key
+      key={mapRenderKey} // Use the incrementing key to force remount
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
