@@ -176,6 +176,7 @@ const AuthPage: React.FC = () => {
                           id="email"
                           type="email"
                           placeholder="example@email.com"
+                          autoComplete="username" // Added for accessibility
                           {...field}
                         />
                       </FormControl>
@@ -246,6 +247,7 @@ const AuthPage: React.FC = () => {
                           id="email"
                           type="email"
                           placeholder="example@email.com"
+                          autoComplete="username" // Added for accessibility
                           {...field}
                         />
                       </FormControl>

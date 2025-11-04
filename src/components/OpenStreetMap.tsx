@@ -35,6 +35,14 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [isMounted, setIsMounted] = useState(false); // New state to track mount status
+
+  useEffect(() => {
+    setIsMounted(true); // Set to true when component mounts
+    return () => {
+      setIsMounted(false); // Set to false when component unmounts
+    };
+  }, []);
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -64,7 +72,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  if (loadingSettings) {
+  if (loadingSettings || !isMounted) { // Only show loader if settings are loading or not yet mounted
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -85,6 +93,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     scrollWheelZoom: true,
     className: `w-full h-full ${className}`,
     style: { zIndex: 0 },
+    key: 'map-container', // Add a stable key to prevent re-initialization issues
   };
 
   const tileLayerProps = {
