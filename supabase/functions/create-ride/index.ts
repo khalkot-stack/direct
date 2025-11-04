@@ -30,7 +30,8 @@ serve(async (req) => {
 
     console.log('Edge Function: User ID from JWT:', user.id);
     console.log('Edge Function: User app_metadata:', user.app_metadata);
-    console.log('Edge Function: User type from app_metadata:', user.app_metadata.user_type);
+    const userType = user.app_metadata?.user_type || 'unknown'; // Default to 'unknown' if not set
+    console.log('Edge Function: User type from app_metadata:', userType);
 
     const { passenger_id, pickup_location, destination, passengers_count } = await req.json()
 
@@ -46,8 +47,8 @@ serve(async (req) => {
 
     // Ensure the user making the request is authorized to create a ride for this passenger_id
     // This check is at the application level, before RLS is evaluated by the database.
-    if (user.id !== passenger_id && user.app_metadata.user_type !== 'admin') {
-        console.error('Edge Function: Forbidden - User not authorized to create rides for this passenger_id. User ID:', user.id, 'Payload Passenger ID:', passenger_id);
+    if (user.id !== passenger_id && userType !== 'admin') { // Use the safely accessed userType
+        console.error('Edge Function: Forbidden - User not authorized to create rides for this passenger_id. User ID:', user.id, 'Payload Passenger ID:', passenger_id, 'User Type:', userType);
         return new Response('Forbidden: Not authorized to create rides for this user', { status: 403, headers: corsHeaders })
     }
 
