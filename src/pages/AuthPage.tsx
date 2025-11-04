@@ -163,42 +163,56 @@ const AuthPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           {isLogin ? (
-            <form onSubmit={loginForm.handleSubmit(handleAuth)} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@email.com"
-                  {...loginForm.register("email")}
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(handleAuth)} className="space-y-4">
+                <FormField
+                  control={loginForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>البريد الإلكتروني</FormLabel>
+                      <FormControl>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="example@email.com"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {loginForm.formState.errors.email && (
-                  <p className="text-red-500 text-sm">{loginForm.formState.errors.email.message}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">كلمة المرور</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  {...loginForm.register("password")}
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>كلمة المرور</FormLabel>
+                      <FormControl>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="********"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {loginForm.formState.errors.password && (
-                  <p className="text-red-500 text-sm">{loginForm.formState.errors.password.message}</p>
-                )}
-              </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
-                    جاري التحميل...
-                  </>
-                ) : (
-                  "تسجيل الدخول"
-                )}
-              </Button>
-            </form>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2 rtl:mr-2" />
+                      جاري التحميل...
+                    </>
+                  ) : (
+                    "تسجيل الدخول"
+                  )}
+                </Button>
+              </form>
+            </Form>
           ) : (
             <Form {...registerForm}>
               <form onSubmit={registerForm.handleSubmit(handleAuth)} className="space-y-4">
