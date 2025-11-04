@@ -66,6 +66,9 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+      // Increment key here to force remount of MapContainer after settings are loaded
+      // This ensures a fresh mount with the correct settings.
+      setMapComponentKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -73,18 +76,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   useEffect(() => {
     fetchMapSettings();
   }, [fetchMapSettings]);
-
-  // This useEffect will run once after initial settings are loaded
-  // and then whenever `loadingSettings` changes to false.
-  useEffect(() => {
-    if (!loadingSettings) {
-      // Introduce a small delay to ensure StrictMode's double render cycle completes
-      const timer = setTimeout(() => {
-        setMapComponentKey(prev => prev + 1);
-      }, 50); // A very short delay
-      return () => clearTimeout(timer);
-    }
-  }, [loadingSettings]); // Depend on loadingSettings
 
   if (loadingSettings) {
     return (
