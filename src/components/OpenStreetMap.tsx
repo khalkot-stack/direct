@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import L from 'leaflet';
 
-// Fix for default Leaflet icons not showing up
+// Fix for default Leaflet icons not showing up - this should be outside the component
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -44,7 +44,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [mapReady, setMapReady] = useState(false); // New state to control MapContainer rendering
+  const [mapReady, setMapReady] = useState(false); // Controls when MapContainer is rendered
+  const [mapInstanceKey, setMapInstanceKey] = useState(0); // Key to force remount of MapContainer
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -74,17 +75,18 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     fetchMapSettings();
   }, [fetchMapSettings]);
 
-  // Use a setTimeout to defer rendering MapContainer
+  // Effect to delay rendering and update key once settings are loaded
   useEffect(() => {
     if (!loadingSettings) {
       const timer = setTimeout(() => {
         setMapReady(true);
-      }, 100); // A small delay
+        setMapInstanceKey(prev => prev + 1); // Increment key to force remount
+      }, 100); // A small delay to allow StrictMode's double render to complete
       return () => clearTimeout(timer);
     }
   }, [loadingSettings]);
 
-  if (loadingSettings || !mapReady) { // Only show loader if settings are loading or map isn't ready
+  if (!mapReady) { // Show loader if settings are loading or map isn't ready
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -106,6 +108,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
+      key={mapInstanceKey} // Use the incrementing key to force remount
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}
