@@ -5,9 +5,9 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import L from 'leaflet';
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 // Fix for default Leaflet icons not showing up - this should be outside the component
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -44,25 +44,22 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [hasMounted, setHasMounted] = useState(false); // New state to track if component has mounted
+  const [hasMounted, setHasMounted] = useState(false);
 
-  // Effect to set hasMounted to true only once after initial render
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
-    const { data, error } = await supabase
-      .from('settings')
-      .select('key, value')
-      .in('key', ['default_map_zoom', 'default_map_center_lat', 'default_map_center_lng']);
+    try {
+      const settings = await supabaseService.getSystemSettings([
+        'default_map_zoom',
+        'default_map_center_lat',
+        'default_map_center_lng'
+      ]);
+      const settingsMap = new Map(settings.map(s => [s.key, s.value]));
 
-    if (error) {
-      console.error("Error fetching map settings:", error);
-      toast.error("فشل جلب إعدادات الخريطة الافتراضية.");
-    } else {
-      const settingsMap = new Map(data.map(s => [s.key, s.value]));
       const defaultLat = parseFloat(settingsMap.get('default_map_center_lat') || String(DEFAULT_MAP_CENTER.lat));
       const defaultLng = parseFloat(settingsMap.get('default_map_center_lng') || String(DEFAULT_MAP_CENTER.lng));
       const defaultZoom = parseInt(settingsMap.get('default_map_zoom') || String(DEFAULT_MAP_ZOOM));
@@ -71,18 +68,20 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
+    } catch (error: any) {
+      console.error("Error fetching map settings:", error);
+      toast.error(`فشل جلب إعدادات الخريطة الافتراضية: ${error.message}`);
+    } finally {
+      setLoadingSettings(false);
     }
-    setLoadingSettings(false);
   }, []);
 
   useEffect(() => {
-    // Only fetch settings if the component has mounted
     if (hasMounted) {
       fetchMapSettings();
     }
   }, [hasMounted, fetchMapSettings]);
 
-  // Show loader if settings are loading or if the component hasn't mounted yet
   if (loadingSettings || !hasMounted) {
     return (
       <div className={`relative w-full h-full ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-10`}>
@@ -98,9 +97,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
 
-  // Create a unique key based on the final map properties.
-  // This key will only change if the actual center or zoom props change,
-  // forcing a remount of MapContainer when necessary, but not on every StrictMode re-render.
   const mapComponentKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
 
   const tileLayerProps = {
@@ -110,7 +106,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
 
   return (
     <MapContainer
-      key={mapComponentKey} // Apply key directly to MapContainer
+      key={mapComponentKey}
       center={finalCenter}
       zoom={finalZoom}
       scrollWheelZoom={true}

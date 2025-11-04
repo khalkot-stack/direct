@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, Car, DollarSign, Star, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   ResponsiveContainer,
@@ -17,7 +16,8 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/UserContext";
-import { ProfileDetails, Ride } from "@/types/supabase"; // Import shared types
+import { Ride } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface StatCardProps {
   title: string;
@@ -40,12 +40,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, de
   </Card>
 );
 
-// Define a raw data interface to correctly type the joined profiles
-interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
-  passenger_profiles: ProfileDetails[] | ProfileDetails | null;
-  driver_profiles: ProfileDetails[] | ProfileDetails | null;
-}
-
 interface MonthlyRevenueData {
   name: string;
   total: number;
@@ -57,8 +51,8 @@ const OverviewPage: React.FC = () => {
   const [completedRidesCount, setCompletedRidesCount] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<number | null>(null);
-  const [recentRides, setRecentRides] = useState<Ride[]>([]); // Use shared Ride type directly
-  const [revenueData, setRevenueData] = useState<MonthlyRevenueData[]>([]);
+  const [recentRides, setRecentRides] = useState<Ride[]>([]);
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState<MonthlyRevenueData[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const fetchOverviewData = useCallback(async () => {
@@ -66,100 +60,21 @@ const OverviewPage: React.FC = () => {
 
     setLoadingData(true);
     try {
-      // Fetch total users
-      const { count: usersCount, error: usersError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      if (usersError) throw usersError;
-      setTotalUsers(usersCount);
+      const {
+        totalUsers,
+        completedRidesCount,
+        totalRevenue,
+        averageRating,
+        recentRides,
+        monthlyRevenueData,
+      } = await supabaseService.getOverviewStats();
 
-      // Fetch completed rides count
-      const { count: completedRidesCountData, error: completedRidesCountError } = await supabase
-        .from('rides')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed');
-      if (completedRidesCountError) throw completedRidesCountError;
-      setCompletedRidesCount(completedRidesCountData);
-
-      // Fetch all completed rides for revenue calculation and chart
-      const { data: allCompletedRides, error: allCompletedRidesError } = await supabase
-        .from('rides')
-        .select('price, created_at')
-        .eq('status', 'completed');
-      if (allCompletedRidesError) throw allCompletedRidesError;
-
-      let calculatedTotalRevenue = 0;
-      const monthlyRevenueMap = new Map<string, number>(); // "YYYY-MM" -> total
-
-      if (allCompletedRides) {
-        allCompletedRides.forEach(ride => {
-          const price = ride.price || 0; // Handle null prices
-          calculatedTotalRevenue += price;
-
-          const date = new Date(ride.created_at);
-          const monthYear = date.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short' }); // e.g., "يناير ٢٠٢٣"
-          monthlyRevenueMap.set(monthYear, (monthlyRevenueMap.get(monthYear) || 0) + price);
-        });
-      }
-      setTotalRevenue(calculatedTotalRevenue);
-
-      // Convert map to array for Recharts, sorting by date
-      const sortedMonthlyRevenue = Array.from(monthlyRevenueMap.entries())
-        .map(([name, total]) => ({ name, total }))
-        .sort((_a, _b) => { // Renamed a, b to _a, _b
-          // Simple sorting by month name might not be chronological,
-          // for real app, store month index or full date for sorting.
-          // For now, assuming month names are ordered for display.
-          return 0; // Keep current order or implement proper date sorting
-        });
-      setRevenueData(sortedMonthlyRevenue);
-
-
-      // Fetch average rating
-      const { data: ratingsData, error: ratingsError } = await supabase
-        .from('ratings')
-        .select('rating');
-      if (ratingsError) throw ratingsError;
-      if (ratingsData && ratingsData.length > 0) {
-        const sumRatings = ratingsData.reduce((sum, r) => sum + r.rating, 0);
-        setAverageRating(parseFloat((sumRatings / ratingsData.length).toFixed(1)));
-      } else {
-        setAverageRating(0);
-      }
-
-      // Fetch recent rides
-      const { data: recentRidesRaw, error: recentRidesError } = await supabase
-        .from('rides')
-        .select(`
-          id,
-          pickup_location,
-          destination,
-          status,
-          created_at,
-          passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-          driver_profiles:driver_id(id, full_name, avatar_url, user_type)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (recentRidesError) throw recentRidesError;
-
-      // Map raw data to conform to the Ride interface
-      const formattedRecentRides: Ride[] = (recentRidesRaw as RawRideData[] || []).map(ride => {
-        const passengerProfile = Array.isArray(ride.passenger_profiles)
-          ? ride.passenger_profiles[0] || null
-          : ride.passenger_profiles;
-        
-        const driverProfile = Array.isArray(ride.driver_profiles)
-          ? ride.driver_profiles[0] || null
-          : ride.driver_profiles;
-
-        return {
-          ...ride,
-          passenger_profiles: passengerProfile,
-          driver_profiles: driverProfile,
-        };
-      }) as Ride[]; // Cast to Ride[] after mapping
-      setRecentRides(formattedRecentRides);
+      setTotalUsers(totalUsers);
+      setCompletedRidesCount(completedRidesCount);
+      setTotalRevenue(totalRevenue);
+      setAverageRating(averageRating);
+      setRecentRides(recentRides);
+      setMonthlyRevenueData(monthlyRevenueData);
 
     } catch (error: any) {
       toast.error(`فشل جلب بيانات النظرة العامة: ${error.message}`);
@@ -205,7 +120,7 @@ const OverviewPage: React.FC = () => {
           <CardContent className="pl-2">
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData}>
+                <BarChart data={monthlyRevenueData}>
                   <XAxis
                     dataKey="name"
                     stroke="hsl(var(--muted-foreground))"

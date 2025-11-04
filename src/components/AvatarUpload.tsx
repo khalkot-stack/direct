@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, User, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface AvatarUploadProps {
   userId: string;
@@ -39,48 +40,41 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
     setUploading(true);
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars') // Assuming a bucket named 'avatars'
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true, // Overwrite existing avatar
-      });
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // Assuming a bucket named 'avatars'
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Overwrite existing avatar
+        });
 
-    if (uploadError) {
-      toast.error(`فشل رفع الصورة: ${uploadError.message}`);
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (!publicUrlData?.publicUrl) {
+        throw new Error("فشل الحصول على رابط الصورة.");
+      }
+
+      const newAvatarUrl = publicUrlData.publicUrl;
+
+      // Update profile table with new avatar URL using the service
+      await supabaseService.updateProfile(userId, { avatar_url: newAvatarUrl });
+
+      setAvatarUrl(newAvatarUrl);
+      onUploadSuccess(newAvatarUrl);
+      toast.success("تم تحديث الصورة الشخصية بنجاح!");
+    } catch (error: any) {
+      toast.error(`فشل رفع الصورة: ${error.message}`);
+      console.error("Error uploading avatar:", error);
+    } finally {
       setUploading(false);
-      return;
     }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    if (!publicUrlData?.publicUrl) {
-      toast.error("فشل الحصول على رابط الصورة.");
-      setUploading(false);
-      return;
-    }
-
-    const newAvatarUrl = publicUrlData.publicUrl;
-
-    // Update profile table with new avatar URL
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: newAvatarUrl })
-      .eq('id', userId);
-
-    if (updateError) {
-      toast.error(`فشل تحديث رابط الصورة في الملف الشخصي: ${updateError.message}`);
-      setUploading(false);
-      return;
-    }
-
-    setAvatarUrl(newAvatarUrl);
-    onUploadSuccess(newAvatarUrl);
-    toast.success("تم تحديث الصورة الشخصية بنجاح!");
-    setUploading(false);
   };
 
   const handleClick = () => {

@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { SystemSetting } from "@/types/supabase";
-import { useUser } from "@/context/UserContext"; // Import useUser
+import { useUser } from "@/context/UserContext";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 // Define default system settings
 const defaultSystemSettings: Omit<SystemSetting, 'id' | 'created_at'>[] = [
@@ -31,24 +31,15 @@ const AdminSettingsPage: React.FC = () => {
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('settings')
-      .select('*');
-
-    if (error) {
-      toast.error(`فشل جلب الإعدادات: ${error.message}`);
-      console.error("Error fetching settings:", error);
-      setSettings([]); // Ensure settings is an empty array on error
-    } else {
-      const fetchedSettingsMap = new Map(data.map(s => [s.key, s]));
+    try {
+      const fetchedSettings = await supabaseService.getSystemSettings(defaultSystemSettings.map(s => s.key));
+      const fetchedSettingsMap = new Map(fetchedSettings.map(s => [s.key, s]));
+      
       const mergedSettings: SystemSetting[] = defaultSystemSettings.map(defaultSetting => {
         const existingSetting = fetchedSettingsMap.get(defaultSetting.key);
         if (existingSetting) {
           return existingSetting as SystemSetting;
         } else {
-          // For new settings, omit 'id' from the object passed to upsert.
-          // However, for local state, we need to conform to SystemSetting interface.
-          // Since 'id' is now optional, we can simply omit it.
           return {
             key: defaultSetting.key,
             value: defaultSetting.value,
@@ -58,8 +49,13 @@ const AdminSettingsPage: React.FC = () => {
         }
       });
       setSettings(mergedSettings);
+    } catch (error: any) {
+      toast.error(`فشل جلب الإعدادات: ${error.message}`);
+      console.error("Error fetching settings:", error);
+      setSettings([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -79,24 +75,21 @@ const AdminSettingsPage: React.FC = () => {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     
-    // Prepare updates for upsert. If 'id' is undefined (for new settings), omit it.
     const updates = settings.map(setting => {
       const { id, ...rest } = setting;
-      return id ? { id, ...rest } : rest; // Conditionally include id
+      return id ? { id, ...rest } : rest;
     });
 
-    const { error } = await supabase
-      .from('settings')
-      .upsert(updates, { onConflict: 'key' }); // Use 'key' for onConflict as it's unique
-
-    if (error) {
+    try {
+      await supabaseService.upsertSystemSettings(updates);
+      toast.success("تم حفظ الإعدادات بنجاح!");
+      fetchSettings();
+    } catch (error: any) {
       toast.error(`فشل حفظ الإعدادات: ${error.message}`);
       console.error("Error saving settings:", error);
-    } else {
-      toast.success("تم حفظ الإعدادات بنجاح!");
-      fetchSettings(); // Re-fetch to get actual IDs for newly inserted settings
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const getSettingValue = (key: string, defaultValue: string = "") => {
@@ -163,7 +156,7 @@ const AdminSettingsPage: React.FC = () => {
               min="1"
               max="20"
               value={getSettingValue("default_map_zoom", "12")}
-              onChange={(e) => handleSettingChange("default_map_zoom", e.target.value)}
+              onChange={(e) => handleSettingChange("default_map-zoom", e.target.value)}
             />
           </div>
           <div className="grid gap-2">

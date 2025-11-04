@@ -11,10 +11,10 @@ import ChatDialog from "@/components/ChatDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Ride, RawRideData } from "@/types/supabase";
+import { Ride } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-// import EmptyState from "@/components/EmptyState"; // Removed EmptyState
-import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
+import InteractiveMap from "@/components/InteractiveMap";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const DriverHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -28,11 +28,6 @@ const DriverHome: React.FC = () => {
   const [chatOtherUserId, setChatOtherUserId] = useState("");
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
-  // Removed rating-related states
-  // const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  // const [ratingTargetUser, setRatingTargetUser] = useState<{ id: string; name: string } | null>(null);
-  // const [rideToRate, setRideToRate] = useState<Ride | null>(null);
-
   const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -44,41 +39,16 @@ const DriverHome: React.FC = () => {
     if (!user?.id) return;
 
     setLoadingRideData(true);
-
-    const { data: currentRideRaw, error: currentRideError } = await supabase
-      .from('rides')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
-      `)
-      .eq('driver_id', user.id)
-      .in('status', ['accepted'])
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (currentRideError) {
+    try {
+      const ride = await supabaseService.getDriverCurrentRide(user.id);
+      setCurrentRide(ride);
+    } catch (currentRideError: any) {
       toast.error(`فشل جلب الرحلة الحالية: ${currentRideError.message}`);
+      console.error("Error fetching current ride:", currentRideError);
       setCurrentRide(null);
-    } else if (currentRideRaw && currentRideRaw.length > 0) {
-      const ride = currentRideRaw[0] as RawRideData;
-      const passengerProfile = Array.isArray(ride.passenger_profiles)
-        ? ride.passenger_profiles[0] || null
-        : ride.passenger_profiles;
-      
-      const driverProfile = Array.isArray(ride.driver_profiles)
-        ? ride.driver_profiles[0] || null
-        : ride.driver_profiles;
-
-      setCurrentRide({
-        ...ride,
-        passenger_profiles: passengerProfile,
-        driver_profiles: driverProfile,
-      } as Ride);
-    } else {
-      setCurrentRide(null);
+    } finally {
+      setLoadingRideData(false);
     }
-    setLoadingRideData(false);
   }, [user]);
 
   useEffect(() => {
@@ -108,7 +78,6 @@ const DriverHome: React.FC = () => {
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'completed' && _payload.old.status !== 'completed') {
         toast.success("تم إكمال الرحلة بنجاح!");
-        // Removed rating trigger for drivers
         setIsTrackingLocation(false);
       }
       if (_payload.eventType === 'UPDATE' && _payload.new.status === 'cancelled' && _payload.old.status !== 'cancelled') {
@@ -126,30 +95,26 @@ const DriverHome: React.FC = () => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          const { error } = await supabase
-            .from('rides')
-            .update({
+          try {
+            await supabaseService.updateRide(currentRide.id, {
               driver_current_lat: latitude,
               driver_current_lng: longitude,
-            })
-            .eq('id', currentRide.id);
-
-          if (error) {
-            toast.error("فشل تحديث موقع السائق."); // Uncommented toast error
-          } else {
-            // Optionally update local state to reflect new location on map if needed
+            });
             setCurrentRide(prev => prev ? { ...prev, driver_current_lat: latitude, driver_current_lng: longitude } : null);
+          } catch (error: any) {
+            toast.error(`فشل تحديث موقع السائق: ${error.message}`);
+            console.error("Error updating driver location:", error);
           }
         },
-        (_error) => { // Fixed: Changed 'error' to '_error'
+        (_error) => {
           toast.error("فشل الحصول على موقعك. الرجاء التأكد من تمكين خدمات الموقع.");
-          handleStopTracking(); // Stop tracking on error
+          handleStopTracking();
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
       toast.error("متصفحك لا يدعم تحديد الموقع الجغرافي.");
-      handleStopTracking(); // Stop tracking if not supported
+      handleStopTracking();
     }
   }, [currentRide, user]);
 
@@ -160,9 +125,8 @@ const DriverHome: React.FC = () => {
     }
     setIsTrackingLocation(true);
     toast.info("بدء تتبع موقعك.");
-    // Immediately update location once, then start interval
     updateDriverLocation();
-    locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000); // Update every 5 seconds
+    locationIntervalRef.current = window.setInterval(updateDriverLocation, 5000);
   };
 
   const handleStopTracking = () => {
@@ -178,17 +142,15 @@ const DriverHome: React.FC = () => {
     if (!currentRide) return;
 
     setLoadingRideData(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: 'completed' })
-      .eq('id', currentRide.id);
-    setLoadingRideData(false);
-
-    if (error) {
-      toast.error(`فشل إكمال الرحلة: ${error.message}`);
-    } else {
+    try {
+      await supabaseService.updateRide(currentRide.id, { status: 'completed' });
       setCurrentRide(null);
       handleStopTracking();
+    } catch (error: any) {
+      toast.error(`فشل إكمال الرحلة: ${error.message}`);
+      console.error("Error completing ride:", error);
+    } finally {
+      setLoadingRideData(false);
     }
   };
 
@@ -203,8 +165,6 @@ const DriverHome: React.FC = () => {
     setIsChatDialogOpen(true);
   };
 
-  // Removed handleSaveRating function
-
   const handleCancelRide = (ride: Ride) => {
     setRideToCancel(ride);
     setIsCancellationDialogOpen(true);
@@ -214,21 +174,19 @@ const DriverHome: React.FC = () => {
     if (!rideToCancel) return;
 
     setIsCancelling(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: 'cancelled', cancellation_reason: reason })
-      .eq('id', rideToCancel.id);
-    setIsCancelling(false);
-    setIsCancellationDialogOpen(false);
-    setRideToCancel(null);
-
-    if (error) {
-      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
-    } else {
+    try {
+      await supabaseService.updateRide(rideToCancel.id, { status: 'cancelled', cancellation_reason: reason });
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
         fetchCurrentRide();
       }
+    } catch (error: any) {
+      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
+      console.error("Error cancelling ride:", error);
+    } finally {
+      setIsCancelling(false);
+      setIsCancellationDialogOpen(false);
+      setRideToCancel(null);
     }
   };
 
@@ -243,7 +201,6 @@ const DriverHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
-      {/* Placeholder for map area */}
       <InteractiveMap />
 
       {currentRide ? (
@@ -314,7 +271,6 @@ const DriverHome: React.FC = () => {
         />
       )}
 
-      {/* Removed RatingDialog component */}
       <CancellationReasonDialog
         open={isCancellationDialogOpen}
         onOpenChange={setIsCancellationDialogOpen}

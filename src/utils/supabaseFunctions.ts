@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface CreateRidePayload {
   passenger_id: string;
@@ -9,7 +10,7 @@ interface CreateRidePayload {
 }
 
 export async function createRideViaEdgeFunction(payload: CreateRidePayload): Promise<any | null> {
-  const SUPABASE_PROJECT_ID = "utbimfmafegovypqtdyj"; // From Supabase Context
+  const SUPABASE_PROJECT_ID = "utbimfmafegovypqtdyj";
   const EDGE_FUNCTION_NAME = "create-ride";
   const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/${EDGE_FUNCTION_NAME}`;
 
@@ -36,7 +37,6 @@ export async function createRideViaEdgeFunction(payload: CreateRidePayload): Pro
 
     let response = await callEdgeFunction(session.access_token);
 
-    // If 403 Forbidden, try to refresh session and retry once
     if (response.status === 403) {
       console.warn("Received 403 from Edge Function. Attempting to refresh session and retry...");
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
@@ -47,8 +47,8 @@ export async function createRideViaEdgeFunction(payload: CreateRidePayload): Pro
         return null;
       }
 
-      session = refreshData.session; // Use the new session
-      response = await callEdgeFunction(session.access_token); // Retry the call
+      session = refreshData.session;
+      response = await callEdgeFunction(session.access_token);
     }
 
     if (!response.ok) {

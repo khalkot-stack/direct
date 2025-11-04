@@ -24,11 +24,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useUser } from "@/context/UserContext";
-import { Profile } from "@/types/supabase"; // Import shared Profile type
+import { Profile } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "الاسم الكامل مطلوب." }),
-  phone_number: z.string().nullable().optional(), // Allow null or undefined
+  phone_number: z.string().nullable().optional(),
   user_type: z.enum(["passenger", "driver", "admin"]),
 });
 
@@ -37,7 +38,7 @@ type ProfileFormInputs = z.infer<typeof profileSchema>;
 const ProfileSettingsPage: React.FC = () => {
   const { user, profile, loading: userLoading, fetchUserProfile } = useUser();
   const [isSaving, setIsSaving] = useState(false);
-  const [localProfile, setLocalProfile] = useState<Profile | null>(null); // Use shared Profile type
+  const [localProfile, setLocalProfile] = useState<Profile | null>(null);
 
   const form = useForm<ProfileFormInputs>({
     resolver: zodResolver(profileSchema),
@@ -52,18 +53,18 @@ const ProfileSettingsPage: React.FC = () => {
     if (!userLoading && profile) {
       setLocalProfile(profile);
       form.reset({
-        full_name: profile.full_name || "", // Provide empty string if null
-        phone_number: profile.phone_number || "", // Provide empty string if null
+        full_name: profile.full_name || "",
+        phone_number: profile.phone_number || "",
         user_type: profile.user_type,
       });
     }
   }, [userLoading, profile, form]);
 
-  const handleAvatarUploadSuccess = (newUrl: string) => {
+  const handleAvatarUploadSuccess = async (newUrl: string) => {
     if (localProfile) {
       setLocalProfile(prev => prev ? { ...prev, avatar_url: newUrl } : null);
       // Also update auth.user metadata
-      supabase.auth.updateUser({ data: { avatar_url: newUrl } });
+      await supabase.auth.updateUser({ data: { avatar_url: newUrl } });
       fetchUserProfile(); // Re-fetch to update global context
     }
   };
@@ -72,22 +73,14 @@ const ProfileSettingsPage: React.FC = () => {
     if (!localProfile || !user) return;
 
     setIsSaving(true);
-    const updatedPhoneNumber = values.phone_number === "" ? null : values.phone_number; // Convert empty string to null
+    const updatedPhoneNumber = values.phone_number === "" ? null : values.phone_number;
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
+    try {
+      await supabaseService.updateProfile(localProfile.id, {
         full_name: values.full_name,
         phone_number: updatedPhoneNumber,
         user_type: values.user_type,
-      })
-      .eq('id', localProfile.id);
-    setIsSaving(false);
-
-    if (error) {
-      toast.error(`فشل حفظ التغييرات: ${error.message}`);
-      console.error("Error saving profile changes:", error);
-    } else {
+      });
       toast.success("تم حفظ التغييرات بنجاح!");
       // Also update auth.user metadata
       await supabase.auth.updateUser({
@@ -98,6 +91,11 @@ const ProfileSettingsPage: React.FC = () => {
         }
       });
       fetchUserProfile(); // Re-fetch to update global context
+    } catch (error: any) {
+      toast.error(`فشل حفظ التغييرات: ${error.message}`);
+      console.error("Error saving profile changes:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 

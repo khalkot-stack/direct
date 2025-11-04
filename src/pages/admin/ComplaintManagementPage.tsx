@@ -13,7 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, Loader2, Flag, Eye, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import {
@@ -28,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/context/UserContext";
-import { Complaint, RawComplaintData } from "@/types/supabase";
+import { Complaint } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,7 +41,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import ComplaintTableSkeleton from "@/components/skeletons/ComplaintTableSkeleton"; // Import the new skeleton component
+import ComplaintTableSkeleton from "@/components/skeletons/ComplaintTableSkeleton";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const AdminComplaintManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -62,44 +62,16 @@ const AdminComplaintManagementPage: React.FC = () => {
 
   const fetchComplaints = useCallback(async () => {
     setLoadingComplaints(true);
-    const { data: complaintsRaw, error } = await supabase
-      .from('complaints')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type),
-        rides(id, pickup_location, destination)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const fetchedComplaints = await supabaseService.getAllComplaints();
+      setComplaints(fetchedComplaints);
+    } catch (error: any) {
       console.error("AdminComplaintManagementPage: Error fetching complaints:", error);
       toast.error(`فشل جلب الشكاوى: ${error.message}`);
       setComplaints([]);
-    } else {
-      const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
-        const passengerProfile = Array.isArray(comp.passenger_profiles)
-          ? comp.passenger_profiles[0] || null
-          : comp.passenger_profiles;
-        
-        const driverProfile = Array.isArray(comp.driver_profiles)
-          ? comp.driver_profiles[0] || null
-          : comp.driver_profiles;
-        
-        const rideDetails = Array.isArray(comp.rides) && comp.rides.length > 0
-          ? comp.rides[0]
-          : (comp.rides as { id: string; pickup_location: string; destination: string } | null);
-
-        return {
-          ...comp,
-          passenger_profiles: passengerProfile,
-          driver_profiles: driverProfile,
-          ride_details: rideDetails,
-        };
-      });
-      setComplaints(formattedComplaints);
+    } finally {
+      setLoadingComplaints(false);
     }
-    setLoadingComplaints(false);
   }, []);
 
   useEffect(() => {
@@ -134,22 +106,20 @@ const AdminComplaintManagementPage: React.FC = () => {
     if (!selectedComplaint) return;
 
     setIsSaving(true);
-    const { error } = await supabase
-      .from('complaints')
-      .update({
+    try {
+      await supabaseService.updateComplaint(selectedComplaint.id, {
         status: newStatus,
         admin_notes: adminNotes.trim() === "" ? null : adminNotes.trim(),
         resolved_at: (newStatus === 'resolved' || newStatus === 'rejected') && !selectedComplaint.resolved_at ? new Date().toISOString() : selectedComplaint.resolved_at,
-      })
-      .eq('id', selectedComplaint.id);
-    setIsSaving(false);
-
-    if (error) {
-      toast.error(`فشل تحديث الشكوى: ${error.message}`);
-      console.error("Error updating complaint:", error);
-    } else {
+      });
       toast.success("تم تحديث الشكوى بنجاح!");
       setIsViewDialogOpen(false);
+      fetchComplaints(); // Re-fetch to update the list
+    } catch (error: any) {
+      toast.error(`فشل تحديث الشكوى: ${error.message}`);
+      console.error("Error updating complaint:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -157,18 +127,16 @@ const AdminComplaintManagementPage: React.FC = () => {
     if (!complaintToDelete) return;
 
     setIsDeleting(true);
-    const { error } = await supabase
-      .from('complaints')
-      .delete()
-      .eq('id', complaintToDelete.id);
-    setIsDeleting(false);
-    setComplaintToDelete(null);
-
-    if (error) {
+    try {
+      await supabaseService.deleteComplaint(complaintToDelete.id);
+      toast.success("تم حذف الشكوى بنجاح!");
+      fetchComplaints(); // Re-fetch to update the list
+    } catch (error: any) {
       toast.error(`فشل حذف الشكوى: ${error.message}`);
       console.error("Error deleting complaint:", error);
-    } else {
-      toast.success("تم حذف الشكوى بنجاح!");
+    } finally {
+      setIsDeleting(false);
+      setComplaintToDelete(null);
     }
   };
 
@@ -246,7 +214,7 @@ const AdminComplaintManagementPage: React.FC = () => {
           description="لا توجد شكاوى لعرضها حاليًا."
         />
       ) : (
-        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

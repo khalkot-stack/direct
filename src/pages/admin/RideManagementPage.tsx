@@ -13,7 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle, Search, Edit, Trash2, Loader2, Car as CarIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RideFormDialog from "@/components/RideFormDialog";
 import EmptyState from "@/components/EmptyState";
@@ -29,10 +28,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useUser } from "@/context/UserContext";
-import { Ride, RawRideData } from "@/types/supabase";
+import { Ride } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import RideTableSkeleton from "@/components/skeletons/RideTableSkeleton"; // Import the new skeleton component
+import RideTableSkeleton from "@/components/skeletons/RideTableSkeleton";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const RideManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -46,51 +46,16 @@ const RideManagementPage: React.FC = () => {
 
   const fetchRides = useCallback(async () => {
     setLoadingRides(true);
-    const { data: ridesRaw, error } = await supabase
-      .from('rides')
-      .select(`
-        id,
-        passenger_id,
-        driver_id,
-        pickup_location,
-        destination,
-        passengers_count,
-        status,
-        created_at,
-        cancellation_reason,
-        pickup_lat,
-        pickup_lng,
-        destination_lat,
-        destination_lng,
-        driver_current_lat,
-        driver_current_lng,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const fetchedRides = await supabaseService.getAllRides();
+      setRides(fetchedRides);
+    } catch (error: any) {
       toast.error(`فشل جلب الرحلات: ${error.message}`);
       console.error("RideManagementPage: Error fetching rides:", error);
-    } else {
-      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
-        const passengerProfile = Array.isArray(ride.passenger_profiles)
-          ? ride.passenger_profiles[0] || null
-          : ride.passenger_profiles;
-        
-        const driverProfile = Array.isArray(ride.driver_profiles)
-          ? ride.driver_profiles[0] || null
-          : ride.driver_profiles;
-
-        return {
-          ...ride,
-          passenger_profiles: passengerProfile,
-          driver_profiles: driverProfile,
-        };
-      }) as Ride[];
-      setRides(formattedRides);
+      setRides([]);
+    } finally {
+      setLoadingRides(false);
     }
-    setLoadingRides(false);
   }, []);
 
   useEffect(() => {
@@ -121,53 +86,38 @@ const RideManagementPage: React.FC = () => {
   };
 
   const handleSaveRide = async (rideData: Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>) => {
-    if (selectedRide) {
-      const { id, ...updates } = rideData;
-      const { error } = await supabase
-        .from('rides')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) {
-        toast.error(`فشل تحديث الرحلة: ${error.message}`);
-        console.error("Error updating ride:", error);
-        console.error("Supabase update error details:", error.details, error.hint, error.code);
-      } else {
+    try {
+      if (selectedRide) {
+        const { id, ...updates } = rideData;
+        await supabaseService.updateRide(id, updates);
         toast.success("تم تحديث الرحلة بنجاح!");
-      }
-    } else {
-      const { id, ...insertData } = rideData;
-      const { error } = await supabase
-        .from('rides')
-        .insert(insertData);
-
-      if (error) {
-        toast.error(`فشل إضافة الرحلة: ${error.message}`);
-        console.error("Error adding ride:", error);
-        console.error("Supabase insert error details:", error.details, error.hint, error.code);
       } else {
+        const { id, ...insertData } = rideData; // id might be present but should be ignored for insert
+        await supabaseService.createRide(insertData);
         toast.success("تم إضافة الرحلة بنجاح!");
       }
+      setIsFormDialogOpen(false);
+      fetchRides(); // Re-fetch to update the list
+    } catch (error: any) {
+      toast.error(`فشل حفظ الرحلة: ${error.message}`);
+      console.error("Error saving ride:", error);
     }
-    setIsFormDialogOpen(false);
   };
 
   const handleDeleteRide = async () => {
     if (!rideToDelete) return;
 
     setIsDeleting(true);
-    const { error } = await supabase
-      .from('rides')
-      .delete()
-      .eq('id', rideToDelete.id);
-    setIsDeleting(false);
-    setRideToDelete(null);
-
-    if (error) {
+    try {
+      await supabaseService.deleteRide(rideToDelete.id);
+      toast.success("تم حذف الرحلة بنجاح!");
+      fetchRides(); // Re-fetch to update the list
+    } catch (error: any) {
       toast.error(`فشل حذف الرحلة: ${error.message}`);
       console.error("Error deleting ride:", error);
-    } else {
-      toast.success("تم حذف الرحلة بنجاح!");
+    } finally {
+      setIsDeleting(false);
+      setRideToDelete(null);
     }
   };
 
@@ -222,7 +172,7 @@ const RideManagementPage: React.FC = () => {
           description="لا توجد بيانات رحلات لعرضها. ابدأ بإضافة رحلة جديدة."
         />
       ) : (
-        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

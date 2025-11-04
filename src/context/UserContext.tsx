@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { Profile } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface UserContextType {
   user: SupabaseUser | null;
@@ -34,55 +35,42 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const isInitialLoadHandled = useRef(false);
 
   const fetchUserProfile = useCallback(async (userId: string) => {
-    const { data, error, status } = await supabase
-      .from("profiles")
-      .select(
-        "id, full_name, email, user_type, status, phone_number, avatar_url, created_at"
-      )
-      .eq("id", userId)
-      .single();
+    try {
+      let userProfile = await supabaseService.getUserProfile(userId);
 
-    if (error && status !== 406) { // 406 means no rows found, which is handled below
-      console.error("UserContext: Error fetching profile:", error);
-      setProfile(null);
-    } else if (data) {
-      setProfile(data as Profile);
-    } else {
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUser = userData.user;
+      if (userProfile) {
+        setProfile(userProfile);
+      } else {
+        // If no profile found, create a default one
+        const { data: userData } = await supabase.auth.getUser();
+        const currentUser = userData.user;
 
-      if (currentUser) {
-        const defaultFullName =
-          currentUser.user_metadata.full_name ||
-          currentUser.email?.split("@")[0] ||
-          "مستخدم جديد";
-        // Use app_metadata for user_type and status as they are set during signup
-        const defaultUserType =
-          currentUser.app_metadata.user_type || "passenger";
-        const defaultStatus = currentUser.app_metadata.status || "active";
-        const defaultPhoneNumber = currentUser.user_metadata.phone_number || null;
-        const defaultAvatarUrl = currentUser.user_metadata.avatar_url || null;
+        if (currentUser) {
+          const defaultFullName =
+            currentUser.user_metadata.full_name ||
+            currentUser.email?.split("@")[0] ||
+            "مستخدم جديد";
+          const defaultUserType =
+            currentUser.app_metadata.user_type || "passenger";
+          const defaultStatus = currentUser.app_metadata.status || "active";
+          const defaultPhoneNumber = currentUser.user_metadata.phone_number || null;
+          const defaultAvatarUrl = currentUser.user_metadata.avatar_url || null;
 
-        const { data: newProfile, error: insertError } = await supabase
-          .from("profiles")
-          .insert({
+          const newProfile = await supabaseService.createProfile({
             id: currentUser.id,
             full_name: defaultFullName,
-            email: currentUser.email,
+            email: currentUser.email!, // Email is guaranteed to exist for a signed-in user
             user_type: defaultUserType,
             status: defaultStatus,
             phone_number: defaultPhoneNumber,
             avatar_url: defaultAvatarUrl,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("UserContext: Error creating default profile:", insertError);
-        } else {
-          setProfile(newProfile as Profile);
+          });
+          setProfile(newProfile);
         }
       }
+    } catch (error) {
+      console.error("UserContext: Error in fetchUserProfile:", error);
+      setProfile(null);
     }
   }, []);
 

@@ -5,13 +5,12 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Flag, PlusCircle, Eye } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import ComplaintFormDialog from "@/components/ComplaintFormDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Complaint, RawComplaintData } from "@/types/supabase"; // Removed ProfileDetails
+import { Complaint } from "@/types/supabase";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const PassengerComplaintsPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -35,45 +35,16 @@ const PassengerComplaintsPage: React.FC = () => {
 
   const fetchMyComplaints = useCallback(async (userId: string) => {
     setLoadingComplaints(true);
-    const { data: complaintsRaw, error } = await supabase
-      .from('complaints')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type),
-        rides(id, pickup_location, destination)
-      `)
-      .eq('passenger_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const fetchedComplaints = await supabaseService.getPassengerComplaints(userId);
+      setComplaints(fetchedComplaints);
+    } catch (error: any) {
       toast.error(`فشل جلب شكاواك: ${error.message}`);
       console.error("Error fetching passenger complaints:", error);
       setComplaints([]);
-    } else {
-      const formattedComplaints: Complaint[] = (complaintsRaw as RawComplaintData[] || []).map(comp => {
-        const passengerProfile = Array.isArray(comp.passenger_profiles)
-          ? comp.passenger_profiles[0] || null
-          : comp.passenger_profiles;
-        
-        const driverProfile = Array.isArray(comp.driver_profiles)
-          ? comp.driver_profiles[0] || null
-          : comp.driver_profiles;
-        
-        const rideDetails = Array.isArray(comp.rides) && comp.rides.length > 0
-          ? comp.rides[0]
-          : (comp.rides as { id: string; pickup_location: string; destination: string } | null);
-
-        return {
-          ...comp,
-          passenger_profiles: passengerProfile,
-          driver_profiles: driverProfile,
-          ride_details: rideDetails,
-        };
-      });
-      setComplaints(formattedComplaints);
+    } finally {
+      setLoadingComplaints(false);
     }
-    setLoadingComplaints(false);
   }, []);
 
   useEffect(() => {

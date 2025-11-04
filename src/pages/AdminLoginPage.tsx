@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),
@@ -63,7 +64,6 @@ const AdminLoginPage: React.FC = () => {
         toast.success("تم تسجيل الدخول بنجاح كمدير!");
         navigate("/admin-dashboard");
       } else {
-        // إذا لم يكن المستخدم مديرًا، قم بتسجيل خروجه وإعادة توجيهه
         await supabase.auth.signOut();
         toast.error("ليس لديك صلاحيات المدير للوصول إلى هذه الصفحة.");
         navigate("/auth");

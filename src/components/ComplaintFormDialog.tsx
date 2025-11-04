@@ -16,18 +16,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/context/UserContext";
 import { Ride, ProfileDetails } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface ComplaintFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: () => void; // Callback to refresh complaints list
+  onSave: () => void;
 }
 
 const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({ open, onOpenChange, onSave }) => {
-  const { user } = useUser(); // Removed userLoading
+  const { user } = useUser();
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [selectedRideId, setSelectedRideId] = useState<string | null>(null);
@@ -39,35 +39,19 @@ const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({ open, onOpenC
     if (open && user?.id) {
       const fetchCompletedRides = async () => {
         setLoadingRides(true);
-        const { data, error } = await supabase
-          .from('rides')
-          .select(`
-            id,
-            pickup_location,
-            destination,
-            driver_id,
-            driver_profiles:driver_id(id, full_name)
-          `)
-          .eq('passenger_id', user.id)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+          const fetchedRides = await supabaseService.getPassengerRides(user.id);
+          setPassengerCompletedRides(fetchedRides.filter(ride => ride.status === 'completed'));
+        } catch (error: any) {
           toast.error(`فشل جلب الرحلات المكتملة: ${error.message}`);
           console.error("Error fetching completed rides for complaint:", error);
           setPassengerCompletedRides([]);
-        } else {
-          const formattedRides: Ride[] = (data || []).map(ride => ({
-            ...ride,
-            driver_profiles: Array.isArray(ride.driver_profiles) ? ride.driver_profiles[0] : ride.driver_profiles,
-          })) as Ride[];
-          setPassengerCompletedRides(formattedRides);
+        } finally {
+          setLoadingRides(false);
         }
-        setLoadingRides(false);
       };
       fetchCompletedRides();
     } else if (!open) {
-      // Reset form when dialog closes
       setSubject("");
       setDescription("");
       setSelectedRideId(null);
@@ -93,24 +77,23 @@ const ComplaintFormDialog: React.FC<ComplaintFormDialogProps> = ({ open, onOpenC
       driverIdToComplainAbout = selectedRide?.driver_id || null;
     }
 
-    const { error } = await supabase.from('complaints').insert({
-      passenger_id: user.id,
-      ride_id: selectedRideId,
-      driver_id: driverIdToComplainAbout,
-      subject: subject.trim(),
-      description: description.trim(),
-      status: 'pending',
-    });
-
-    setIsSubmitting(false);
-
-    if (error) {
-      toast.error(`فشل تقديم الشكوى: ${error.message}`);
-      console.error("Error submitting complaint:", error);
-    } else {
+    try {
+      await supabaseService.createComplaint({
+        passenger_id: user.id,
+        ride_id: selectedRideId,
+        driver_id: driverIdToComplainAbout,
+        subject: subject.trim(),
+        description: description.trim(),
+        status: 'pending',
+      });
       toast.success("تم تقديم الشكوى بنجاح! سيتم مراجعتها من قبل الإدارة.");
       onOpenChange(false);
-      onSave(); // Trigger refresh in parent
+      onSave();
+    } catch (error: any) {
+      toast.error(`فشل تقديم الشكوى: ${error.message}`);
+      console.error("Error submitting complaint:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

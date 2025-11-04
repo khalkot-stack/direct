@@ -1,11 +1,11 @@
 export interface Profile {
   id: string;
-  full_name: string | null; // Changed to allow null
+  full_name: string | null;
   email: string;
   user_type: "passenger" | "driver" | "admin";
-  status: "active" | "suspended" | "banned" | "pending_review"; // Added 'pending_review'
-  phone_number: string | null; // Changed to allow null
-  avatar_url: string | null; // Changed to allow null
+  status: "active" | "suspended" | "banned" | "pending_review";
+  phone_number: string | null;
+  avatar_url: string | null;
   created_at: string;
 }
 
@@ -13,7 +13,7 @@ export interface ProfileDetails {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  user_type?: "passenger" | "driver" | "admin"; // Add user_type
+  user_type?: "passenger" | "driver" | "admin";
 }
 
 export interface Ride {
@@ -26,6 +26,7 @@ export interface Ride {
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
   cancellation_reason: string | null;
+  price: number | null; // Added price
   pickup_lat: number | null;
   pickup_lng: number | null;
   destination_lat: number | null;
@@ -36,7 +37,6 @@ export interface Ride {
   driver_profiles: ProfileDetails | null;
 }
 
-// New interface to handle raw data from Supabase joins where profiles might be arrays
 export interface RawRideData extends Omit<Ride, 'passenger_profiles' | 'driver_profiles'> {
   passenger_profiles: ProfileDetails[] | ProfileDetails | null;
   driver_profiles: ProfileDetails[] | ProfileDetails | null;
@@ -51,7 +51,6 @@ export interface Message {
   receiver_profiles: ProfileDetails | null;
 }
 
-// New interface to handle raw data from Supabase joins for messages where profiles might be arrays
 export interface SupabaseJoinedMessageData extends Omit<Message, 'sender_profiles' | 'receiver_profiles'> {
   sender_profiles: ProfileDetails | ProfileDetails[] | null;
   receiver_profiles: ProfileDetails | ProfileDetails[] | null;
@@ -76,11 +75,11 @@ export interface UserSettings {
 }
 
 export interface SystemSetting {
-  id?: string; // Made optional to allow for new settings without an ID
+  id?: string;
   key: string;
   value: string;
   description?: string;
-  created_at: string; // Added created_at property
+  created_at: string;
 }
 
 export interface Complaint {

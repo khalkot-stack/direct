@@ -17,7 +17,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { Message, ProfileDetails, SupabaseJoinedMessageData } from "@/types/supabase";
+import { Message, ProfileDetails } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface ChatDialogProps {
   open: boolean;
@@ -44,7 +45,6 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   const currentUserId = user?.id;
 
-  // Refs to hold the latest profile data without triggering useEffect re-runs for the channel
   const currentUserProfileRef = useRef(currentUserProfile);
   const otherUserProfileRef = useRef(otherUserProfile);
 
@@ -62,16 +62,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   const fetchOtherProfile = useCallback(async () => {
     if (open && otherUserId) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, user_type') // Fetch user_type
-        .eq('id', otherUserId)
-        .single();
-      if (error) {
+      try {
+        const profile = await supabaseService.getUserProfile(otherUserId);
+        setOtherUserProfile(profile);
+      } catch (error) {
         console.error("Error fetching other user profile:", error);
         setOtherUserProfile(null);
-      } else {
-        setOtherUserProfile(data);
       }
     }
   }, [open, otherUserId]);
@@ -84,41 +80,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     if (!currentUserId) return;
 
     setLoadingMessages(true);
-    const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        id,
-        sender_id,
-        content,
-        created_at,
-        sender_profiles:sender_id(id, full_name, avatar_url, user_type),
-        receiver_profiles:receiver_id(id, full_name, avatar_url, user_type)
-      `)
-      .eq('ride_id', rideId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
+    try {
+      const fetchedMessages = await supabaseService.getMessagesForRide(rideId);
+      setMessages(fetchedMessages);
+    } catch (error: any) {
       toast.error(`فشل جلب الرسائل: ${error.message}`);
       console.error("Error fetching messages:", error);
-    } else {
-      const formattedMessages: Message[] = (data as SupabaseJoinedMessageData[]).map(msg => {
-        const senderProfiles = Array.isArray(msg.sender_profiles) && msg.sender_profiles.length > 0
-          ? msg.sender_profiles[0]
-          : (msg.sender_profiles as ProfileDetails | null);
-        
-        const receiverProfiles = Array.isArray(msg.receiver_profiles) && msg.receiver_profiles.length > 0
-          ? msg.receiver_profiles[0]
-          : (msg.receiver_profiles as ProfileDetails | null);
-
-        return {
-          ...msg,
-          sender_profiles: senderProfiles,
-          receiver_profiles: receiverProfiles,
-        };
-      });
-      setMessages(formattedMessages);
+    } finally {
+      setLoadingMessages(false);
     }
-    setLoadingMessages(false);
   }, [rideId, currentUserId]);
 
   useEffect(() => {
@@ -135,7 +105,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
   useEffect(() => {
     let channel: RealtimeChannel | undefined;
-    if (!currentUserId) { // Only subscribe if user is logged in
+    if (!currentUserId) {
       return () => {
         if (channel) {
           supabase.removeChannel(channel);
@@ -148,13 +118,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `ride_id=eq.${rideId}` },
-        async (payload) => { // Made callback async
+        async (payload) => {
           const newMsgPayload = payload.new;
           
           let senderProfiles: ProfileDetails | null = null;
           let receiverProfiles: ProfileDetails | null = null;
 
-          // Try to get profiles from refs first
           if (newMsgPayload.sender_id === currentUserId) {
             senderProfiles = currentUserProfileRef.current;
             receiverProfiles = otherUserProfileRef.current;
@@ -163,22 +132,19 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             receiverProfiles = currentUserProfileRef.current;
           }
 
-          // If profiles are still null, fetch them
           if (!senderProfiles || !receiverProfiles) {
-            const { data: profilesData, error: profilesError } = await supabase
-              .from('profiles')
-              .select('id, full_name, avatar_url, user_type') // Fetch user_type
-              .in('id', [newMsgPayload.sender_id, newMsgPayload.receiver_id]);
-
-            if (profilesError) {
-              console.error("Error fetching profiles for new message:", profilesError);
-            } else if (profilesData) {
-              senderProfiles = profilesData.find(p => p.id === newMsgPayload.sender_id) || null;
-              receiverProfiles = profilesData.find(p => p.id === newMsgPayload.receiver_id) || null;
+            try {
+              const profilesData = await Promise.all([
+                supabaseService.getUserProfile(newMsgPayload.sender_id),
+                supabaseService.getUserProfile(newMsgPayload.receiver_id)
+              ]);
+              senderProfiles = profilesData[0];
+              receiverProfiles = profilesData[1];
+            } catch (error) {
+              console.error("Error fetching profiles for new message:", error);
             }
           }
           
-          // Fallback if profiles are not found
           if (!senderProfiles) {
             senderProfiles = { id: newMsgPayload.sender_id, full_name: 'مستخدم غير معروف', avatar_url: null, user_type: undefined };
           }
@@ -196,7 +162,6 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           };
           setMessages((prevMessages) => [...prevMessages, formattedNewMessage]);
           
-          // Show toast notification only if the message is from the other user AND the chat dialog is NOT open
           if (newMsgPayload.sender_id !== currentUserId && !open) {
             toast.info(`رسالة جديدة من ${senderProfiles?.full_name || 'مستخدم'}: ${formattedNewMessage.content.substring(0, 30)}...`);
           }
@@ -209,7 +174,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [open, rideId, currentUserId, otherUserId]); // Added 'open' to dependencies
+  }, [open, rideId, currentUserId, otherUserId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,20 +185,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     }
 
     setIsSending(true);
-
-    const { error } = await supabase.from('messages').insert({
-      ride_id: rideId,
-      sender_id: currentUserId,
-      receiver_id: otherUserId,
-      content: newMessage.trim(),
-    });
-    if (error) {
+    try {
+      await supabaseService.sendMessage(rideId, currentUserId, otherUserId, newMessage);
+      setNewMessage("");
+    } catch (error: any) {
       toast.error(`فشل إرسال الرسالة: ${error.message}`);
       console.error("Error sending message:", error);
-    } else {
-      setNewMessage("");
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const getSenderLabel = (msg: Message) => {

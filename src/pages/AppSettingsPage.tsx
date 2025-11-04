@@ -8,11 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useTheme } from "next-themes";
 import LogoutButton from "@/components/LogoutButton";
 import { useUser } from "@/context/UserContext";
-import { UserSettings } from "@/types/supabase"; // Import shared UserSettings type
+import { UserSettings } from "@/types/supabase";
+import { useTheme } from "next-themes";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const AppSettingsPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -23,49 +23,38 @@ const AppSettingsPage: React.FC = () => {
 
   const fetchUserSettings = useCallback(async (userId: string) => {
     setLoadingSettings(true);
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    try {
+      let fetchedSettings = await supabaseService.getUserSettings(userId);
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (fetchedSettings) {
+        setSettings(fetchedSettings);
+        setTheme(fetchedSettings.theme);
+      } else {
+        // If no settings found, create default ones using upsert
+        const defaultSettings: Omit<UserSettings, 'id'> = {
+          user_id: userId,
+          theme: 'system',
+          notifications_enabled: true,
+          language: 'ar',
+        };
+        const newSettings = await supabaseService.upsertUserSettings(defaultSettings);
+        setSettings(newSettings);
+        if (newSettings) setTheme(newSettings.theme);
+      }
+    } catch (error: any) {
       toast.error(`فشل جلب إعدادات المستخدم: ${error.message}`);
       console.error("Error fetching user settings:", error);
       setSettings(null);
-    } else if (data) {
-      setSettings(data as UserSettings);
-      setTheme(data.theme);
-    } else {
-      // If no settings found, create default ones using upsert
-      const defaultSettings: Omit<UserSettings, 'id'> = {
-        user_id: userId,
-        theme: 'system',
-        notifications_enabled: true,
-        language: 'ar',
-      };
-      const { data: newSettings, error: upsertError } = await supabase
-        .from('user_settings')
-        .upsert(defaultSettings, { onConflict: 'user_id' }) // Use upsert with onConflict
-        .select()
-        .single();
-
-      if (upsertError) {
-        toast.error(`فشل إنشاء الإعدادات الافتراضية: ${upsertError.message}`);
-        console.error("Error creating default settings:", upsertError);
-      } else {
-        setSettings(newSettings as UserSettings);
-        setTheme(newSettings.theme);
-      }
+    } finally {
+      setLoadingSettings(false);
     }
-    setLoadingSettings(false);
   }, [setTheme]);
 
   useEffect(() => {
     if (!userLoading && user) {
       fetchUserSettings(user.id);
     } else if (!userLoading && !user) {
-      setLoadingSettings(false); // No user, so no settings to load
+      setLoadingSettings(false);
     }
   }, [userLoading, user, fetchUserSettings]);
 
@@ -82,21 +71,19 @@ const AppSettingsPage: React.FC = () => {
     if (!user?.id || !settings) return;
 
     setIsSaving(true);
-    const { error } = await supabase
-      .from('user_settings')
-      .update({
+    try {
+      await supabaseService.upsertUserSettings({
+        user_id: user.id,
         theme: settings.theme,
         notifications_enabled: settings.notifications_enabled,
         language: settings.language,
-      })
-      .eq('user_id', user.id);
-    setIsSaving(false);
-
-    if (error) {
+      });
+      toast.success("تم حفظ الإعدادات بنجاح!");
+    } catch (error: any) {
       toast.error(`فشل حفظ الإعدادات: ${error.message}`);
       console.error("Error saving settings:", error);
-    } else {
-      toast.success("تم حفظ الإعدادات بنجاح!");
+    } finally {
+      setIsSaving(false);
     }
   };
 

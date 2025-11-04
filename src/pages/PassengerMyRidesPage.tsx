@@ -12,7 +12,7 @@ import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
-import { Ride, Rating, RawRideData } from "@/types/supabase";
+import { Ride } from "@/types/supabase";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import {
@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -50,39 +51,16 @@ const PassengerMyRidesPage: React.FC = () => {
 
   const fetchMyRides = useCallback(async (userId: string) => {
     setLoadingRides(true);
-    const { data: ridesRaw, error } = await supabase
-      .from('rides')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
-      `)
-      .eq('passenger_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const fetchedRides = await supabaseService.getPassengerRides(userId);
+      setRides(fetchedRides);
+    } catch (error: any) {
       console.error("PassengerMyRidesPage: Error fetching rides:", error);
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
       setRides([]);
-    } else {
-      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
-        const passengerProfile = Array.isArray(ride.passenger_profiles)
-          ? ride.passenger_profiles[0] || null
-          : ride.passenger_profiles;
-        
-        const driverProfile = Array.isArray(ride.driver_profiles)
-          ? ride.driver_profiles[0] || null
-          : ride.driver_profiles;
-
-        return {
-          ...ride,
-          passenger_profiles: passengerProfile,
-          driver_profiles: driverProfile,
-        };
-      }) as Ride[];
-      setRides(formattedRides);
+    } finally {
+      setLoadingRides(false);
     }
-    setLoadingRides(false);
   }, []);
 
   useEffect(() => {
@@ -145,19 +123,18 @@ const PassengerMyRidesPage: React.FC = () => {
   const handleSaveRating = async (rating: number, comment: string) => {
     if (!user || !rideToRate || !ratingTargetUser) return;
 
-    const { error } = await supabase.from('ratings').insert({
-      ride_id: rideToRate.id,
-      rater_id: user.id,
-      rated_user_id: ratingTargetUser.id,
-      rating,
-      comment,
-    } as Omit<Rating, 'id' | 'created_at'>);
-
-    if (error) {
+    try {
+      await supabaseService.createRating({
+        ride_id: rideToRate.id,
+        rater_id: user.id,
+        rated_user_id: ratingTargetUser.id,
+        rating,
+        comment,
+      });
+      toast.success("تم حفظ التقييم بنجاح!");
+    } catch (error: any) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
       console.error("Error saving rating:", error);
-    } else {
-      toast.success("تم حفظ التقييم بنجاح!");
     }
   };
 
@@ -170,22 +147,19 @@ const PassengerMyRidesPage: React.FC = () => {
     if (!rideToCancel) return;
 
     setIsCancelling(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: 'cancelled', cancellation_reason: reason })
-      .eq('id', rideToCancel.id);
-    setIsCancelling(false);
-    setIsCancellationDialogOpen(false);
-    setRideToCancel(null);
-
-    if (error) {
-      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
-      console.error("Error cancelling ride:", error);
-    } else {
+    try {
+      await supabaseService.updateRide(rideToCancel.id, { status: 'cancelled', cancellation_reason: reason });
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
         fetchMyRides(user.id);
       }
+    } catch (error: any) {
+      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
+      console.error("Error cancelling ride:", error);
+    } finally {
+      setIsCancelling(false);
+      setIsCancellationDialogOpen(false);
+      setRideToCancel(null);
     }
   };
 
@@ -193,21 +167,18 @@ const PassengerMyRidesPage: React.FC = () => {
     if (!rideToDelete) return;
 
     setIsDeleting(true);
-    const { error } = await supabase
-      .from('rides')
-      .delete()
-      .eq('id', rideToDelete.id);
-    setIsDeleting(false);
-    setRideToDelete(null);
-
-    if (error) {
-      toast.error(`فشل حذف الرحلة: ${error.message}`);
-      console.error("Error deleting ride:", error);
-    } else {
+    try {
+      await supabaseService.deleteRide(rideToDelete.id);
       toast.success("تم حذف الرحلة بنجاح!");
       if (user) {
         fetchMyRides(user.id);
       }
+    } catch (error: any) {
+      toast.error(`فشل حذف الرحلة: ${error.message}`);
+      console.error("Error deleting ride:", error);
+    } finally {
+      setIsDeleting(false);
+      setRideToDelete(null);
     }
   };
 

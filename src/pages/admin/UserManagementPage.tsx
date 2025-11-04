@@ -13,7 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle, Search, Edit, Trash2, Loader2, Users as UsersIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import UserFormDialog from "@/components/UserFormDialog";
 import EmptyState from "@/components/EmptyState";
@@ -32,7 +31,8 @@ import { useUser } from "@/context/UserContext";
 import { Profile } from "@/types/supabase";
 import UserStatusBadge from "@/components/UserStatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import UserTableSkeleton from "@/components/skeletons/UserTableSkeleton"; // Import the new skeleton component
+import UserTableSkeleton from "@/components/skeletons/UserTableSkeleton";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -48,18 +48,16 @@ const UserManagementPage: React.FC = () => {
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const fetchedUsers = await supabaseService.getAllUsers();
+      setUsers(fetchedUsers);
+    } catch (error: any) {
       toast.error(`فشل جلب المستخدمين: ${error.message}`);
       console.error("Error fetching users:", error);
-    } else {
-      setUsers(data as Profile[]);
+      setUsers([]);
+    } finally {
+      setLoadingUsers(false);
     }
-    setLoadingUsers(false);
   }, []);
 
   useEffect(() => {
@@ -83,22 +81,20 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleSaveUser = async (profileData: Profile) => {
-    if (isNewUser) {
-      fetchUsers();
-    } else if (selectedUser) {
-      const { id, ...updates } = profileData;
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) {
-        toast.error(`فشل تحديث المستخدم: ${error.message}`);
-        console.error("Error updating user:", error);
-      } else {
+    try {
+      if (isNewUser) {
+        // For new users, the profile is already created via auth.signUp in UserFormDialog
+        // We just need to re-fetch the list to include the new user.
+        fetchUsers();
+      } else if (selectedUser) {
+        const { id, ...updates } = profileData;
+        await supabaseService.updateProfile(id, updates);
         toast.success("تم تحديث المستخدم بنجاح!");
         fetchUsers();
       }
+    } catch (error: any) {
+      toast.error(`فشل حفظ المستخدم: ${error.message}`);
+      console.error("Error saving user:", error);
     }
   };
 
@@ -106,19 +102,16 @@ const UserManagementPage: React.FC = () => {
     if (!userToDelete) return;
 
     setIsDeleting(true);
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userToDelete.id);
-    setIsDeleting(false);
-    setUserToDelete(null);
-
-    if (error) {
-      toast.error(`فشل حذف المستخدم: ${error.message}`);
-      console.error("Error deleting user:", error);
-    } else {
+    try {
+      await supabaseService.deleteProfile(userToDelete.id);
       toast.success("تم حذف المستخدم بنجاح!");
       fetchUsers();
+    } catch (error: any) {
+      toast.error(`فشل حذف المستخدم: ${error.message}`);
+      console.error("Error deleting user:", error);
+    } finally {
+      setIsDeleting(false);
+      setUserToDelete(null);
     }
   };
 

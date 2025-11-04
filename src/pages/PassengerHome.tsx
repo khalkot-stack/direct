@@ -5,20 +5,18 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Car, MessageSquare, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatDialog from "@/components/ChatDialog";
 import RatingDialog from "@/components/RatingDialog";
 import CancellationReasonDialog from "@/components/CancellationReasonDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Ride, RawRideData } from "@/types/supabase";
+import { Ride } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
-import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions"; // Import the Edge Function utility
-import RequestRideDialog from "@/components/RequestRideDialog"; // Import the new RequestRideDialog
-import InteractiveMap from "@/components/InteractiveMap"; // Import InteractiveMap
-
-// Removed rideRequestSchema and RideRequestInputs as they are now in RequestRideDialog
+import { createRideViaEdgeFunction } from "@/utils/supabaseFunctions";
+import RequestRideDialog from "@/components/RequestRideDialog";
+import InteractiveMap from "@/components/InteractiveMap";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const PassengerHome: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -40,47 +38,20 @@ const PassengerHome: React.FC = () => {
   const [rideToCancel, setRideToCancel] = useState<Ride | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const [isRequestRideDialogOpen, setIsRequestRideDialogOpen] = useState(false); // New state for RequestRideDialog
-
-  // Removed useForm hook as it's now in RequestRideDialog
+  const [isRequestRideDialogOpen, setIsRequestRideDialogOpen] = useState(false);
 
   const fetchCurrentRide = useCallback(async (userId: string) => {
     setLoadingRideData(true);
-    const { data: ridesRaw, error: ridesError } = await supabase
-      .from('rides')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type),
-        driver_profiles:driver_id(id, full_name, avatar_url, user_type)
-      `)
-      .eq('passenger_id', userId)
-      .in('status', ['pending', 'accepted'])
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (ridesError) {
+    try {
+      const ride = await supabaseService.getPassengerCurrentRide(userId);
+      setCurrentRide(ride);
+    } catch (ridesError: any) {
       toast.error(`فشل جلب الرحلات الحالية: ${ridesError.message}`);
       console.error("Error fetching current ride:", ridesError);
       setCurrentRide(null);
-    } else if (ridesRaw && ridesRaw.length > 0) {
-      const ride = ridesRaw[0] as RawRideData;
-      const passengerProfile = Array.isArray(ride.passenger_profiles)
-        ? ride.passenger_profiles[0] || null
-        : ride.passenger_profiles;
-      
-      const driverProfile = Array.isArray(ride.driver_profiles)
-        ? ride.driver_profiles[0] || null
-        : ride.driver_profiles;
-
-      setCurrentRide({
-        ...ride,
-        passenger_profiles: passengerProfile,
-        driver_profiles: driverProfile,
-      } as Ride);
-    } else {
-      setCurrentRide(null);
+    } finally {
+      setLoadingRideData(false);
     }
-    setLoadingRideData(false);
   }, []);
 
   useEffect(() => {
@@ -102,24 +73,24 @@ const PassengerHome: React.FC = () => {
     (payload) => {
       if (user) {
         fetchCurrentRide(user.id);
-        if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
-          toast.success("تم قبول رحلتك من قبل سائق!");
-        }
-        if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
-          toast.success("تم إكمال رحلتك بنجاح!");
-          const completedRide = payload.new as Ride;
-          if (completedRide.driver_profiles) {
-            setRideToRate(completedRide);
-            setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
-            setIsRatingDialogOpen(true);
-          }
-        }
-        if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
-          toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.old.status === 'pending') {
+        toast.success("تم قبول رحلتك من قبل سائق!");
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'completed' && payload.old.status !== 'completed') {
+        toast.success("تم إكمال رحلتك بنجاح!");
+        const completedRide = payload.new as Ride;
+        if (completedRide.driver_profiles) {
+          setRideToRate(completedRide);
+          setRatingTargetUser({ id: completedRide.driver_id!, name: completedRide.driver_profiles.full_name || 'السائق' });
+          setIsRatingDialogOpen(true);
         }
       }
+      if (payload.eventType === 'UPDATE' && payload.new.status === 'cancelled' && payload.old.status !== 'cancelled') {
+        toast.warning(`تم إلغاء رحلتك. السبب: ${payload.new.cancellation_reason || 'غير محدد'}`);
+      }
     },
-    !!user // Only enable if user is logged in
+    !!user
   );
 
   const handleRequestRide = async (values: { pickupLocation: string; destination: string; passengersCount: number }) => {
@@ -138,8 +109,8 @@ const PassengerHome: React.FC = () => {
     setLoadingRideData(false);
 
     if (result) {
-      setIsRequestRideDialogOpen(false); // Close dialog on success
-      fetchCurrentRide(user.id); // Refresh current ride status
+      setIsRequestRideDialogOpen(false);
+      fetchCurrentRide(user.id);
     }
   };
 
@@ -157,19 +128,18 @@ const PassengerHome: React.FC = () => {
   const handleSaveRating = async (rating: number, comment: string) => {
     if (!user || !rideToRate || !ratingTargetUser) return;
 
-    const { error } = await supabase.from('ratings').insert({
-      ride_id: rideToRate.id,
-      rater_id: user.id,
-      rated_user_id: ratingTargetUser.id,
-      rating,
-      comment,
-    });
-
-    if (error) {
+    try {
+      await supabaseService.createRating({
+        ride_id: rideToRate.id,
+        rater_id: user.id,
+        rated_user_id: ratingTargetUser.id,
+        rating,
+        comment,
+      });
+      toast.success("تم حفظ التقييم بنجاح!");
+    } catch (error: any) {
       toast.error(`فشل حفظ التقييم: ${error.message}`);
       console.error("Error saving rating:", error);
-    } else {
-      toast.success("تم حفظ التقييم بنجاح!");
     }
   };
 
@@ -182,22 +152,19 @@ const PassengerHome: React.FC = () => {
     if (!rideToCancel) return;
 
     setIsCancelling(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: 'cancelled', cancellation_reason: reason })
-      .eq('id', rideToCancel.id);
-    setIsCancelling(false);
-    setIsCancellationDialogOpen(false);
-    setRideToCancel(null);
-
-    if (error) {
-      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
-      console.error("Error cancelling ride:", error);
-    } else {
+    try {
+      await supabaseService.updateRide(rideToCancel.id, { status: 'cancelled', cancellation_reason: reason });
       toast.success("تم إلغاء الرحلة بنجاح.");
       if (user) {
-        fetchCurrentRide(user.id); // Refresh current ride status
+        fetchCurrentRide(user.id);
       }
+    } catch (error: any) {
+      toast.error(`فشل إلغاء الرحلة: ${error.message}`);
+      console.error("Error cancelling ride:", error);
+    } finally {
+      setIsCancelling(false);
+      setIsCancellationDialogOpen(false);
+      setRideToCancel(null);
     }
   };
 
@@ -212,11 +179,9 @@ const PassengerHome: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)]">
-      {/* Placeholder for map area */}
       <InteractiveMap />
 
       {currentRide ? (
-        // Active Ride Card (similar to Uber's bottom card for active rides)
         <Card className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md shadow-lg z-10">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -257,9 +222,8 @@ const PassengerHome: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        // Request Ride Button (when no active ride)
         <Button
-          onClick={() => setIsRequestRideDialogOpen(true)} // Open the new dialog
+          onClick={() => setIsRequestRideDialogOpen(true)}
           className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-primary hover:bg-primary-dark text-primary-foreground py-3 text-lg shadow-lg z-10"
         >
           <Car className="h-5 w-5 ml-2 rtl:mr-2" />
@@ -298,7 +262,7 @@ const PassengerHome: React.FC = () => {
           open={isRequestRideDialogOpen}
           onOpenChange={setIsRequestRideDialogOpen}
           onSave={handleRequestRide}
-          isSubmitting={loadingRideData} // Use loadingRideData to indicate submission status
+          isSubmitting={loadingRideData}
         />
       )}
     </div>

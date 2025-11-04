@@ -16,13 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { Profile } from "@/types/supabase"; // Import shared Profile type
+import { Profile } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile?: Profile;
-  onSave: (profile: Profile) => Promise<void>; // Updated to accept Promise<void>
+  onSave: (profile: Profile) => Promise<void>;
   isNewUser: boolean;
 }
 
@@ -45,11 +46,11 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
         setStatus("active");
         setPhoneNumber("");
       } else if (profile) {
-        setFullName(profile.full_name || ""); // Handle null
+        setFullName(profile.full_name || "");
         setEmail(profile.email);
         setUserType(profile.user_type);
         setStatus(profile.status);
-        setPhoneNumber(profile.phone_number || ""); // Handle null
+        setPhoneNumber(profile.phone_number || "");
         setPassword("");
       }
     }
@@ -59,65 +60,66 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({ open, onOpenChange, pro
     e.preventDefault();
     setIsSaving(true);
 
-    if (isNewUser) {
-      if (!fullName || !email || !password || !userType) {
-        toast.error("الرجاء ملء جميع الحقول المطلوبة لإنشاء مستخدم جديد.");
-        setIsSaving(false);
-        return;
-      }
-      if (password.length < 6) {
-        toast.error("يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.");
-        setIsSaving(false);
-        return;
-      }
+    try {
+      if (isNewUser) {
+        if (!fullName || !email || !password || !userType) {
+          toast.error("الرجاء ملء جميع الحقول المطلوبة لإنشاء مستخدم جديد.");
+          return;
+        }
+        if (password.length < 6) {
+          toast.error("يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.");
+          return;
+        }
 
-      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
+        const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber;
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone_number: finalPhoneNumber,
-            user_type: userType,
-            status: status, // Use selected status for new user
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              phone_number: finalPhoneNumber,
+              user_type: userType,
+              status: status,
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        toast.error(`فشل إنشاء المستخدم: ${error.message}`);
-        console.error("Error creating new user:", error);
-      } else if (data.user) {
-        toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
+        if (error) {
+          throw error;
+        } else if (data.user) {
+          toast.success(`تم إنشاء المستخدم ${fullName} بنجاح! (الرجاء التحقق من البريد الإلكتروني للتفعيل).`);
+          onOpenChange(false);
+          await onSave({ id: data.user.id, full_name: fullName, email, user_type: userType, status, phone_number: finalPhoneNumber, avatar_url: null, created_at: new Date().toISOString() });
+        }
+      } else {
+        if (!profile?.id || !fullName || !email || !userType || !status) {
+          toast.error("الرجاء ملء جميع الحقول المطلوبة لتعديل المستخدم.");
+          return;
+        }
+
+        const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber;
+
+        const updatedProfile: Profile = {
+          id: profile.id,
+          full_name: fullName,
+          email,
+          user_type: userType,
+          status,
+          phone_number: finalPhoneNumber,
+          avatar_url: profile.avatar_url,
+          created_at: profile.created_at,
+        };
+        await onSave(updatedProfile);
         onOpenChange(false);
-        // Pass a dummy profile with minimal data for new user, actual data will be fetched by parent
-        await onSave({ id: data.user.id, full_name: fullName, email, user_type: userType, status, phone_number: finalPhoneNumber, avatar_url: null, created_at: new Date().toISOString() });
       }
-    } else {
-      if (!profile?.id || !fullName || !email || !userType || !status) {
-        toast.error("الرجاء ملء جميع الحقول المطلوبة لتعديل المستخدم.");
-        setIsSaving(false);
-        return;
-      }
-
-      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
-
-      const updatedProfile: Profile = {
-        id: profile.id,
-        full_name: fullName,
-        email,
-        user_type: userType,
-        status,
-        phone_number: finalPhoneNumber,
-        avatar_url: profile.avatar_url, // Keep existing avatar_url
-        created_at: profile.created_at, // Ensure created_at is passed
-      };
-      await onSave(updatedProfile);
-      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(`فشل العملية: ${error.message}`);
+      console.error("Error in user form submission:", error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   return (

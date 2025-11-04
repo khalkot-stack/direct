@@ -5,7 +5,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label"; // Removed unused import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -21,7 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { SystemSetting } from "@/types/supabase"; // Removed unused import
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 const loginSchema = z.object({
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),
@@ -33,7 +32,7 @@ const registerSchema = z.object({
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),
   password: z.string().min(6, { message: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل." }),
   phoneNumber: z.string().optional(),
-  userType: z.enum(["passenger", "driver"], { message: "الرجاء اختيار نوع المستخدم." }), // Added userType
+  userType: z.enum(["passenger", "driver"], { message: "الرجاء اختيار نوع المستخدم." }),
 });
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -61,24 +60,20 @@ const AuthPage: React.FC = () => {
       email: "",
       password: "",
       phoneNumber: "",
-      userType: "passenger", // Default to passenger
+      userType: "passenger",
     },
   });
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('key, value')
-        .in('key', ['allow_new_registrations', 'driver_auto_approve']);
-
-      if (error) {
-        console.error("Error fetching settings:", error);
-        toast.error("فشل جلب إعدادات التطبيق.");
-      } else {
-        const settingsMap = new Map(data.map(s => [s.key, s.value]));
+      try {
+        const settings = await supabaseService.getSystemSettings(['allow_new_registrations', 'driver_auto_approve']);
+        const settingsMap = new Map(settings.map(s => [s.key, s.value]));
         setAllowNewRegistrations(settingsMap.get('allow_new_registrations') === 'true');
         setDriverAutoApprove(settingsMap.get('driver_auto_approve') === 'true');
+      } catch (error: any) {
+        console.error("Error fetching settings:", error);
+        toast.error(`فشل جلب إعدادات التطبيق: ${error.message}`);
       }
     };
     fetchSettings();
@@ -99,11 +94,11 @@ const AuthPage: React.FC = () => {
       } else {
         toast.success("تم تسجيل الدخول بنجاح!");
         const { data: { user } } = await supabase.auth.getUser();
-        const userRole = user?.app_metadata?.user_type; // Check app_metadata for role
-        const userStatus = user?.app_metadata?.status; // Check app_metadata for status
+        const userRole = user?.app_metadata?.user_type;
+        const userStatus = user?.app_metadata?.status;
 
         if (userStatus === 'pending_review') {
-          await supabase.auth.signOut(); // Log out user if status is pending_review
+          await supabase.auth.signOut();
           toast.info("حسابك قيد المراجعة. يرجى الانتظار حتى يتم تفعيله.");
           navigate("/auth");
         } else if (userRole === "passenger") {
@@ -120,7 +115,7 @@ const AuthPage: React.FC = () => {
       const { fullName, email, password, phoneNumber, userType } = values as RegisterFormInputs;
 
       const initialStatus = (userType === 'driver' && !driverAutoApprove) ? 'pending_review' : 'active';
-      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber; // Convert empty string to null
+      const finalPhoneNumber = phoneNumber === "" ? null : phoneNumber;
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -128,7 +123,7 @@ const AuthPage: React.FC = () => {
         options: {
           data: {
             full_name: fullName,
-            phone_number: finalPhoneNumber, // Use the potentially nullified phone number
+            phone_number: finalPhoneNumber,
             user_type: userType,
             status: initialStatus,
           },
@@ -176,7 +171,7 @@ const AuthPage: React.FC = () => {
                           id="email"
                           type="email"
                           placeholder="example@email.com"
-                          autoComplete="username" // Added for accessibility
+                          autoComplete="username"
                           {...field}
                         />
                       </FormControl>
@@ -195,7 +190,7 @@ const AuthPage: React.FC = () => {
                           id="password"
                           type="password"
                           placeholder="********"
-                          autoComplete="current-password" // Fixed: autocomplete to autoComplete
+                          autoComplete="current-password"
                           {...field}
                         />
                       </FormControl>
@@ -247,7 +242,7 @@ const AuthPage: React.FC = () => {
                           id="email"
                           type="email"
                           placeholder="example@email.com"
-                          autoComplete="username" // Added for accessibility
+                          autoComplete="username"
                           {...field}
                         />
                       </FormControl>
@@ -266,7 +261,7 @@ const AuthPage: React.FC = () => {
                           id="password"
                           type="password"
                           placeholder="********"
-                          autoComplete="new-password" // Fixed: autocomplete to autoComplete
+                          autoComplete="new-password"
                           {...field}
                         />
                       </FormControl>

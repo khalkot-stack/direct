@@ -14,9 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { Profile, Ride } from "@/types/supabase"; // Import shared types
+import { Profile, Ride } from "@/types/supabase";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface RideFormDialogProps {
   open: boolean;
@@ -39,18 +39,16 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, user_type');
-
-      if (profilesError) {
+      try {
+        const profilesData = await supabaseService.getAllUsers();
+        setPassengers(profilesData.filter(p => p.user_type === 'passenger'));
+        setDrivers(profilesData.filter(p => p.user_type === 'driver'));
+      } catch (profilesError: any) {
         toast.error(`فشل جلب المستخدمين: ${profilesError.message}`);
         console.error("Error fetching profiles:", profilesError);
-      } else {
-        setPassengers(profilesData.filter(p => p.user_type === 'passenger') as Profile[]);
-        setDrivers(profilesData.filter(p => p.user_type === 'driver') as Profile[]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUsers();
@@ -90,7 +88,6 @@ const RideFormDialog: React.FC<RideFormDialogProps> = ({ open, onOpenChange, rid
       status: status,
     };
 
-    // Conditionally add 'id' only if it's an existing ride
     const newRide = ride ? { ...baseRideData, id: ride.id } : baseRideData;
     
     onSave(newRide as Omit<Ride, 'created_at' | 'passenger_profiles' | 'driver_profiles' | 'cancellation_reason' | 'pickup_lat' | 'pickup_lng' | 'destination_lat' | 'destination_lng' | 'driver_current_lat' | 'driver_current_lng'>);

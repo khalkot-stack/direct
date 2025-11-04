@@ -12,10 +12,11 @@ import EmptyState from "@/components/EmptyState";
 import RideSearchDialog from "@/components/RideSearchDialog";
 import { useUser } from "@/context/UserContext";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
-import { Ride, RawRideData } from "@/types/supabase";
+import { Ride } from "@/types/supabase";
 import RideStatusBadge from "@/components/RideStatusBadge";
 import PageHeader from "@/components/PageHeader";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import supabaseService from "@/services/supabaseService"; // Import the new service
 
 interface RideSearchCriteria {
   pickupLocation?: string;
@@ -52,59 +53,26 @@ const DriverAvailableRidesPage: React.FC = () => {
 
     setLoadingRides(true);
 
-    const limit = PAGE_SIZE;
-    const offset = currentPage * limit;
+    try {
+      const { rides, count } = await supabaseService.getAvailableRides(
+        user.id,
+        currentPage,
+        PAGE_SIZE,
+        searchCriteria
+      );
 
-    let query = supabase
-      .from('rides')
-      .select(`
-        *,
-        passenger_profiles:passenger_id(id, full_name, avatar_url, user_type)
-      `, { count: 'exact' })
-      .eq('status', 'pending')
-      .is('driver_id', null)
-      // .neq('passenger_id', user.id) // تم تعليق هذا الشرط للسماح للسائق برؤية رحلاته الخاصة لأغراض الاختبار
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // Log the constructed query filters (simplified representation)
-    console.log("DriverAvailableRidesPage: fetchAvailableRides - Supabase query filters - status=pending, driver_id=null, passenger_id!=current_user_id (temporarily disabled)");
-
-    if (searchCriteria?.pickupLocation) {
-      query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
-      console.log("DriverAvailableRidesPage: fetchAvailableRides - Adding pickup_location filter:", searchCriteria.pickupLocation);
-    }
-    if (searchCriteria?.destination) {
-      query = query.ilike('destination', `%${searchCriteria.destination}%`);
-      console.log("DriverAvailableRidesPage: fetchAvailableRides - Adding destination filter:", searchCriteria.destination);
-    }
-
-    const { data: ridesRaw, error: ridesError, count } = await query;
-
-    if (ridesError) {
+      console.log("DriverAvailableRidesPage: fetchAvailableRides - Successfully fetched rides. Count:", count, "Raw data:", rides);
+      setAvailableRides(prev => append ? [...prev, ...rides] : rides);
+      setHasMoreRides(count !== null && (currentPage * PAGE_SIZE + rides.length) < count);
+    } catch (ridesError: any) {
       console.error("DriverAvailableRidesPage: fetchAvailableRides - Error fetching available rides:", ridesError);
       toast.error(`فشل جلب الرحلات المتاحة: ${ridesError.message}`);
       setAvailableRides([]);
       setHasMoreRides(false);
-    } else {
-      console.log("DriverAvailableRidesPage: fetchAvailableRides - Successfully fetched rides. Count:", count, "Raw data:", ridesRaw);
-      const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
-        const passengerProfile = Array.isArray(ride.passenger_profiles)
-          ? ride.passenger_profiles[0] || null
-          : ride.passenger_profiles;
-        
-        return {
-          ...ride,
-          passenger_profiles: passengerProfile,
-          driver_profiles: null,
-        };
-      }) as Ride[];
-
-      setAvailableRides(prev => append ? [...prev, ...formattedRides] : formattedRides);
-      setHasMoreRides(count !== null && (offset + formattedRides.length) < count);
+    } finally {
+      setLoadingRides(false);
     }
-    setLoadingRides(false);
-  }, [user, searchCriteria]); // Dependencies: user and searchCriteria, NOT page
+  }, [user, searchCriteria]);
 
   // Effect for initial load and when search criteria changes
   useEffect(() => {
@@ -150,21 +118,15 @@ const DriverAvailableRidesPage: React.FC = () => {
     }
 
     setLoadingRides(true);
-    const { error } = await supabase
-      .from('rides')
-      .update({ driver_id: user.id, status: 'accepted' })
-      .eq('id', rideId)
-      .eq('status', 'pending')
-      .is('driver_id', null);
-
-    setLoadingRides(false);
-
-    if (error) {
-      toast.error(`فشل قبول الرحلة: ${error.message}`);
-      console.error("Error accepting ride:", error);
-    } else {
+    try {
+      await supabaseService.updateRide(rideId, { driver_id: user.id, status: 'accepted' });
       toast.success("تم قبول الرحلة بنجاح! يمكنك الآن عرضها في رحلاتي المقبولة.");
       navigate("/driver-dashboard"); // Redirect to home to show current ride
+    } catch (error: any) {
+      toast.error(`فشل قبول الرحلة: ${error.message}`);
+      console.error("Error accepting ride:", error);
+    } finally {
+      setLoadingRides(false);
     }
   };
 
@@ -181,21 +143,20 @@ const DriverAvailableRidesPage: React.FC = () => {
 
   const handleSearch = (criteria: RideSearchCriteria) => {
     setSearchCriteria(criteria);
-    // setPage(0) and setAvailableRides([]) are handled by the useEffect when searchCriteria changes
     setIsSearchDialogOpen(false);
   };
 
   const handleLoadMore = () => {
     if (user && !loadingRides && hasMoreRides) {
-      setPage(prevPage => prevPage + 1); // This will trigger the second useEffect
+      setPage(prevPage => prevPage + 1);
     }
   };
 
   const handleRefreshAvailableRides = () => {
     if (user) {
-      setPage(0); // Reset page to 0
-      setAvailableRides([]); // Clear existing rides
-      fetchAvailableRides(0, false); // Fetch rides from start (not appending)
+      setPage(0);
+      setAvailableRides([]);
+      fetchAvailableRides(0, false);
     }
   };
 
