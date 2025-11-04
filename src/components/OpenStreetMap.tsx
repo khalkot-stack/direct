@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import type * as Leaflet from 'leaflet'; // استيراد الأنواع فقط
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css'; // تم تعديل المسار هنا
+// تم إزالة الاستيراد الصريح لملف CSS الخاص بـ leaflet-defaulticon-compatibility
 import 'leaflet-defaulticon-compatibility';
 import { Loader2 } from "lucide-react";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "@/lib/constants";
