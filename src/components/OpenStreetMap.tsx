@@ -44,7 +44,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     zoom: DEFAULT_MAP_ZOOM,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [mapComponentKey, setMapComponentKey] = useState(0); // Key for the MapContainer
 
   const fetchMapSettings = useCallback(async () => {
     setLoadingSettings(true);
@@ -66,9 +65,6 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         center: { lat: defaultLat, lng: defaultLng },
         zoom: defaultZoom,
       });
-      // Increment key here to force remount of MapContainer after settings are loaded
-      // This ensures a fresh mount with the correct settings.
-      setMapComponentKey(prev => prev + 1);
     }
     setLoadingSettings(false);
   }, []);
@@ -91,6 +87,10 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     (center || mapSettings.center).lng,
   ];
   const finalZoom: number = zoom || mapSettings.zoom;
+
+  // Create a unique key based on the final map properties
+  // This will force a remount of MapContainer if any of these change
+  const mapComponentKey = `${finalCenter[0]}-${finalCenter[1]}-${finalZoom}`;
 
   const tileLayerProps = {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
