@@ -42,7 +42,13 @@ const DriverAvailableRidesPage: React.FC = () => {
   const [chatOtherUserName, setChatOtherUserName] = useState("");
 
   const fetchAvailableRides = useCallback(async (currentPage: number, append: boolean) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("fetchAvailableRides: User ID not available, skipping fetch.");
+      setLoadingRides(false);
+      return;
+    }
+
+    console.log("fetchAvailableRides: Fetching for user ID:", user.id, "Page:", currentPage, "Append:", append, "Search Criteria:", searchCriteria);
 
     setLoadingRides(true);
 
@@ -61,21 +67,27 @@ const DriverAvailableRidesPage: React.FC = () => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
+    // Log the constructed query filters (simplified representation)
+    console.log("fetchAvailableRides: Supabase query filters - status=pending, driver_id=null, passenger_id!=current_user_id");
+
     if (searchCriteria?.pickupLocation) {
       query = query.ilike('pickup_location', `%${searchCriteria.pickupLocation}%`);
+      console.log("fetchAvailableRides: Adding pickup_location filter:", searchCriteria.pickupLocation);
     }
     if (searchCriteria?.destination) {
       query = query.ilike('destination', `%${searchCriteria.destination}%`);
+      console.log("fetchAvailableRides: Adding destination filter:", searchCriteria.destination);
     }
 
     const { data: ridesRaw, error: ridesError, count } = await query;
 
     if (ridesError) {
+      console.error("fetchAvailableRides: Error fetching available rides:", ridesError);
       toast.error(`فشل جلب الرحلات المتاحة: ${ridesError.message}`);
-      console.error("Error fetching available rides:", ridesError);
       setAvailableRides([]);
       setHasMoreRides(false);
     } else {
+      console.log("fetchAvailableRides: Successfully fetched rides. Count:", count, "Raw data:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
           ? ride.passenger_profiles[0] || null
