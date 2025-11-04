@@ -34,7 +34,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const isInitialLoadHandled = useRef(false);
 
   const fetchUserProfile = useCallback(async (userId: string) => {
-    console.log("UserContext: Attempting to fetch profile for userId:", userId);
     const { data, error, status } = await supabase
       .from("profiles")
       .select(
@@ -47,11 +46,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("UserContext: Error fetching profile:", error);
       setProfile(null);
     } else if (data) {
-      console.log("UserContext: Profile fetched successfully:", data);
-      console.log("UserContext: Fetched profile user_type:", data.user_type);
       setProfile(data as Profile);
     } else {
-      console.log("UserContext: No profile found, attempting to create default for userId:", userId);
       const { data: userData } = await supabase.auth.getUser();
       const currentUser = userData.user;
 
@@ -84,8 +80,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (insertError) {
           console.error("UserContext: Error creating default profile:", insertError);
         } else {
-          console.log("UserContext: Default profile created:", newProfile);
-          console.log("UserContext: Created profile user_type:", (newProfile as Profile).user_type);
           setProfile(newProfile as Profile);
         }
       }
@@ -101,14 +95,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     let authListenerSubscription: { unsubscribe: () => void } | null = null;
 
     const setupAuth = async () => {
-      console.log("UserContext: Initializing authentication setup.");
       const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("UserContext: Error fetching initial session:", sessionError);
       }
       setSession(initialSession);
       setUser(initialSession?.user || null);
-      console.log("UserContext: Initial session user:", initialSession?.user?.id);
 
       if (initialSession?.user) {
         await fetchUserProfile(initialSession.user.id);
@@ -116,13 +108,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         setProfile(null);
       }
       setLoading(false);
-      console.log("UserContext: Initial loading complete. User:", initialSession?.user?.id ? "Logged In" : "Logged Out");
 
       const { data } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
-          console.log("UserContext: Auth state changed. Event:", _event, "User:", currentSession?.user?.id);
           if (_event === 'TOKEN_REFRESHED') {
-            console.log('UserContext: Supabase token refreshed!');
+            // console.log('UserContext: Supabase token refreshed!'); // Keep this log for token refresh info
           }
           setSession(currentSession);
           setUser(currentSession?.user || null);
@@ -140,7 +130,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       if (authListenerSubscription) {
-        console.log("UserContext: Unsubscribing from auth listener.");
         authListenerSubscription.unsubscribe();
       }
     };

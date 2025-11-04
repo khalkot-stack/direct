@@ -26,11 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-// import { useNavigate } from "react-router-dom"; // Import useNavigate - Removed as it's not used
 
 const PassengerMyRidesPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
-  // const navigate = useNavigate(); // Initialize useNavigate - Removed as it's not used
   const [rides, setRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(true);
 
@@ -51,7 +49,6 @@ const PassengerMyRidesPage: React.FC = () => {
   const [rideToDelete, setRideToDelete] = useState<Ride | null>(null);
 
   const fetchMyRides = useCallback(async (userId: string) => {
-    console.log("PassengerMyRidesPage: Fetching rides for userId:", userId);
     setLoadingRides(true);
     const { data: ridesRaw, error } = await supabase
       .from('rides')
@@ -68,7 +65,6 @@ const PassengerMyRidesPage: React.FC = () => {
       toast.error(`فشل جلب رحلاتي: ${error.message}`);
       setRides([]);
     } else {
-      console.log("PassengerMyRidesPage: Rides fetched successfully:", ridesRaw);
       const formattedRides: Ride[] = (ridesRaw as RawRideData[] || []).map(ride => {
         const passengerProfile = Array.isArray(ride.passenger_profiles)
           ? ride.passenger_profiles[0] || null
@@ -87,15 +83,12 @@ const PassengerMyRidesPage: React.FC = () => {
       setRides(formattedRides);
     }
     setLoadingRides(false);
-    console.log("PassengerMyRidesPage: Loading rides complete.");
   }, []);
 
   useEffect(() => {
-    console.log("PassengerMyRidesPage: useEffect triggered. userLoading:", userLoading, "user:", user?.id);
     if (!userLoading && user) {
       fetchMyRides(user.id);
     } else if (!userLoading && !user) {
-      console.log("PassengerMyRidesPage: User not logged in, redirecting or showing error.");
       toast.error("الرجاء تسجيل الدخول لعرض رحلاتك.");
     }
   }, [userLoading, user, fetchMyRides]);
@@ -109,7 +102,6 @@ const PassengerMyRidesPage: React.FC = () => {
       filter: `passenger_id=eq.${user?.id}`,
     },
     (payload) => {
-      console.log("PassengerMyRidesPage: Realtime update received:", payload);
       if (user) {
         fetchMyRides(user.id);
       }
