@@ -31,14 +31,15 @@ import {
 import { useUser } from "@/context/UserContext";
 import { Profile } from "@/types/supabase";
 import UserStatusBadge from "@/components/UserStatusBadge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import UserTableSkeleton from "@/components/skeletons/UserTableSkeleton"; // Import the new skeleton component
 
 const UserManagementPage: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all"); // New state for status filter
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | undefined>(undefined);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -131,7 +132,7 @@ const UserManagementPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (userLoading || loadingUsers) {
+  if (userLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -172,14 +173,16 @@ const UserManagementPage: React.FC = () => {
         </Button>
       </div>
 
-      {filteredUsers.length === 0 ? (
+      {loadingUsers ? (
+        <UserTableSkeleton />
+      ) : filteredUsers.length === 0 ? (
         <EmptyState
           icon={UsersIcon}
           title="لا يوجد مستخدمون"
           description="لا توجد بيانات مستخدمين لعرضها. ابدأ بإضافة مستخدم جديد."
         />
       ) : (
-        <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
